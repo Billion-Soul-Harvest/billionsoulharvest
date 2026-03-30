@@ -130,7 +130,7 @@ export function usePipelineLeads(options: UsePipelineLeadsOptions = {}) {
 
         switch (dateRange) {
           case 'last_30':
-            startDate = new Date(now.setDate(now.getDate() - 30))
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
             break
           case 'this_quarter': {
             const quarter = Math.floor(new Date().getMonth() / 3)
@@ -168,19 +168,21 @@ export function usePipelineLeads(options: UsePipelineLeadsOptions = {}) {
 
       // Log activity
       if (user) {
-        const { data: stage } = await supabase
+        const { data: stage, error: stageError } = await supabase
           .from('pipeline_stages')
           .select('name')
           .eq('id', stageId)
           .single()
 
-        await supabase.from('activity_logs').insert({
-          organization_id: user.organization_id,
-          lead_id: leadId,
-          user_id: user.id,
-          action_type: 'stage_changed',
-          description: `Moved lead to ${stage?.name}`,
-        })
+        if (!stageError && stage) {
+          await supabase.from('activity_logs').insert({
+            organization_id: user.organization_id,
+            lead_id: leadId,
+            user_id: user.id,
+            action_type: 'stage_changed',
+            description: `Moved lead to ${stage.name}`,
+          })
+        }
       }
 
       return data
@@ -224,9 +226,11 @@ export function usePipelineAdvisors() {
 
 export function useLeadTasks(leadIds: string[]) {
   const { data: user } = useCurrentUser()
+  // Stabilize query key to prevent unnecessary refetches when array reference changes
+  const stableKey = leadIds.sort().join(',')
 
   const tasksQuery = useQuery({
-    queryKey: ['pipeline', 'lead-tasks', leadIds],
+    queryKey: ['pipeline', 'lead-tasks', stableKey],
     queryFn: async (): Promise<Record<string, Task | undefined>> => {
       if (leadIds.length === 0) return {}
 
