@@ -26,20 +26,46 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
 
   -- Create test auth user (if not exists)
-  INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_super_admin, role)
+  INSERT INTO auth.users (
+    id, instance_id, aud, email, encrypted_password, email_confirmed_at,
+    created_at, updated_at, raw_app_meta_data, raw_user_meta_data,
+    is_super_admin, role,
+    confirmation_token, recovery_token, email_change_token_new, email_change,
+    phone_change, phone_change_token, email_change_token_current, reauthentication_token,
+    email_change_confirm_status, is_sso_user, is_anonymous
+  )
   VALUES (
     user_id,
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
     'test@example.com',
-    '$2a$10$PrwC/XKxkP6pZBvBL5qvr.Fs7vhJUWwF0ayJc3CgH1R.PvGFrHvXO', -- password: password123
+    '$2a$10$7GYuv7zPeOi8hI02OAvq.ucejYVD8yFuCaWhA4BX1ijKRmKFJqiKe', -- password: password123
     now(),
     now(),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{}'::jsonb,
     false,
-    'authenticated'
+    'authenticated',
+    '', '', '', '',
+    '', '', '', '',
+    0, false, false
   )
   ON CONFLICT (id) DO NOTHING;
+
+  -- Create auth identity for email provider (required for Supabase auth)
+  INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+  VALUES (
+    user_id,
+    user_id,
+    jsonb_build_object('sub', user_id::text, 'email', 'test@example.com', 'email_verified', true, 'phone_verified', false),
+    'email',
+    'test@example.com',
+    now(),
+    now(),
+    now()
+  )
+  ON CONFLICT (provider, provider_id) DO NOTHING;
 
   -- Create test user profile (if not exists)
   INSERT INTO users (id, organization_id, email, full_name, role, created_at)
