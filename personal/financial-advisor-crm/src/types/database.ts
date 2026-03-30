@@ -115,6 +115,8 @@ export type Database = {
           last_scored_at: string | null
           created_at: string
           updated_at: string
+          estimated_value: number
+          last_contact_at: string | null
         }
         Insert: {
           id?: string
@@ -134,6 +136,8 @@ export type Database = {
           last_scored_at?: string | null
           created_at?: string
           updated_at?: string
+          estimated_value?: number
+          last_contact_at?: string | null
         }
         Update: {
           id?: string
@@ -153,6 +157,8 @@ export type Database = {
           last_scored_at?: string | null
           created_at?: string
           updated_at?: string
+          estimated_value?: number
+          last_contact_at?: string | null
         }
         Relationships: []
       }
