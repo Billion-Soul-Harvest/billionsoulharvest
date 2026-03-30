@@ -30,7 +30,7 @@ BEGIN
   VALUES (
     user_id,
     'test@example.com',
-    '$2a$10$abcdefghijklmnopqrstuv', -- dummy bcrypt hash
+    '$2a$10$PrwC/XKxkP6pZBvBL5qvr.Fs7vhJUWwF0ayJc3CgH1R.PvGFrHvXO', -- password: password123
     now(),
     now(),
     now(),
