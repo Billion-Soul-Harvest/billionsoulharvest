@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 import {
   ArrowLeft,
   Phone,
@@ -407,10 +407,7 @@ export function LeadDetail() {
               <div className="flex justify-between">
                 <span className="text-sm opacity-70">Days in Pipeline</span>
                 <span className="font-bold">
-                  {Math.floor(
-                    (Date.now() - new Date(lead.created_at).getTime()) /
-                      (1000 * 60 * 60 * 24)
-                  )}
+                  {differenceInDays(new Date(), new Date(lead.created_at))}
                 </span>
               </div>
             </div>

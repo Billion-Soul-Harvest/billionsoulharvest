@@ -49,20 +49,26 @@ export function LeadSourceChart({ leads }: LeadSourceChartProps) {
   // Calculate SVG circle segments
   const segments = useMemo(() => {
     const circumference = 2 * Math.PI * 40 // radius = 40
-    let offset = 0
 
-    return sourceData.map((item) => {
-      const segmentLength = (item.percentage / 100) * circumference
-      const dashArray = `${segmentLength} ${circumference - segmentLength}`
-      const dashOffset = -offset
-      offset += segmentLength
+    return sourceData.reduce<Array<typeof sourceData[0] & { dashArray: string; dashOffset: number }>>(
+      (acc, item) => {
+        const segmentLength = (item.percentage / 100) * circumference
+        const dashArray = `${segmentLength} ${circumference - segmentLength}`
+        const previousOffset = acc.reduce((sum, seg) => {
+          const prevLength = (seg.percentage / 100) * circumference
+          return sum + prevLength
+        }, 0)
+        const dashOffset = -previousOffset
 
-      return {
-        ...item,
-        dashArray,
-        dashOffset,
-      }
-    })
+        acc.push({
+          ...item,
+          dashArray,
+          dashOffset,
+        })
+        return acc
+      },
+      []
+    )
   }, [sourceData])
 
   const topSources = sourceData.slice(0, 5)

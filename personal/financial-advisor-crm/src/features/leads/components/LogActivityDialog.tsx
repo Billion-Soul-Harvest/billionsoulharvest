@@ -33,7 +33,7 @@ interface LogActivityDialogProps {
 const callSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   description: z.string().optional(),
-  duration: z.coerce.number().min(1).optional(),
+  duration: z.number().min(1).optional(),
   outcome: z.string().optional(),
 })
 
@@ -164,7 +164,7 @@ export function LogActivityDialog({
                     id="call-duration"
                     type="number"
                     placeholder="15"
-                    {...callForm.register('duration')}
+                    {...callForm.register('duration', { valueAsNumber: true })}
                   />
                 </div>
                 <div className="space-y-2">

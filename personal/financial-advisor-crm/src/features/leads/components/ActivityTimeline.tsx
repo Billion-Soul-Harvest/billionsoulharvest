@@ -104,14 +104,14 @@ export function ActivityTimeline({ activities, isLoading }: ActivityTimelineProp
                     {/* Metadata display */}
                     {metadata && (
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {metadata.duration && (
+                        {'duration' in metadata && metadata.duration != null && (
                           <span className="text-xs bg-surface-2 px-2 py-0.5 rounded">
-                            Duration: {metadata.duration}min
+                            Duration: {`${metadata.duration}`}min
                           </span>
                         )}
-                        {metadata.outcome && (
+                        {'outcome' in metadata && metadata.outcome != null && (
                           <span className="text-xs bg-surface-2 px-2 py-0.5 rounded">
-                            Outcome: {metadata.outcome as string}
+                            Outcome: {`${metadata.outcome}`}
                           </span>
                         )}
                       </div>
