@@ -110,6 +110,7 @@ export type Database = {
           source: string | null
           financial_goals: string | null
           notes: string | null
+          occupation: string | null
           lead_score: number
           score_factors: Json
           last_scored_at: string | null
@@ -131,6 +132,7 @@ export type Database = {
           source?: string | null
           financial_goals?: string | null
           notes?: string | null
+          occupation?: string | null
           lead_score?: number
           score_factors?: Json
           last_scored_at?: string | null
@@ -152,6 +154,7 @@ export type Database = {
           source?: string | null
           financial_goals?: string | null
           notes?: string | null
+          occupation?: string | null
           lead_score?: number
           score_factors?: Json
           last_scored_at?: string | null
@@ -331,6 +334,9 @@ export type Database = {
           coverage_amount: number | null
           beneficiaries: Json
           notes: string | null
+          fund_value: number
+          fund_value_date: string | null
+          riders: Json
           created_at: string
           updated_at: string
         }
@@ -352,6 +358,9 @@ export type Database = {
           coverage_amount?: number | null
           beneficiaries?: Json
           notes?: string | null
+          fund_value?: number
+          fund_value_date?: string | null
+          riders?: Json
           created_at?: string
           updated_at?: string
         }
@@ -373,6 +382,9 @@ export type Database = {
           coverage_amount?: number | null
           beneficiaries?: Json
           notes?: string | null
+          fund_value?: number
+          fund_value_date?: string | null
+          riders?: Json
           created_at?: string
           updated_at?: string
         }
@@ -513,6 +525,29 @@ export interface PolicyWithClient extends Policy {
 export interface Beneficiary {
   name: string
   percentage: number
+}
+
+export interface PolicyRider {
+  enabled: boolean
+  amount?: number
+  daily_rate?: number
+}
+
+export interface PolicyRiders {
+  ccb?: PolicyRider  // Critical Care / Living Care Benefit
+  lcb?: PolicyRider  // Living Care Benefit (alternative name)
+  tpd?: PolicyRider  // Total Permanent Disability
+  core_add?: PolicyRider  // Accidental Death & Dismemberment
+  wptpd?: PolicyRider  // Waiver of Premium on TPD
+  dhi?: PolicyRider  // Daily Hospital Income
+  ser?: PolicyRider  // Surgical Expense Reimbursement
+  icu?: PolicyRider  // Intensive Care Unit
+  pa_add?: PolicyRider  // Personal Accident ADD
+  pa_atpd?: PolicyRider  // Personal Accident - Accidental TPD
+  ma?: PolicyRider  // Murder and Assault
+  amr?: PolicyRider  // Accident Medical Reimbursement
+  fs?: PolicyRider  // Future Safe
+  bb?: PolicyRider  // Burial Benefit
 }
 
 export interface LeadActivityWithUser extends LeadActivity {
