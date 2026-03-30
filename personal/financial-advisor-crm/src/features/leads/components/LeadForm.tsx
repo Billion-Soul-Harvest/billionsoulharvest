@@ -25,6 +25,7 @@ const leadSchema = z.object({
   phone: z.string().optional(),
   date_of_birth: z.string().optional(),
   source: z.string().optional(),
+  occupation: z.string().optional(),
   estimated_value: z.number().min(0).optional(),
   financial_goals: z.string().optional(),
   notes: z.string().optional(),
@@ -74,6 +75,7 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
           phone: lead.phone || '',
           date_of_birth: lead.date_of_birth || '',
           source: lead.source || '',
+          occupation: lead.occupation || '',
           estimated_value: lead.estimated_value || 0,
           financial_goals: lead.financial_goals || '',
           notes: lead.notes || '',
@@ -83,6 +85,7 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
       : {
           stage_id: defaultStage?.id,
           estimated_value: 0,
+          occupation: '',
         },
   })
 
@@ -93,6 +96,7 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
       phone: data.phone || null,
       date_of_birth: data.date_of_birth || null,
       source: data.source || null,
+      occupation: data.occupation || null,
       estimated_value: data.estimated_value || 0,
       financial_goals: data.financial_goals || null,
       notes: data.notes || null,
@@ -177,6 +181,27 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
             {...register('source')}
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="occupation">Occupation</Label>
+        <Input
+          id="occupation"
+          placeholder="e.g., Engineer, Business Owner, Healthcare Professional"
+          {...register('occupation')}
+          list="occupation-suggestions"
+        />
+        <datalist id="occupation-suggestions">
+          <option value="Engineer" />
+          <option value="Government Employee" />
+          <option value="Healthcare Professional" />
+          <option value="Business Owner" />
+          <option value="Teacher" />
+          <option value="Lawyer" />
+          <option value="Accountant" />
+          <option value="Self-Employed" />
+          <option value="Retired" />
+        </datalist>
       </div>
 
       <div className="space-y-2">
