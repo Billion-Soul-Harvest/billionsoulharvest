@@ -25,6 +25,7 @@ const leadSchema = z.object({
   phone: z.string().optional(),
   date_of_birth: z.string().optional(),
   source: z.string().optional(),
+  estimated_value: z.number().min(0).optional(),
   financial_goals: z.string().optional(),
   notes: z.string().optional(),
   stage_id: z.string().min(1, 'Stage is required'),
@@ -73,6 +74,7 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
           phone: lead.phone || '',
           date_of_birth: lead.date_of_birth || '',
           source: lead.source || '',
+          estimated_value: lead.estimated_value || 0,
           financial_goals: lead.financial_goals || '',
           notes: lead.notes || '',
           stage_id: lead.stage_id,
@@ -80,6 +82,7 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
         }
       : {
           stage_id: defaultStage?.id,
+          estimated_value: 0,
         },
   })
 
@@ -90,6 +93,7 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
       phone: data.phone || null,
       date_of_birth: data.date_of_birth || null,
       source: data.source || null,
+      estimated_value: data.estimated_value || 0,
       financial_goals: data.financial_goals || null,
       notes: data.notes || null,
       assigned_to: data.assigned_to || null,
@@ -173,6 +177,19 @@ export function LeadForm({ lead, onSuccess, onCancel }: LeadFormProps) {
             {...register('source')}
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="estimated_value">Estimated Value ($)</Label>
+        <Input
+          id="estimated_value"
+          type="number"
+          placeholder="0"
+          {...register('estimated_value', { valueAsNumber: true })}
+        />
+        {errors.estimated_value && (
+          <p className="text-sm text-destructive">{errors.estimated_value.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">
