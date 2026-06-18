@@ -92,7 +92,14 @@ serve(async (req: Request) => {
     }
 
     const title = template.title;
-    const body = template.body(merchant.name, booking.pickup_date);
+    let body: string;
+    if (booking.status === "picked_up") {
+      body = (template.body as () => string)();
+    } else if (booking.status === "in_progress" || booking.status === "completed" || booking.status === "cancelled") {
+      body = (template.body as (merchantName: string) => string)(merchant.name);
+    } else {
+      body = (template.body as (merchantName: string, date: string) => string)(merchant.name, booking.pickup_date);
+    }
     const data = { bookingId: booking.id };
 
     // Send push notification
