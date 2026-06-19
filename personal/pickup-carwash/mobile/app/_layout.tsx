@@ -7,9 +7,11 @@ import { StripeProvider } from "@stripe/stripe-react-native";
 import { AppProviders } from "@/shared/providers/AppProviders";
 import { useAuthStore } from "@/features/auth/store";
 import { supabase } from "@/shared/lib/supabase";
+import { usePushNotifications } from "@/shared/hooks/usePushNotifications";
 
 export default function RootLayout() {
   const { setSession, setInitialized } = useAuthStore();
+  usePushNotifications();
 
   useEffect(() => {
     // Check initial session
