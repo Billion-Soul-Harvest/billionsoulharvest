@@ -10,6 +10,7 @@ import { useBookingStore } from "@/features/booking/store";
 import { PackageCard } from "@/features/merchants/components";
 import { SlotPicker, StepIndicator } from "@/features/booking/components";
 import { Button } from "@/shared/components";
+import { useLocation } from "@/shared/hooks";
 
 const STEPS = ["Package", "Schedule", "Address", "Pay"];
 const PLATFORM_FEE = 50;
@@ -21,6 +22,7 @@ export default function NewBookingScreen() {
   const { data: merchant } = useMerchant(merchantId);
   const { data: packages } = useMerchantPackages(merchantId);
   const createBooking = useCreateBooking();
+  const { coords: userLocation } = useLocation();
 
   const store = useBookingStore();
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -210,7 +212,9 @@ export default function NewBookingScreen() {
               placeholder="Enter your full address"
               value={store.pickupAddress ?? ""}
               onChangeText={(text) =>
-                store.setAddress(text, { lat: 14.5547, lng: 121.0244 })
+                // TODO: Implement proper geocoding service to convert address to coordinates
+                // Currently using user's current location as a reasonable default
+                store.setAddress(text, userLocation ?? { lat: 14.5547, lng: 121.0244 })
               }
               multiline
               numberOfLines={3}
