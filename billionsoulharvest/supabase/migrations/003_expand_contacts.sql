@@ -1,0 +1,19 @@
+-- Expand contacts table with fields from Constant Contact CSV export
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS phone_home text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS phone_mobile text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS phone_work text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS street_address text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email_status text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email_permission text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS alternative_email text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS birthday date;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS gender text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS age_group text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS language text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS job_title text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS referred_by text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS interests text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS expectations text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS source text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS cc_region text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email_lists text[];
