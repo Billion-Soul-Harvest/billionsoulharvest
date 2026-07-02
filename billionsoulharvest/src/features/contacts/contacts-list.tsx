@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useCallback, useTransition } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,8 +39,14 @@ interface Region {
 }
 
 interface Props {
-  initialContacts: ContactRow[];
+  contacts: ContactRow[];
   regions: Region[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  search: string;
+  typeFilter: string;
+  regionFilter: string;
 }
 
 const contactTypeLabels: Record<ContactType, string> = {
@@ -60,26 +67,46 @@ const contactTypeColors: Record<ContactType, string> = {
   other: "bg-gray-100 text-gray-600",
 };
 
-export function ContactsListClient({ initialContacts, regions }: Props) {
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [regionFilter, setRegionFilter] = useState("all");
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
-  const filtered = initialContacts.filter((c) => {
-    const matchesSearch =
-      !search ||
-      `${c.first_name} ${c.last_name} ${c.email} ${c.church_name}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
-    const matchesType = typeFilter === "all" || c.contact_type === typeFilter;
-    const matchesRegion =
-      regionFilter === "all" || c.region?.id === regionFilter;
-    return matchesSearch && matchesType && matchesRegion;
-  });
+export function ContactsListClient({
+  contacts,
+  regions,
+  totalCount,
+  page,
+  pageSize,
+  search,
+  typeFilter,
+  regionFilter,
+}: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+
+  const navigate = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams();
+      const merged = { page: String(page), pageSize: String(pageSize), search, type: typeFilter, region: regionFilter, ...updates };
+      for (const [k, v] of Object.entries(merged)) {
+        if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25")) {
+          params.set(k, v);
+        }
+      }
+      const qs = params.toString();
+      startTransition(() => {
+        router.push(qs ? `${pathname}?${qs}` : pathname);
+      });
+    },
+    [router, pathname, page, pageSize, search, typeFilter, regionFilter, startTransition]
+  );
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, totalCount);
 
   function exportCSV() {
     const headers = ["First Name", "Last Name", "Email", "Phone", "Type", "Church", "City", "Country", "Region", "Tags"];
-    const rows = filtered.map((c) => [
+    const rows = contacts.map((c) => [
       c.first_name, c.last_name, c.email ?? "", c.phone ?? "",
       c.contact_type, c.church_name ?? "", c.city ?? "", c.country ?? "",
       c.region?.name ?? "", c.tags.join("; "),
@@ -108,13 +135,24 @@ export function ContactsListClient({ initialContacts, regions }: Props) {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <Input
-          placeholder="Search by name, email, church..."
-          value={search}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Select value={typeFilter} onValueChange={(v: string | null) => { if (v) setTypeFilter(v); }}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            navigate({ search: formData.get("search") as string, page: "1" });
+          }}
+          className="flex gap-2 max-w-sm"
+        >
+          <Input
+            name="search"
+            placeholder="Search by name, email, church..."
+            defaultValue={search}
+          />
+          <Button type="submit" variant="outline" size="sm">
+            Search
+          </Button>
+        </form>
+        <Select value={typeFilter} onValueChange={(v: string | null) => { if (v) navigate({ type: v, page: "1" }); }}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
@@ -125,7 +163,7 @@ export function ContactsListClient({ initialContacts, regions }: Props) {
             ))}
           </SelectContent>
         </Select>
-        <Select value={regionFilter} onValueChange={(v: string | null) => { if (v) setRegionFilter(v); }}>
+        <Select value={regionFilter} onValueChange={(v: string | null) => { if (v) navigate({ region: v, page: "1" }); }}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Regions" />
           </SelectTrigger>
@@ -139,11 +177,16 @@ export function ContactsListClient({ initialContacts, regions }: Props) {
       </div>
 
       <p className="text-sm text-gray-500 mb-3">
-        {filtered.length} contact{filtered.length !== 1 ? "s" : ""}
+        {totalCount} contact{totalCount !== 1 ? "s" : ""}
       </p>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className={`bg-white rounded-xl border overflow-hidden relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+        {isPending && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-600" />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -159,8 +202,8 @@ export function ContactsListClient({ initialContacts, regions }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.length > 0 ? (
-                filtered.map((c) => (
+              {contacts.length > 0 ? (
+                contacts.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3">
                       <Link
@@ -216,6 +259,74 @@ export function ContactsListClient({ initialContacts, regions }: Props) {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalCount > 0 && (
+          <div className="flex items-center justify-between border-t px-4 py-3">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">
+                {startIndex}–{endIndex} of {totalCount}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Rows:</span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v: string | null) => {
+                    if (v) navigate({ pageSize: v, page: "1" });
+                  }}
+                >
+                  <SelectTrigger className="w-[70px] h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={String(size)}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate({ page: "1" })}
+                disabled={page <= 1}
+              >
+                First
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate({ page: String(page - 1) })}
+                disabled={page <= 1}
+              >
+                Prev
+              </Button>
+              <span className="px-3 text-sm text-gray-600">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate({ page: String(page + 1) })}
+                disabled={page >= totalPages}
+              >
+                Next
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate({ page: String(totalPages) })}
+                disabled={page >= totalPages}
+              >
+                Last
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
