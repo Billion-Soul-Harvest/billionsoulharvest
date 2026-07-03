@@ -18,12 +18,14 @@ const leaders = [
     title: "Global Director",
     bio: "Rev. Dr. Young Cho serves as the Global Director of Billion Soul Harvest, providing strategic leadership, developing international partnerships, and coordinating global initiatives that advance the mission of BSH across the nations.",
     initials: "YC",
+    image: "/leaders/young-cho.jpg",
   },
   {
     name: "Pastor Rick Warren",
     title: "Honorary Chairman",
     bio: "Founding Pastor, Saddleback Church. Founder, FINISHERS and Daily Hope. Pastor Rick Warren serves as the Honorary Chairman of Billion Soul Harvest, encouraging the movement's vision of global collaboration and the fulfillment of the Great Commission.",
     initials: "RW",
+    image: "/leaders/rick-warren.jpg",
   },
 ];
 
@@ -168,9 +170,21 @@ export default function AboutPage() {
                 key={leader.name}
                 className="bg-gray-50 border border-gray-100 rounded-2xl p-8 text-center hover:border-[#29BDD6]/30 hover:shadow-lg transition-all"
               >
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#29BDD6]/20 to-[#29BDD6]/5 flex items-center justify-center mx-auto mb-5 ring-2 ring-[#29BDD6]/20">
-                  <span className="text-[#29BDD6] font-bold text-2xl">{leader.initials}</span>
-                </div>
+                {"image" in leader && leader.image ? (
+                  <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-5 ring-2 ring-[#29BDD6]/20">
+                    <Image
+                      src={leader.image}
+                      alt={leader.name}
+                      width={96}
+                      height={96}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#29BDD6]/20 to-[#29BDD6]/5 flex items-center justify-center mx-auto mb-5 ring-2 ring-[#29BDD6]/20">
+                    <span className="text-[#29BDD6] font-bold text-2xl">{leader.initials}</span>
+                  </div>
+                )}
                 <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#0f2744] mb-1">
                   {leader.name}
                 </h3>
