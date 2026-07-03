@@ -62,7 +62,7 @@ export default function GatheringsPage() {
       <section className="py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Coming Soon</p>
+            <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Coming Soon</p>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white">
               Upcoming Gatherings
             </h2>
@@ -109,7 +109,7 @@ export default function GatheringsPage() {
       <section className="bg-[#0a1e38] py-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">History</p>
+            <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">History</p>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white">
               Past Gatherings
             </h2>

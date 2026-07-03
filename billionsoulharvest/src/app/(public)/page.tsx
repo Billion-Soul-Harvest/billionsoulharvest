@@ -41,7 +41,7 @@ export default async function HomePage() {
           <h1 className="font-[family-name:var(--font-heading)] text-5xl sm:text-6xl lg:text-8xl font-bold text-white mb-6 leading-[0.9] tracking-tight">
             Reaching 1 Billion Souls
             <br />
-            <span className="text-[#29BDD6]">by 2033</span>
+            <span className="text-[#D4A843]">by 2033</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-200/80 max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -91,7 +91,7 @@ export default async function HomePage() {
         <section className="relative -mt-16 pb-16 z-10">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl">
-              <p className="text-[#29BDD6]/60 text-xs font-semibold tracking-widest uppercase mb-3">
+              <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">
                 Featured Event
               </p>
               <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold text-white mb-2">
@@ -191,7 +191,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[#0a1e38]/90" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
           <div className="text-center mb-14">
-            <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Our Heartbeat</p>
+            <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Heartbeat</p>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl font-bold text-white mb-4">
               Evangelize. Disciple. Multiply.
             </h2>
@@ -245,7 +245,7 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Our DNA</p>
+              <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our DNA</p>
               <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white mb-6">
                 Holy. Humble. Hidden.
               </h2>
@@ -319,7 +319,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[#0a1e38]/85" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
           <div className="text-center mb-14">
-            <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Our Vision</p>
+            <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Vision</p>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl font-bold text-white mb-4">
               The Four Greats
             </h2>
@@ -382,7 +382,7 @@ export default async function HomePage() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Our Strategy</p>
+            <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Strategy</p>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl font-bold text-white mb-4">
               Five Global Initiatives
             </h2>
@@ -476,7 +476,7 @@ export default async function HomePage() {
               { stat: "2033", label: "Vision Year" },
             ].map((item) => (
               <div key={item.label} className="text-center p-8 rounded-2xl bg-white/5 border border-white/5">
-                <p className="font-[family-name:var(--font-heading)] text-4xl sm:text-5xl font-bold text-[#29BDD6] mb-2">
+                <p className="font-[family-name:var(--font-heading)] text-4xl sm:text-5xl font-bold text-[#D4A843] mb-2">
                   {item.stat}
                 </p>
                 <p className="text-gray-400 text-sm">{item.label}</p>
@@ -497,7 +497,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[#0f2744]/85" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
           <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl font-bold text-white mb-6 leading-tight">
-            Gather for Vision.<br className="hidden sm:block" /> Scatter for Harvest.<br className="hidden sm:block" /> Unite for the Kingdom.
+            <span className="text-[#D4A843]">Gather</span> for Vision.<br className="hidden sm:block" /> <span className="text-[#D4A843]">Scatter</span> for Harvest.<br className="hidden sm:block" /> <span className="text-[#D4A843]">Unite</span> for the Kingdom.
           </h2>
           <p className="text-gray-200/80 max-w-xl mx-auto mb-10 text-lg">
             Whether you&apos;re a pastor, missionary, ministry leader, church member, or believer with a heart

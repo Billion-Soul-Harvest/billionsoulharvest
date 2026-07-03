@@ -21,7 +21,7 @@ export default function ConnectPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f2744]/85 via-[#0f2744]/75 to-[#0f2744]/90" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
-          <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-4">Get Involved</p>
+          <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-4">Get Involved</p>
           <h1 className="font-[family-name:var(--font-heading)] text-4xl sm:text-6xl font-bold text-white mb-6">
             Join the Movement
           </h1>

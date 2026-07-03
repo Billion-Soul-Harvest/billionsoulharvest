@@ -37,7 +37,7 @@ export default function InitiativesPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
-                <span className="text-[#29BDD6] text-xs font-semibold">01</span>
+                <span className="text-[#D4A843] text-xs font-semibold">01</span>
               </div>
               <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
                 Global & National Harvest Summits
@@ -94,7 +94,7 @@ export default function InitiativesPage() {
             </div>
             <div className="order-1 lg:order-2">
               <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
-                <span className="text-[#29BDD6] text-xs font-semibold">02</span>
+                <span className="text-[#D4A843] text-xs font-semibold">02</span>
               </div>
               <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
                 International Leadership Institute (ILI)
@@ -129,7 +129,7 @@ export default function InitiativesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
-              <span className="text-[#29BDD6] text-xs font-semibold">03</span>
+              <span className="text-[#D4A843] text-xs font-semibold">03</span>
             </div>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white mb-4">
               Fanning the Flame
@@ -213,7 +213,7 @@ export default function InitiativesPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
-                <span className="text-[#29BDD6] text-xs font-semibold">04</span>
+                <span className="text-[#D4A843] text-xs font-semibold">04</span>
               </div>
               <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
                 Billion Soul Care
@@ -237,7 +237,7 @@ export default function InitiativesPage() {
               </div>
             </div>
             <div className="text-center">
-              <p className="text-[#29BDD6] font-semibold text-lg">
+              <p className="text-[#D4A843] font-semibold text-lg">
                 Sharing the Gospel. Serving with Compassion. Transforming Lives.
               </p>
             </div>
@@ -260,7 +260,7 @@ export default function InitiativesPage() {
             </div>
             <div>
               <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
-                <span className="text-[#29BDD6] text-xs font-semibold">05</span>
+                <span className="text-[#D4A843] text-xs font-semibold">05</span>
               </div>
               <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
                 Strategic Partnerships
@@ -286,7 +286,7 @@ export default function InitiativesPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[#29BDD6] font-semibold mt-8">
+              <p className="text-[#D4A843] font-semibold mt-8">
                 One Mission. One Kingdom. One Harvest.
               </p>
             </div>

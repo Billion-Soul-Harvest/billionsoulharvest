@@ -69,7 +69,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div>
-              <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Our Story</p>
+              <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Story</p>
               <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
                 The Greatest Harvest Requires the Greatest Unity
               </h2>
@@ -108,7 +108,7 @@ export default function AboutPage() {
 
           {/* Quote block */}
           <div className="mt-16 text-center max-w-3xl mx-auto">
-            <div className="border-l-4 border-[#29BDD6] pl-6 py-4 text-left">
+            <div className="border-l-4 border-[#D4A843] pl-6 py-4 text-left">
               <p className="text-white font-medium text-xl italic leading-relaxed">
                 &ldquo;To unite the Body of Christ and help accelerate the fulfillment of the Great Commission —
                 one soul, one church, one nation at a time.&rdquo;
@@ -122,7 +122,7 @@ export default function AboutPage() {
       <section className="bg-[#0a1e38] py-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Our Journey</p>
+            <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Journey</p>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white">
               From Commission to Harvest
             </h2>
@@ -153,7 +153,7 @@ export default function AboutPage() {
       <section className="py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Our Leadership</p>
+            <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Leadership</p>
             <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white mb-4">
               Led by a Global Vision
             </h2>
