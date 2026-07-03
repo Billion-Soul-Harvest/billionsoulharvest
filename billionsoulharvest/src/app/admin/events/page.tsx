@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
-import type { EventStatus } from "@/shared/types/database";
+import type { EventStatus, EventType } from "@/shared/types/database";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Events — BSH Admin",
@@ -16,6 +18,30 @@ const statusColors: Record<EventStatus, string> = {
   registration_closed: "bg-amber-100 text-amber-700",
   completed: "bg-purple-100 text-purple-700",
   cancelled: "bg-red-100 text-red-700",
+};
+
+const eventTypeLabels: Record<EventType, string> = {
+  service: "Service",
+  conference: "Conference",
+  workshop: "Workshop",
+  social: "Social",
+  prayer_meeting: "Prayer Meeting",
+  youth_event: "Youth Event",
+  training: "Training",
+  church_anniversary: "Church Anniversary",
+  other: "Other",
+};
+
+const eventTypeColors: Record<EventType, string> = {
+  service: "#3b82f6",
+  conference: "#8b5cf6",
+  workshop: "#22c55e",
+  social: "#f472b6",
+  prayer_meeting: "#f97316",
+  youth_event: "#ef4444",
+  training: "#a855f7",
+  church_anniversary: "#ec4899",
+  other: "#6b7280",
 };
 
 const statusLabels: Record<EventStatus, string> = {
@@ -50,7 +76,7 @@ export default async function EventsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Events</h1>
-        <Link href="/events/new">
+        <Link href="/admin/events/new">
           <Button>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -65,13 +91,19 @@ export default async function EventsPage() {
           events.map((event) => (
             <Link
               key={event.id}
-              href={`/events/${event.id}`}
+              href={`/admin/events/edit/${event.id}`}
               className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow block"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
+                    {event.event_type && (
+                      <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: eventTypeColors[event.event_type as EventType] ?? "#6b7280" }} />
+                        {eventTypeLabels[event.event_type as EventType] ?? event.event_type}
+                      </span>
+                    )}
                     <Badge variant="secondary" className={statusColors[event.status as EventStatus]}>
                       {statusLabels[event.status as EventStatus]}
                     </Badge>

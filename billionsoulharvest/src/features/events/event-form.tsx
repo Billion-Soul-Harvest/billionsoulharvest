@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createClient } from "@/shared/utils/supabase/client";
-import type { EventStatus } from "@/shared/types/database";
+import type { EventStatus, EventType } from "@/shared/types/database";
 
 interface Region {
   id: string;
@@ -26,12 +26,12 @@ interface EventData {
   title: string;
   slug: string;
   description: string;
-  long_description: string;
   location: string;
   city: string;
   country: string;
   start_date: string;
   end_date: string;
+  event_type: EventType;
   status: EventStatus;
   region_id: string;
   max_registrations: string;
@@ -56,12 +56,12 @@ export function EventForm({ event, regions }: Props) {
     title: event?.title ?? "",
     slug: event?.slug ?? "",
     description: event?.description ?? "",
-    long_description: event?.long_description ?? "",
     location: event?.location ?? "",
     city: event?.city ?? "",
     country: event?.country ?? "",
     start_date: event?.start_date ?? "",
     end_date: event?.end_date ?? "",
+    event_type: event?.event_type ?? "conference",
     status: event?.status ?? "draft",
     region_id: event?.region_id ?? "",
     max_registrations: event?.max_registrations ?? "",
@@ -85,12 +85,12 @@ export function EventForm({ event, regions }: Props) {
       title: form.title,
       slug: form.slug,
       description: form.description || null,
-      long_description: form.long_description || null,
       location: form.location || null,
       city: form.city || null,
       country: form.country || null,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
+      event_type: form.event_type,
       status: form.status,
       region_id: form.region_id || null,
       max_registrations: form.max_registrations ? parseInt(form.max_registrations) : null,
@@ -105,9 +105,21 @@ export function EventForm({ event, regions }: Props) {
     }
 
     setSaving(false);
-    router.push("/events");
+    router.push("/admin/events");
     router.refresh();
   }
+
+  const eventTypes: { value: EventType; label: string; color: string }[] = [
+    { value: "service", label: "Service", color: "#3b82f6" },
+    { value: "conference", label: "Conference", color: "#8b5cf6" },
+    { value: "workshop", label: "Workshop", color: "#22c55e" },
+    { value: "social", label: "Social", color: "#f472b6" },
+    { value: "prayer_meeting", label: "Prayer Meeting", color: "#f97316" },
+    { value: "youth_event", label: "Youth Event", color: "#ef4444" },
+    { value: "training", label: "Training", color: "#a855f7" },
+    { value: "church_anniversary", label: "Church Anniversary", color: "#ec4899" },
+    { value: "other", label: "Other", color: "#6b7280" },
+  ];
 
   const statuses: { value: EventStatus; label: string }[] = [
     { value: "draft", label: "Draft" },
@@ -147,10 +159,20 @@ export function EventForm({ event, regions }: Props) {
               className="min-h-[60px]" />
           </div>
           <div className="sm:col-span-2 space-y-1.5">
-            <Label>Full Description (HTML)</Label>
-            <Textarea value={form.long_description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField("long_description", e.target.value)}
-              className="min-h-[100px] font-mono text-xs" />
+            <Label>Event Type</Label>
+            <Select value={form.event_type} onValueChange={(v: string | null) => { if (v) updateField("event_type", v); }}>
+              <SelectTrigger><SelectValue placeholder="Select event type" /></SelectTrigger>
+              <SelectContent>
+                {eventTypes.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
+                      {t.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>

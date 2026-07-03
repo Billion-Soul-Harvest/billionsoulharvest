@@ -1,7 +1,46 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const ADMIN_DOMAIN = process.env.NEXT_PUBLIC_ADMIN_DOMAIN;
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") ?? "";
+
+  // Domain-based routing (skipped when ADMIN_DOMAIN is not set, e.g. local dev)
+  if (ADMIN_DOMAIN) {
+    const isAdminDomain = host === ADMIN_DOMAIN;
+    const publicDomain = host.replace(/^app\./, "www.");
+
+    if (isAdminDomain) {
+      // Admin domain: redirect / to dashboard, block public-only routes
+      if (pathname === "/") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/dashboard";
+        return NextResponse.redirect(url);
+      }
+      if (
+        !pathname.startsWith("/admin") &&
+        !pathname.startsWith("/login") &&
+        !pathname.startsWith("/api")
+      ) {
+        // Redirect public routes to public domain
+        const url = request.nextUrl.clone();
+        url.host = publicDomain;
+        url.port = "";
+        return NextResponse.redirect(url);
+      }
+    } else {
+      // Public domain: block admin routes
+      if (pathname.startsWith("/admin")) {
+        const url = request.nextUrl.clone();
+        url.host = ADMIN_DOMAIN;
+        url.port = "";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
   }
@@ -34,8 +73,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protect admin routes
-  if (request.nextUrl.pathname.startsWith("/dashboard") ||
-      request.nextUrl.pathname.startsWith("/registrations")) {
+  if (pathname.startsWith("/admin")) {
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";

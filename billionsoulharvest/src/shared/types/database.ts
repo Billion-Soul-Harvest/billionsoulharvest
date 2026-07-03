@@ -8,6 +8,17 @@ export type EventStatus =
   | "completed"
   | "cancelled";
 
+export type EventType =
+  | "service"
+  | "conference"
+  | "workshop"
+  | "social"
+  | "prayer_meeting"
+  | "youth_event"
+  | "training"
+  | "church_anniversary"
+  | "other";
+
 export type RegistrationStatus = "pending" | "confirmed" | "cancelled" | "waitlisted";
 
 export type FollowUpPriority = "low" | "medium" | "high" | "urgent";
@@ -73,6 +84,7 @@ export interface Event {
   start_date: string | null;
   end_date: string | null;
   status: EventStatus;
+  event_type: EventType;
   region_id: string | null;
   banner_url: string | null;
   max_registrations: number | null;
@@ -120,6 +132,92 @@ export interface AdminUser {
   id: string;
   role: AdminRole;
   display_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SpeakerRole = "keynote" | "speaker" | "panelist" | "worship";
+export type ProgramType = "main_session" | "breakout" | "workshop" | "worship" | "meal" | "free_time";
+export type FaqCategory = "general" | "travel" | "accommodation" | "registration";
+export type SectionType = "arrival_info" | "accommodation" | "transportation" | "about" | "custom";
+
+export interface EventSpeaker {
+  id: string;
+  event_id: string;
+  name: string;
+  title: string;
+  organization: string | null;
+  bio: string | null;
+  photo_url: string | null;
+  role: SpeakerRole;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventProgram {
+  id: string;
+  event_id: string;
+  title: string;
+  description: string | null;
+  day_date: string;
+  start_time: string;
+  end_time: string | null;
+  location: string | null;
+  type: ProgramType;
+  speaker_id: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventFaq {
+  id: string;
+  event_id: string;
+  question: string;
+  answer: string;
+  category: FaqCategory | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventSection {
+  id: string;
+  event_id: string;
+  section_type: SectionType;
+  title: string;
+  content: string;
+  sort_order: number;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Page Builder types
+export type BlockType = "rich_text" | "speakers" | "schedule" | "faq" | "hero" | "image" | "video" | "cta";
+
+export interface EventPage {
+  id: string;
+  event_id: string;
+  title: string;
+  slug: string;
+  icon: string | null;
+  sort_order: number;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventPageBlock {
+  id: string;
+  page_id: string;
+  event_id: string;
+  block_type: BlockType;
+  title: string | null;
+  content: Record<string, unknown>;
+  sort_order: number;
+  published: boolean;
   created_at: string;
   updated_at: string;
 }
