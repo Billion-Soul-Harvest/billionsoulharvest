@@ -23,7 +23,7 @@ function FaqItem({ faq }: { faq: EventFaq }) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-4 text-left group"
       >
-        <span className="text-white font-medium text-sm pr-4 group-hover:text-[#c69c3f] transition-colors">
+        <span className="text-white font-medium text-sm pr-4 group-hover:text-[#29BDD6] transition-colors">
           {faq.question}
         </span>
         <svg
@@ -66,7 +66,7 @@ export function EventFaqSection({ faqs }: Props) {
           {[...categories.entries()].map(([category, items]) => (
             <div key={category}>
               {categories.size > 1 && (
-                <h3 className="text-[#c69c3f] text-sm font-semibold uppercase tracking-wider mb-3">
+                <h3 className="text-[#29BDD6] text-sm font-semibold uppercase tracking-wider mb-3">
                   {categoryLabels[category] ?? category}
                 </h3>
               )}

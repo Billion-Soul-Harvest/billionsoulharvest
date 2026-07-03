@@ -52,14 +52,14 @@ export default async function EventsListPage() {
                 <Link
                   key={event.id}
                   href={`/events/${event.slug}`}
-                  className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-[#c69c3f]/30 transition-all"
+                  className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-[#29BDD6]/30 transition-all"
                 >
                   {/* Banner placeholder */}
                   <div className="h-40 bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] flex items-center justify-center">
                     {event.banner_url ? (
                       <img src={event.banner_url} alt={event.title} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="text-[#c69c3f]/30 text-4xl font-bold">BSH</div>
+                      <div className="text-[#29BDD6]/30 text-4xl font-bold">BSH</div>
                     )}
                   </div>
 
@@ -78,7 +78,7 @@ export default async function EventsListPage() {
                       )}
                     </div>
 
-                    <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-white group-hover:text-[#c69c3f] transition-colors mb-2">
+                    <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-white group-hover:text-[#29BDD6] transition-colors mb-2">
                       {event.title}
                     </h3>
 

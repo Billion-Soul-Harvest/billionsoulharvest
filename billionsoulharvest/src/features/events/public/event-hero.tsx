@@ -15,7 +15,7 @@ export function EventHero({ event }: Props) {
         </div>
       ) : (
         <div className="absolute inset-0">
-          <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#c69c3f]/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#29BDD6]/5 rounded-full blur-3xl" />
           <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-3xl" />
         </div>
       )}
@@ -28,7 +28,7 @@ export function EventHero({ event }: Props) {
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-gray-300 mb-6">
           {event.start_date && (
             <span className="flex items-center gap-1.5 text-sm">
-              <svg className="w-4 h-4 text-[#c69c3f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#29BDD6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               {new Date(event.start_date + "T00:00:00").toLocaleDateString("en-US", {
@@ -50,7 +50,7 @@ export function EventHero({ event }: Props) {
           )}
           {(event.city || event.country) && (
             <span className="flex items-center gap-1.5 text-sm">
-              <svg className="w-4 h-4 text-[#c69c3f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#29BDD6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -66,7 +66,7 @@ export function EventHero({ event }: Props) {
         {event.status === "registration_open" && (
           <Link
             href={`/register/${event.slug}`}
-            className="inline-flex items-center gap-2 bg-[#c69c3f] hover:bg-[#b08a35] text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-[#c69c3f]/20"
+            className="inline-flex items-center gap-2 bg-[#29BDD6] hover:bg-[#1a9ab5] text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-[#29BDD6]/20"
           >
             Register Now
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

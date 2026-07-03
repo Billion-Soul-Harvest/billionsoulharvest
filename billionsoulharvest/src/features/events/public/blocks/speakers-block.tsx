@@ -29,14 +29,14 @@ export function SpeakersBlock({ speakers, title }: Props) {
                     className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full mx-auto mb-4 bg-[#c69c3f]/20 flex items-center justify-center">
-                    <span className="text-[#c69c3f] font-bold text-xl">
+                  <div className="w-24 h-24 rounded-full mx-auto mb-4 bg-[#29BDD6]/20 flex items-center justify-center">
+                    <span className="text-[#29BDD6] font-bold text-xl">
                       {speaker.name.split(" ").map((n) => n[0]).join("")}
                     </span>
                   </div>
                 )}
                 <h3 className="text-white font-semibold text-lg">{speaker.name}</h3>
-                <p className="text-[#c69c3f] text-sm font-medium">{speaker.title}</p>
+                <p className="text-[#29BDD6] text-sm font-medium">{speaker.title}</p>
                 {speaker.organization && (
                   <p className="text-gray-400 text-xs mt-0.5">{speaker.organization}</p>
                 )}

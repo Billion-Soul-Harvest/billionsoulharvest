@@ -27,7 +27,7 @@ export function EventPageTabs({ eventSlug, pages, activePageSlug }: Props) {
                 href={href}
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   isActive
-                    ? "bg-white/10 text-[#c69c3f]"
+                    ? "bg-white/10 text-[#29BDD6]"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >

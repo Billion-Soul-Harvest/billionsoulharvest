@@ -48,7 +48,7 @@ export function EventSections({ sections }: Props) {
                 className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8"
               >
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="text-[#c69c3f] shrink-0 mt-0.5">
+                  <div className="text-[#29BDD6] shrink-0 mt-0.5">
                     {sectionIcons[section.section_type] ?? sectionIcons.custom}
                   </div>
                   <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold text-white">

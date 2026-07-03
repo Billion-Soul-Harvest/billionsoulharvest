@@ -191,7 +191,7 @@ async function LegacyLayout({ event, supabase }: { event: Event; supabase: any }
             </p>
             <Link
               href={`/register/${event.slug}`}
-              className="inline-flex items-center gap-2 bg-[#c69c3f] hover:bg-[#b08a35] text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-[#c69c3f]/20"
+              className="inline-flex items-center gap-2 bg-[#29BDD6] hover:bg-[#1a9ab5] text-white font-semibold px-8 py-4 rounded-xl text-lg transition-colors shadow-lg shadow-[#29BDD6]/20"
             >
               Register Now
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

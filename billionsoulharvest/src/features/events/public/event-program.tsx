@@ -15,7 +15,7 @@ const typeLabels: Record<string, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  main_session: "bg-[#c69c3f]/20 text-[#c69c3f]",
+  main_session: "bg-[#29BDD6]/20 text-[#29BDD6]",
   breakout: "bg-blue-500/20 text-blue-300",
   workshop: "bg-purple-500/20 text-purple-300",
   worship: "bg-amber-500/20 text-amber-300",
@@ -57,7 +57,7 @@ export function EventProgramSchedule({ programs, speakers }: Props) {
         <div className="space-y-10">
           {sortedDays.map(([date, items]) => (
             <div key={date}>
-              <h3 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-[#c69c3f] mb-4 border-b border-white/10 pb-2">
+              <h3 className="font-[family-name:var(--font-heading)] text-lg font-semibold text-[#29BDD6] mb-4 border-b border-white/10 pb-2">
                 {new Date(date + "T00:00:00").toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
@@ -93,7 +93,7 @@ export function EventProgramSchedule({ programs, speakers }: Props) {
                           )}
                           <div className="flex gap-3 mt-1">
                             {speaker && (
-                              <p className="text-[#c69c3f] text-xs">{speaker.name}</p>
+                              <p className="text-[#29BDD6] text-xs">{speaker.name}</p>
                             )}
                             {item.location && (
                               <p className="text-gray-500 text-xs">{item.location}</p>

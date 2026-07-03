@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Events", href: "/events" },
+  { label: "About", href: "/about" },
+  { label: "Initiatives", href: "/initiatives" },
+  { label: "Global Gatherings", href: "/gatherings" },
+  { label: "Media", href: "/media" },
+  { label: "Connect", href: "/connect" },
 ];
 
 export function PublicHeader() {
@@ -20,17 +25,18 @@ export function PublicHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 bg-gradient-to-br from-[#c69c3f] to-[#a37e2e] rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">BSH</span>
-            </div>
-            <div className="hidden sm:block">
-              <p className="font-semibold text-white text-sm leading-tight">Billion Soul Harvest</p>
-              <p className="text-[10px] text-[#c69c3f]/70 uppercase tracking-wider">Reaching the Nations</p>
-            </div>
+            <Image
+              src="/bsh-logo.png"
+              alt="Billion Soul Harvest"
+              width={180}
+              height={48}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href ||
                 (link.href !== "/" && pathname.startsWith(link.href));
@@ -41,7 +47,7 @@ export function PublicHeader() {
                   className={cn(
                     "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "text-[#c69c3f] bg-white/5"
+                      ? "text-[#29BDD6] bg-white/5"
                       : "text-gray-300 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -54,14 +60,16 @@ export function PublicHeader() {
           {/* CTA + mobile toggle */}
           <div className="flex items-center gap-3">
             <Link
-              href="/events"
-              className="hidden sm:inline-flex items-center gap-2 bg-[#c69c3f] hover:bg-[#b08a35] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              href="/connect"
+              className="hidden sm:inline-flex items-center gap-2 bg-[#29BDD6] hover:bg-[#1a9ab5] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
             >
-              Upcoming Events
+              Join the Movement
             </Link>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden text-gray-300 hover:text-white p-1"
+              className="lg:hidden text-gray-300 hover:text-white p-1"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileOpen}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {mobileOpen ? (
@@ -76,7 +84,7 @@ export function PublicHeader() {
 
         {/* Mobile nav */}
         {mobileOpen && (
-          <nav className="md:hidden pb-4 border-t border-white/10 pt-3 space-y-1">
+          <nav className="lg:hidden pb-4 border-t border-white/10 pt-3 space-y-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href ||
                 (link.href !== "/" && pathname.startsWith(link.href));
@@ -88,7 +96,7 @@ export function PublicHeader() {
                   className={cn(
                     "block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "text-[#c69c3f] bg-white/5"
+                      ? "text-[#29BDD6] bg-white/5"
                       : "text-gray-300 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -97,11 +105,11 @@ export function PublicHeader() {
               );
             })}
             <Link
-              href="/events"
+              href="/connect"
               onClick={() => setMobileOpen(false)}
-              className="block text-center bg-[#c69c3f] hover:bg-[#b08a35] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors mt-3"
+              className="block text-center bg-[#29BDD6] hover:bg-[#1a9ab5] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors mt-3"
             >
-              Upcoming Events
+              Join the Movement
             </Link>
           </nav>
         )}
