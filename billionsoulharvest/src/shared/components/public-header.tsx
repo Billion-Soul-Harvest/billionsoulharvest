@@ -30,7 +30,7 @@ export function PublicHeader() {
               alt="Billion Soul Harvest"
               width={180}
               height={48}
-              className="h-10 w-auto brightness-[2] contrast-[0.85]"
+              className="h-10 w-auto brightness-0 invert"
               priority
             />
           </Link>

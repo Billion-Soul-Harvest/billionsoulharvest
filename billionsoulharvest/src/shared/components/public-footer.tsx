@@ -14,7 +14,7 @@ export function PublicFooter() {
                 alt="Billion Soul Harvest"
                 width={200}
                 height={54}
-                className="h-12 w-auto brightness-[2] contrast-[0.85]"
+                className="h-12 w-auto brightness-0 invert"
               />
             </div>
             <p className="text-gray-400 text-sm max-w-md leading-relaxed">
