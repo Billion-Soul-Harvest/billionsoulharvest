@@ -142,7 +142,7 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
         {/* View Site + User */}
         <div className="border-t px-4 py-3 space-y-2">
           <a
-            href={process.env.NEXT_PUBLIC_ADMIN_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ADMIN_DOMAIN.replace(/^app\./, "www.")}` : "/"}
+            href="https://www.billionsoulharvest.org"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"

@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  const ADMIN_DOMAIN = process.env.NEXT_PUBLIC_ADMIN_DOMAIN;
+  const ADMIN_DOMAIN = process.env.ADMIN_DOMAIN;
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") ?? "";
 
