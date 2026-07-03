@@ -58,12 +58,12 @@ export default function GatheringsPage() {
         </div>
       </section>
 
-      {/* Upcoming Gatherings */}
-      <section className="py-24">
+      {/* Upcoming Gatherings — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Coming Soon</p>
-            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white">
+            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-[#0f2744]">
               Upcoming Gatherings
             </h2>
           </div>
@@ -71,7 +71,7 @@ export default function GatheringsPage() {
             {upcomingGatherings.map((event) => (
               <div
                 key={event.title}
-                className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-[#29BDD6]/30 transition-all"
+                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-[#29BDD6]/30 hover:shadow-lg transition-all"
               >
                 <div className="relative aspect-[16/10] overflow-hidden">
                   <Image
@@ -80,15 +80,15 @@ export default function GatheringsPage() {
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0f2744]/80 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <span className="absolute top-4 left-4 text-3xl">{event.flag}</span>
                 </div>
                 <div className="p-6">
-                  <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-white mb-2">
+                  <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#0f2744] mb-2">
                     {event.title}
                   </h3>
                   <p className="text-[#29BDD6] text-sm font-medium mb-1">{event.date}</p>
-                  <p className="text-gray-400 text-sm mb-4">{event.location}</p>
+                  <p className="text-gray-500 text-sm mb-4">{event.location}</p>
                   <Link
                     href="/events"
                     className="inline-flex items-center gap-1 text-[#29BDD6] hover:text-[#3dcde6] text-sm font-semibold transition-colors"
@@ -118,13 +118,13 @@ export default function GatheringsPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20">
+      {/* CTA — white background */}
+      <section className="bg-white py-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold text-white mb-4">
+          <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold text-[#0f2744] mb-4">
             Looking for Event Registration?
           </h3>
-          <p className="text-gray-400 mb-8">
+          <p className="text-gray-500 mb-8">
             Visit our events page for current registration details and upcoming event information.
           </p>
           <Link

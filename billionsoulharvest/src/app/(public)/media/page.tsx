@@ -31,12 +31,12 @@ export default function MediaPage() {
         </div>
       </section>
 
-      {/* Stories */}
-      <section className="py-24">
+      {/* Stories — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Explore</p>
-            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white">
+            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-[#0f2744]">
               Stories
             </h2>
           </div>
@@ -83,12 +83,12 @@ export default function MediaPage() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center hover:border-[#29BDD6]/20 transition-all group"
+                className="bg-gray-50 border border-gray-100 rounded-2xl p-8 text-center hover:border-[#29BDD6]/30 hover:shadow-lg transition-all group"
               >
                 <div className="w-16 h-16 mx-auto mb-5 rounded-xl bg-[#29BDD6]/10 flex items-center justify-center text-[#29BDD6] group-hover:bg-[#29BDD6]/20 transition-colors">
                   {item.icon}
                 </div>
-                <h3 className="text-white font-semibold text-lg mb-2">{item.title}</h3>
+                <h3 className="text-[#0f2744] font-semibold text-lg mb-2">{item.title}</h3>
                 <p className="text-gray-500 text-sm mb-4">{item.description}</p>
                 <span className="inline-flex items-center gap-1 text-[#29BDD6]/60 text-xs font-semibold bg-[#29BDD6]/5 px-3 py-1 rounded-full">
                   Coming Soon

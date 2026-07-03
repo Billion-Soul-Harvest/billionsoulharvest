@@ -139,31 +139,30 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* What is BSH — with side image */}
-      <section className="py-24">
+      {/* What is BSH — white background section */}
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl">
               <Image
                 src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=960&q=80"
                 alt="Global community united in faith"
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f2744]/60 to-transparent" />
             </div>
             <div>
-              <p className="text-[#29BDD6] text-xs font-semibold tracking-widest uppercase mb-3">Who We Are</p>
-              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white mb-6">
+              <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Who We Are</p>
+              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-[#0f2744] mb-6">
                 What is Billion Soul Harvest?
               </h2>
-              <div className="space-y-4 text-gray-300 leading-relaxed">
+              <div className="space-y-4 text-gray-700 leading-relaxed">
                 <p>
                   Billion Soul Harvest (BSH) is a global movement uniting churches, ministries, mission organizations,
                   and Christian leaders around a shared vision: to help catalyze the greatest harvest of souls in history
                   as we approach the year 2033.
                 </p>
-                <p className="text-gray-400">
+                <p className="text-gray-500">
                   We believe that no single church, denomination, ministry, or nation can fulfill the Great Commission alone.
                   But together, through humility, collaboration, prayer, and the power of the Holy Spirit, the Body of Christ
                   can accelerate evangelism, discipleship, and multiplication on an unprecedented scale.
@@ -171,7 +170,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/about"
-                className="inline-flex items-center gap-2 text-[#29BDD6] hover:text-[#3dcde6] font-semibold mt-6 transition-colors"
+                className="inline-flex items-center gap-2 text-[#29BDD6] hover:text-[#1a9ab5] font-semibold mt-6 transition-colors"
               >
                 Read our story &rarr;
               </Link>
@@ -240,16 +239,16 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Our DNA — Holy. Humble. Hidden. */}
-      <section className="py-24">
+      {/* Our DNA — Holy. Humble. Hidden. — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our DNA</p>
-              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white mb-6">
+              <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-[#0f2744] mb-6">
                 Holy. Humble. Hidden.
               </h2>
-              <p className="text-gray-400 mb-8">
+              <p className="text-gray-500 mb-8">
                 Our culture is defined by three commitments that shape who we are and how we serve.
               </p>
               <div className="space-y-6">
@@ -283,26 +282,25 @@ export default async function HomePage() {
                     ),
                   },
                 ].map((item) => (
-                  <div key={item.title} className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+                  <div key={item.title} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
                     <div className="w-10 h-10 rounded-lg bg-[#29BDD6]/10 flex items-center justify-center text-[#29BDD6] shrink-0">
                       {item.icon}
                     </div>
                     <div>
-                      <h3 className="text-white font-semibold mb-1">{item.title}</h3>
-                      <p className="text-gray-400 text-sm">{item.description}</p>
+                      <h3 className="text-[#0f2744] font-semibold mb-1">{item.title}</h3>
+                      <p className="text-gray-500 text-sm">{item.description}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl">
               <Image
                 src="https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?auto=format&fit=crop&w=960&q=80"
                 alt="Community in prayer and fellowship"
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-l from-[#0f2744]/40 to-transparent" />
             </div>
           </div>
         </div>
@@ -378,12 +376,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Five Global Initiatives */}
-      <section className="py-24">
+      {/* Five Global Initiatives — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Strategy</p>
-            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl font-bold text-white mb-4">
+            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-5xl font-bold text-[#0f2744] mb-4">
               Five Global Initiatives
             </h2>
           </div>
@@ -436,19 +434,19 @@ export default async function HomePage() {
                 ),
               },
             ].map((item) => (
-              <div key={item.title} className="p-6 rounded-xl bg-white/5 border border-white/5 hover:border-[#29BDD6]/20 transition-all group">
+              <div key={item.title} className="p-6 rounded-xl bg-gray-50 border border-gray-100 hover:border-[#29BDD6]/30 hover:shadow-lg transition-all group">
                 <div className="w-12 h-12 mb-4 rounded-lg bg-[#29BDD6]/10 flex items-center justify-center text-[#29BDD6] group-hover:bg-[#29BDD6]/20 transition-colors">
                   {item.icon}
                 </div>
-                <h3 className="text-white font-semibold mb-2">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
+                <h3 className="text-[#0f2744] font-semibold mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.description}</p>
               </div>
             ))}
           </div>
           <div className="text-center mt-10">
             <Link
               href="/initiatives"
-              className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-medium px-6 py-3 rounded-xl transition-all"
+              className="inline-flex items-center gap-2 bg-[#0f2744] hover:bg-[#0a1e38] text-white font-medium px-6 py-3 rounded-xl transition-all"
             >
               Learn more about our initiatives &rarr;
             </Link>

@@ -31,21 +31,21 @@ export default function InitiativesPage() {
         </div>
       </section>
 
-      {/* 1. Global & National Harvest Summits */}
-      <section className="py-24">
+      {/* 1. Global & National Harvest Summits — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
                 <span className="text-[#D4A843] text-xs font-semibold">01</span>
               </div>
-              <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
+              <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-[#0f2744] mb-6">
                 Global & National Harvest Summits
               </h2>
-              <div className="space-y-4 text-gray-300 leading-relaxed">
+              <div className="space-y-4 text-gray-700 leading-relaxed">
                 <p>
                   We bring Christian leaders together through both
-                  <strong className="text-white"> Global Harvest Summits</strong> and <strong className="text-white">National Harvest Summits</strong> —
+                  <strong className="text-[#0f2744]"> Global Harvest Summits</strong> and <strong className="text-[#0f2744]">National Harvest Summits</strong> —
                   because the greatest harvest in history will require the greatest collaboration in history.
                 </p>
               </div>
@@ -57,7 +57,7 @@ export default function InitiativesPage() {
                   "Foster strategic partnerships for greater Kingdom impact",
                   "Mobilize the Church to reach every nation and every generation",
                 ].map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-gray-400 text-sm">
+                  <div key={item} className="flex items-start gap-3 text-gray-500 text-sm">
                     <svg className="w-5 h-5 text-[#29BDD6] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
@@ -66,14 +66,13 @@ export default function InitiativesPage() {
                 ))}
               </div>
             </div>
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl">
               <Image
                 src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=960&q=80"
                 alt="Global gathering of leaders"
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f2744]/40 to-transparent" />
             </div>
           </div>
         </div>
@@ -124,17 +123,17 @@ export default function InitiativesPage() {
         </div>
       </section>
 
-      {/* 3. Fanning the Flame */}
-      <section className="py-24">
+      {/* 3. Fanning the Flame — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
               <span className="text-[#D4A843] text-xs font-semibold">03</span>
             </div>
-            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-[#0f2744] mb-4">
               Fanning the Flame
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto italic">
+            <p className="text-gray-500 max-w-2xl mx-auto italic">
               &ldquo;Fan into flame the gift of God&rdquo; — 2 Timothy 1:6
             </p>
           </div>
@@ -170,28 +169,28 @@ export default function InitiativesPage() {
                 ),
               },
             ].map((item) => (
-              <div key={item.title} className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center hover:border-[#29BDD6]/20 transition-all group">
+              <div key={item.title} className="bg-gray-50 border border-gray-100 rounded-2xl p-8 text-center hover:border-[#29BDD6]/30 hover:shadow-lg transition-all group">
                 <div className="w-14 h-14 mx-auto mb-5 rounded-xl bg-[#29BDD6]/10 flex items-center justify-center text-[#29BDD6] group-hover:bg-[#29BDD6]/20 transition-colors">
                   {item.icon}
                 </div>
                 <h3 className="text-[#29BDD6] font-bold text-xl mb-3">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.description}</p>
               </div>
             ))}
           </div>
 
           {/* Two Tracks */}
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-              <h3 className="text-white font-semibold mb-3">Kingdom Project Grants</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+            <div className="bg-gray-50 border border-gray-100 rounded-xl p-6">
+              <h3 className="text-[#0f2744] font-semibold mb-3">Kingdom Project Grants</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
                 We identify strategic Gospel initiatives around the world and provide financial support
                 to ministries that demonstrate vision, accountability, and measurable Kingdom impact.
               </p>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-              <h3 className="text-white font-semibold mb-3">Evangelist Sponsorship</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+            <div className="bg-gray-50 border border-gray-100 rounded-xl p-6">
+              <h3 className="text-[#0f2744] font-semibold mb-3">Evangelist Sponsorship</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
                 Through our One Account for One Evangelist initiative, partners can sponsor an evangelist
                 with a monthly commitment of $100, enabling faithful servants to continue proclaiming Christ.
               </p>
@@ -245,27 +244,26 @@ export default function InitiativesPage() {
         </div>
       </section>
 
-      {/* 5. Strategic Partnerships */}
-      <section className="py-24">
+      {/* 5. Strategic Partnerships — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl">
               <Image
                 src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=960&q=80"
                 alt="Strategic collaboration"
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f2744]/50 to-transparent" />
             </div>
             <div>
               <div className="inline-flex items-center gap-2 bg-[#29BDD6]/10 rounded-full px-4 py-1.5 mb-4">
                 <span className="text-[#D4A843] text-xs font-semibold">05</span>
               </div>
-              <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
+              <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-[#0f2744] mb-6">
                 Strategic Partnerships
               </h2>
-              <p className="text-gray-300 leading-relaxed mb-6">
+              <p className="text-gray-700 leading-relaxed mb-6">
                 Rather than creating another organization, our desire is to strengthen what God is already doing
                 by connecting people, sharing resources, and mobilizing the Church toward a common mission.
               </p>
@@ -278,7 +276,7 @@ export default function InitiativesPage() {
                   "Mobilize leaders and ministries for greater Kingdom impact",
                   "Inspire the next generation to engage in God's global mission",
                 ].map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-gray-400 text-sm">
+                  <div key={item} className="flex items-start gap-3 text-gray-500 text-sm">
                     <svg className="w-5 h-5 text-[#29BDD6] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>

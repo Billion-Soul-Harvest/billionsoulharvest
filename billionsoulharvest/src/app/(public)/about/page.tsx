@@ -64,52 +64,51 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Our Story — text with side image */}
-      <section className="py-24">
+      {/* Our Story — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div>
               <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Story</p>
-              <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-white mb-6">
+              <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold text-[#0f2744] mb-6">
                 The Greatest Harvest Requires the Greatest Unity
               </h2>
-              <div className="space-y-5 text-gray-300 leading-relaxed">
+              <div className="space-y-5 text-gray-700 leading-relaxed">
                 <p>
                   As the world approaches the year 2033 — the 2,000th anniversary of Christ&apos;s death,
                   resurrection, and the birth of the Church — we believe God is calling His people to a renewed
                   commitment to the Great Commission.
                 </p>
                 <p>
-                  Billion Soul Harvest was born from a simple yet compelling conviction: <strong className="text-white">the greatest harvest in
+                  Billion Soul Harvest was born from a simple yet compelling conviction: <strong className="text-[#0f2744]">the greatest harvest in
                   history will require the greatest unity in history.</strong>
                 </p>
-                <p className="text-gray-400">
+                <p className="text-gray-500">
                   No single church, denomination, ministry, or mission organization can fulfill the Great
                   Commission alone. But together, through prayer, humility, collaboration, and the power of the
                   Holy Spirit, the Body of Christ can make an unprecedented impact for the Kingdom of God.
                 </p>
-                <p className="text-gray-400">
+                <p className="text-gray-500">
                   From its beginning, Billion Soul Harvest has sought to bring Christian leaders together across
                   nations, generations, and traditions — not to build another organization, but to serve as a
                   catalyst for Kingdom collaboration.
                 </p>
               </div>
             </div>
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden lg:mt-12">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl lg:mt-12">
               <Image
                 src="https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=960&q=80"
                 alt="Leaders gathered in unity"
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0f2744]/50 to-transparent" />
             </div>
           </div>
 
           {/* Quote block */}
           <div className="mt-16 text-center max-w-3xl mx-auto">
             <div className="border-l-4 border-[#D4A843] pl-6 py-4 text-left">
-              <p className="text-white font-medium text-xl italic leading-relaxed">
+              <p className="text-[#0f2744] font-medium text-xl italic leading-relaxed">
                 &ldquo;To unite the Body of Christ and help accelerate the fulfillment of the Great Commission —
                 one soul, one church, one nation at a time.&rdquo;
               </p>
@@ -149,15 +148,15 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Leadership */}
-      <section className="py-24">
+      {/* Leadership — white background */}
+      <section className="bg-white py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-[#D4A843] text-xs font-semibold tracking-widest uppercase mb-3">Our Leadership</p>
-            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="font-[family-name:var(--font-heading)] text-3xl sm:text-4xl font-bold text-[#0f2744] mb-4">
               Led by a Global Vision
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-gray-500 max-w-2xl mx-auto">
               Billion Soul Harvest is led by a diverse team of Christian leaders from around the world
               who are united by a shared commitment to the Great Commission.
             </p>
@@ -167,52 +166,52 @@ export default function AboutPage() {
             {leaders.map((leader) => (
               <div
                 key={leader.name}
-                className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center hover:border-[#29BDD6]/20 transition-all"
+                className="bg-gray-50 border border-gray-100 rounded-2xl p-8 text-center hover:border-[#29BDD6]/30 hover:shadow-lg transition-all"
               >
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#29BDD6]/20 to-[#29BDD6]/5 flex items-center justify-center mx-auto mb-5 ring-2 ring-[#29BDD6]/20">
                   <span className="text-[#29BDD6] font-bold text-2xl">{leader.initials}</span>
                 </div>
-                <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-white mb-1">
+                <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#0f2744] mb-1">
                   {leader.name}
                 </h3>
                 <p className="text-[#29BDD6] text-sm font-medium mb-4">{leader.title}</p>
-                <p className="text-gray-400 text-sm leading-relaxed">{leader.bio}</p>
+                <p className="text-gray-500 text-sm leading-relaxed">{leader.bio}</p>
               </div>
             ))}
           </div>
 
           {/* Global Leadership Team + Advisory Council */}
           <div className="grid md:grid-cols-2 gap-6 mt-10">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-8">
               <div className="w-12 h-12 mb-4 rounded-xl bg-[#29BDD6]/10 flex items-center justify-center">
                 <svg className="w-6 h-6 text-[#29BDD6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                 </svg>
               </div>
-              <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold text-white mb-3">
+              <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold text-[#0f2744] mb-3">
                 Global Leadership Team
               </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-gray-500 text-sm leading-relaxed">
                 BSH is supported by an expanding network of regional and national leaders
                 who represent churches, ministries, denominations, mission organizations, and strategic
                 partners across the world.
               </p>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-8">
               <div className="w-12 h-12 mb-4 rounded-xl bg-[#29BDD6]/10 flex items-center justify-center">
                 <svg className="w-6 h-6 text-[#29BDD6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                 </svg>
               </div>
-              <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold text-white mb-3">
+              <h3 className="font-[family-name:var(--font-heading)] text-xl font-bold text-[#0f2744] mb-3">
                 Advisory Council
               </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-gray-500 text-sm leading-relaxed">
                 The Advisory Council consists of respected Christian leaders from around the world who
                 provide wisdom, encouragement, and strategic guidance to the BSH movement.
               </p>
-              <p className="text-gray-500 text-xs mt-3 italic">
+              <p className="text-gray-400 text-xs mt-3 italic">
                 Members will be announced as they are confirmed.
               </p>
             </div>
