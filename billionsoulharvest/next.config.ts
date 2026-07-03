@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  env: {
+    ADMIN_DOMAIN: process.env.ADMIN_DOMAIN,
+  },
 };
 
 export default nextConfig;
