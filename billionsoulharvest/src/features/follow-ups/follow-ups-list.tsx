@@ -190,7 +190,7 @@ export function FollowUpsClient({ initialFollowUps, contacts }: Props) {
             onClick={() => setStatusFilter(f.value)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               statusFilter === f.value
-                ? "bg-emerald-100 text-emerald-700"
+                ? "bg-cyan-100 text-cyan-700"
                 : "text-gray-500 hover:bg-gray-100"
             }`}
           >
@@ -240,7 +240,7 @@ export function FollowUpsClient({ initialFollowUps, contacts }: Props) {
               )}
               <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                 {fu.contact && (
-                  <Link href={`/contacts/${fu.contact.id}`} className="hover:text-emerald-600">
+                  <Link href={`/contacts/${fu.contact.id}`} className="hover:text-cyan-600">
                     {fu.contact.first_name} {fu.contact.last_name}
                   </Link>
                 )}

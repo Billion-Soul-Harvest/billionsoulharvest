@@ -184,7 +184,7 @@ export function ContactsListClient({
       <div className={`bg-white rounded-xl border overflow-hidden relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
         {isPending && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-600" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-cyan-600" />
           </div>
         )}
         <div className="overflow-x-auto">
@@ -208,7 +208,7 @@ export function ContactsListClient({
                     <td className="px-4 py-3">
                       <Link
                         href={`/contacts/${c.id}`}
-                        className="font-medium text-gray-900 hover:text-emerald-700"
+                        className="font-medium text-gray-900 hover:text-cyan-700"
                       >
                         {c.first_name} {c.last_name}
                       </Link>
