@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Eye, Pencil, Mail } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { createClient } from "@/shared/utils/supabase/client";
 import type { ContactType } from "@/shared/types/database";
 
 interface ContactRow {
@@ -47,6 +58,10 @@ interface Props {
   search: string;
   typeFilter: string;
   regionFilter: string;
+  languageFilter: string;
+  languages: string[];
+  sort: string;
+  dir: string;
 }
 
 const contactTypeLabels: Record<ContactType, string> = {
@@ -78,17 +93,122 @@ export function ContactsListClient({
   search,
   typeFilter,
   regionFilter,
+  languageFilter,
+  languages,
+  sort,
+  dir,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkTagInput, setBulkTagInput] = useState("");
+  const [bulkTagMode, setBulkTagMode] = useState<"add" | "replace">("add");
+  const [bulkRegion, setBulkRegion] = useState("");
+  const [bulkType, setBulkType] = useState<ContactType | "">("");
+
+  const allOnPageSelected = contacts.length > 0 && contacts.every((c) => selected.has(c.id));
+  const someSelected = selected.size > 0;
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allOnPageSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        contacts.forEach((c) => next.delete(c.id));
+        return next;
+      });
+    } else {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        contacts.forEach((c) => next.add(c.id));
+        return next;
+      });
+    }
+  }
+
+  async function executeBulk(action: () => Promise<void>) {
+    setBulkLoading(true);
+    try {
+      await action();
+      setSelected(new Set());
+      setBulkDialog(null);
+      router.refresh();
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function bulkAssignTags() {
+    const supabase = createClient();
+    const newTags = bulkTagInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (newTags.length === 0) return;
+    const ids = [...selected];
+
+    if (bulkTagMode === "replace") {
+      await supabase.from("contacts").update({ tags: newTags }).in("id", ids);
+    } else {
+      const { data } = await supabase.from("contacts").select("id, tags").in("id", ids);
+      for (const contact of data ?? []) {
+        const merged = [...new Set([...(contact.tags ?? []), ...newTags])];
+        await supabase.from("contacts").update({ tags: merged }).eq("id", contact.id);
+      }
+    }
+  }
+
+  async function bulkAssignRegion() {
+    const supabase = createClient();
+    await supabase.from("contacts").update({ region_id: bulkRegion || null }).in("id", [...selected]);
+  }
+
+  async function bulkChangeType() {
+    const supabase = createClient();
+    await supabase.from("contacts").update({ contact_type: bulkType as ContactType }).in("id", [...selected]);
+  }
+
+  async function bulkDelete() {
+    const supabase = createClient();
+    await supabase.from("contacts").delete().in("id", [...selected]);
+  }
+
+  function exportSelectedCSV() {
+    const selectedContacts = contacts.filter((c) => selected.has(c.id));
+    const headers = ["First Name", "Last Name", "Email", "Phone", "Type", "Church", "City", "Country", "Region", "Tags"];
+    const rows = selectedContacts.map((c) => [
+      c.first_name, c.last_name, c.email ?? "", c.phone ?? "",
+      c.contact_type, c.church_name ?? "", c.city ?? "", c.country ?? "",
+      c.region?.name ?? "", c.tags.join("; "),
+    ]);
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `contacts-selected-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   const navigate = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams();
-      const merged = { page: String(page), pageSize: String(pageSize), search, type: typeFilter, region: regionFilter, ...updates };
+      const merged = { page: String(page), pageSize: String(pageSize), search, type: typeFilter, region: regionFilter, language: languageFilter, sort, dir, ...updates };
       for (const [k, v] of Object.entries(merged)) {
-        if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25")) {
+        if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc")) {
           params.set(k, v);
         }
       }
@@ -97,7 +217,7 @@ export function ContactsListClient({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, page, pageSize, search, typeFilter, regionFilter, startTransition]
+    [router, pathname, page, pageSize, search, typeFilter, regionFilter, sort, dir, startTransition]
   );
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -122,6 +242,28 @@ export function ContactsListClient({
     link.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function sortHeader(label: string, column: string) {
+    const isActive = sort === column;
+    return (
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 hover:text-gray-900"
+        onClick={() => navigate({
+          sort: column,
+          dir: isActive && dir === "asc" ? "desc" : "asc",
+          page: "1",
+        })}
+      >
+        {label}
+        {isActive ? (
+          <span className="text-cyan-600">{dir === "asc" ? "▲" : "▼"}</span>
+        ) : (
+          <span className="text-gray-300">▲</span>
+        )}
+      </button>
+    );
   }
 
   return (
@@ -174,6 +316,17 @@ export function ContactsListClient({
             ))}
           </SelectContent>
         </Select>
+        <Select value={languageFilter} onValueChange={(v: string | null) => { if (v) navigate({ language: v, page: "1" }); }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Languages" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Languages</SelectItem>
+            {languages.map((lang) => (
+              <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <p className="text-sm text-gray-500 mb-3">
@@ -191,37 +344,54 @@ export function ContactsListClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b">
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+                <th className="px-4 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allOnPageSelected}
+                    onChange={toggleAll}
+                    className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Name", "first_name")}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Email", "email")}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Church</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Type", "contact_type")}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Church", "church_name")}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Language</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Region</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Tags</th>
+                <th className="px-4 py-3 w-24"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {contacts.length > 0 ? (
                 contacts.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50/50">
+                  <tr key={c.id} className="hover:bg-gray-50/50 group/row">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleOne(c.id)}
+                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={`/contacts/${c.id}`}
+                        href={`/admin/contacts/${c.id}`}
                         className="font-medium text-gray-900 hover:text-cyan-700"
                       >
                         {c.first_name} {c.last_name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{c.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.phone ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.email}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.phone}</td>
                     <td className="px-4 py-3">
                       <Badge variant="secondary" className={contactTypeColors[c.contact_type]}>
                         {contactTypeLabels[c.contact_type]}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{c.church_name ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.language ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.church_name}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.language}</td>
                     <td className="px-4 py-3">
                       {c.region ? (
                         <span className="inline-flex items-center gap-1.5">
@@ -232,18 +402,58 @@ export function ContactsListClient({
                           <span className="text-gray-700">{c.region.name}</span>
                         </span>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        null
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {c.tags.slice(0, 3).map((tag) => (
+                        {(expandedTags.has(c.id) ? c.tags : c.tags.slice(0, 2)).map((tag) => (
                           <span key={tag} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">
                             {tag}
                           </span>
                         ))}
-                        {c.tags.length > 3 && (
-                          <span className="text-gray-400 text-xs">+{c.tags.length - 3}</span>
+                        {c.tags.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpandedTags((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(c.id)) next.delete(c.id);
+                                else next.add(c.id);
+                                return next;
+                              });
+                            }}
+                            className="text-cyan-600 hover:text-cyan-800 text-xs font-medium px-1"
+                          >
+                            {expandedTags.has(c.id) ? "show less" : `+${c.tags.length - 2}`}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <Link
+                          href={`/admin/contacts/${c.id}`}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={`/admin/contacts/${c.id}?edit=true`}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Link>
+                        {c.email && (
+                          <a
+                            href={`mailto:${c.email}`}
+                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                            title="Email"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </a>
                         )}
                       </div>
                     </td>
@@ -251,7 +461,7 @@ export function ContactsListClient({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={10} className="px-4 py-12 text-center text-gray-400">
                     No contacts found
                   </td>
                 </tr>
@@ -328,6 +538,132 @@ export function ContactsListClient({
           </div>
         )}
       </div>
+
+      {/* Bulk Action Bar */}
+      {someSelected && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white rounded-xl shadow-2xl px-6 py-3 flex items-center gap-3">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <div className="w-px h-5 bg-gray-600" />
+          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={exportSelectedCSV}>
+            Export
+          </Button>
+          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={() => { setBulkTagInput(""); setBulkTagMode("add"); setBulkDialog("tags"); }}>
+            Tags
+          </Button>
+          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={() => { setBulkRegion(""); setBulkDialog("region"); }}>
+            Region
+          </Button>
+          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={() => { setBulkType(""); setBulkDialog("type"); }}>
+            Type
+          </Button>
+          <Button variant="ghost" size="sm" className="text-red-400 hover:bg-gray-700 hover:text-red-300" onClick={() => setBulkDialog("delete")}>
+            Delete
+          </Button>
+          <div className="w-px h-5 bg-gray-600" />
+          <Button variant="ghost" size="sm" className="text-gray-400 hover:bg-gray-700 hover:text-white" onClick={() => setSelected(new Set())}>
+            Clear
+          </Button>
+        </div>
+      )}
+
+      {/* Assign Tags Dialog */}
+      <Dialog open={bulkDialog === "tags"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Tags to {selected.size} contacts</DialogTitle>
+            <DialogDescription>Enter tags separated by commas.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Tag 1, Tag 2, ..."
+              value={bulkTagInput}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBulkTagInput(e.target.value)}
+            />
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="tagMode" checked={bulkTagMode === "add"} onChange={() => setBulkTagMode("add")} />
+                Add to existing
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="tagMode" checked={bulkTagMode === "replace"} onChange={() => setBulkTagMode("replace")} />
+                Replace all
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={() => executeBulk(bulkAssignTags)} disabled={bulkLoading}>
+              {bulkLoading ? "Applying..." : "Apply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Region Dialog */}
+      <Dialog open={bulkDialog === "region"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Region to {selected.size} contacts</DialogTitle>
+          </DialogHeader>
+          <Select value={bulkRegion} onValueChange={(v: string | null) => setBulkRegion(v ?? "")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select region..." />
+            </SelectTrigger>
+            <SelectContent>
+              {regions.map((r) => (
+                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={() => executeBulk(bulkAssignRegion)} disabled={bulkLoading || !bulkRegion}>
+              {bulkLoading ? "Applying..." : "Apply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Type Dialog */}
+      <Dialog open={bulkDialog === "type"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Type for {selected.size} contacts</DialogTitle>
+          </DialogHeader>
+          <Select value={bulkType} onValueChange={(v: string | null) => setBulkType((v ?? "") as ContactType | "")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select type..." />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(contactTypeLabels).map(([val, label]) => (
+                <SelectItem key={val} value={val}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={() => executeBulk(bulkChangeType)} disabled={bulkLoading || !bulkType}>
+              {bulkLoading ? "Applying..." : "Apply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={bulkDialog === "delete"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {selected.size} contacts?</DialogTitle>
+            <DialogDescription>This action cannot be undone. These contacts and all their associated data will be permanently deleted.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button variant="destructive" onClick={() => executeBulk(bulkDelete)} disabled={bulkLoading}>
+              {bulkLoading ? "Deleting..." : `Delete ${selected.size} contacts`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

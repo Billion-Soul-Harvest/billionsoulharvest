@@ -13,6 +13,9 @@ interface Props {
     search?: string;
     type?: string;
     region?: string;
+    language?: string;
+    sort?: string;
+    dir?: string;
   }>;
 }
 
@@ -25,6 +28,13 @@ export default async function ContactsPage({ searchParams }: Props) {
   const search = params.search ?? "";
   const typeFilter = params.type ?? "all";
   const regionFilter = params.region ?? "all";
+  const languageFilter = params.language ?? "all";
+
+  const SORTABLE_COLUMNS = ["first_name", "email", "contact_type", "church_name", "created_at"] as const;
+  type SortColumn = (typeof SORTABLE_COLUMNS)[number];
+  const sortParam = params.sort as string | undefined;
+  const sort: SortColumn = SORTABLE_COLUMNS.includes(sortParam as SortColumn) ? (sortParam as SortColumn) : "created_at";
+  const dir = params.dir === "asc" ? "asc" : "desc";
 
   const supabase = await createClient();
 
@@ -46,17 +56,30 @@ export default async function ContactsPage({ searchParams }: Props) {
     query = query.eq("region_id", regionFilter);
   }
 
+  if (languageFilter !== "all") {
+    query = query.eq("language", languageFilter);
+  }
+
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
   const { data: contacts, count } = await query
-    .order("created_at", { ascending: false })
+    .order(sort, { ascending: dir === "asc" })
     .range(from, to);
 
   const { data: regions } = await supabase
     .from("ministry_regions")
     .select("id, name, color")
     .order("name");
+
+  const { data: languageRows } = await supabase
+    .from("contacts")
+    .select("language")
+    .not("language", "is", null)
+    .not("language", "eq", "")
+    .order("language");
+
+  const languages = [...new Set((languageRows ?? []).map((r) => r.language as string))];
 
   return (
     <div>
@@ -69,6 +92,10 @@ export default async function ContactsPage({ searchParams }: Props) {
         search={search}
         typeFilter={typeFilter}
         regionFilter={regionFilter}
+        languageFilter={languageFilter}
+        languages={languages}
+        sort={sort}
+        dir={dir}
       />
     </div>
   );
