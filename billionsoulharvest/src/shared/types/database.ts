@@ -87,6 +87,7 @@ export interface Event {
   event_type: EventType;
   region_id: string | null;
   banner_url: string | null;
+  page_content: Record<string, unknown> | null;
   max_registrations: number | null;
   registration_fee_cents: number;
   created_at: string;
@@ -132,6 +133,74 @@ export interface AdminUser {
   id: string;
   role: AdminRole;
   display_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Campaign types
+export type CampaignStatus = "draft" | "sending" | "sent" | "failed" | "scheduled" | "cancelled";
+export type CampaignSendStatus = "queued" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed" | "unsubscribed";
+
+export interface SegmentFilter {
+  contact_type?: string[];
+  region_id?: string;
+  language?: string;
+  country?: string;
+  tags_include?: string[];
+  email_lists?: string[];
+  contact_ids?: string[];
+}
+
+export interface CampaignTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body_html: string;
+  preview_text: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  subject: string | null;
+  body_html: string | null;
+  preview_text: string | null;
+  from_name: string | null;
+  from_email: string | null;
+  reply_to: string | null;
+  status: CampaignStatus;
+  segment_filter: SegmentFilter;
+  template_id: string | null;
+  total_recipients: number;
+  sent_count: number;
+  delivered_count: number;
+  opened_count: number;
+  clicked_count: number;
+  bounced_count: number;
+  complained_count: number;
+  failed_count: number;
+  scheduled_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CampaignSend {
+  id: string;
+  campaign_id: string;
+  contact_id: string;
+  email: string;
+  status: CampaignSendStatus;
+  resend_id: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  bounced_at: string | null;
+  error_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -205,6 +274,7 @@ export interface EventPage {
   icon: string | null;
   sort_order: number;
   published: boolean;
+  page_content: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }

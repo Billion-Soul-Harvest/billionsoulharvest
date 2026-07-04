@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Editor, useEditor } from "@craftjs/core";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import type { Event } from "@/shared/types/database";
 import { Viewport } from "./viewport";
 import { RightPanel } from "./right-panel";
 import { EventProvider } from "./event-context";
+import { PageContextProvider, type PageInfo } from "./page-context";
 
 import { CraftText } from "./components/craft-text";
 import { CraftImage } from "./components/craft-image";
@@ -85,13 +86,94 @@ const statusOptions = [
 ];
 
 function EditorLayout({ event }: { event: Event }) {
-  const { query } = useEditor();
+  const { query, actions } = useEditor();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeViewport, setActiveViewport] = useState(0);
   const [status, setStatus] = useState<string>(event.status ?? "draft");
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
+
+  // Page management state
+  const [activePageId, setActivePageId] = useState<string | null>(null); // null = home
+  const [pages, setPages] = useState<PageInfo[]>([]);
+  // In-memory store of serialized content per page (keyed by pageId, "home" for home page)
+  const pageContentsRef = useRef<Record<string, string>>({});
+  const activePageIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync
+  useEffect(() => {
+    activePageIdRef.current = activePageId;
+  }, [activePageId]);
+
+  const fetchPages = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("event_pages")
+      .select("id, title, slug, sort_order, published, page_content")
+      .eq("event_id", event.id)
+      .order("sort_order");
+    if (data) setPages(data);
+  }, [event.id]);
+
+  useEffect(() => {
+    fetchPages();
+  }, [fetchPages]);
+
+  const switchPage = useCallback((newPageId: string | null) => {
+    const currentId = activePageIdRef.current;
+    if (currentId === newPageId) return;
+
+    // Serialize current canvas and store it
+    const currentJson = query.serialize();
+    const currentKey = currentId ?? "home";
+    pageContentsRef.current[currentKey] = currentJson;
+
+    // Load new page content
+    const newKey = newPageId ?? "home";
+    const stored = pageContentsRef.current[newKey];
+
+    if (stored) {
+      // We have cached content for this page
+      actions.deserialize(stored);
+    } else if (newPageId === null) {
+      // Home page — use event.page_content
+      if (event.page_content) {
+        actions.deserialize(JSON.stringify(event.page_content));
+      }
+      // If no page_content, the default content was already loaded on mount
+    } else {
+      // Sub-page — load from its page_content
+      const page = pages.find((p) => p.id === newPageId);
+      if (page?.page_content) {
+        actions.deserialize(JSON.stringify(page.page_content));
+      } else {
+        // Empty page — deserialize a minimal empty container
+        actions.deserialize(JSON.stringify({
+          ROOT: {
+            type: { resolvedName: "CraftContainer" },
+            isCanvas: true,
+            props: {
+              backgroundColor: "#0f2744",
+              backgroundImage: "",
+              padding: 40,
+              borderRadius: 0,
+              borderColor: "transparent",
+              borderWidth: 0,
+              width: 1200,
+              minHeight: 800,
+              alignItems: "center",
+              gap: 0,
+            },
+            nodes: [],
+            linkedNodes: {},
+          },
+        }));
+      }
+    }
+
+    setActivePageId(newPageId);
+  }, [query, actions, event.page_content, pages]);
 
   const handleStatusChange = useCallback(async (newStatus: string) => {
     setStatusSaving(true);
@@ -110,20 +192,46 @@ function EditorLayout({ event }: { event: Event }) {
   const handleSave = useCallback(async () => {
     setSaving(true);
     setSaved(false);
-    const json = query.serialize();
+
+    // Serialize current canvas to the ref
+    const currentJson = query.serialize();
+    const currentKey = activePageId ?? "home";
+    pageContentsRef.current[currentKey] = currentJson;
+
     const supabase = createClient();
+    const promises: PromiseLike<unknown>[] = [];
 
-    const { error } = await supabase
-      .from("events")
-      .update({ page_content: JSON.parse(json) })
-      .eq("id", event.id);
-
-    setSaving(false);
-    if (!error) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+    // Save home page content to events.page_content
+    const homeContent = pageContentsRef.current["home"] ?? currentJson;
+    if (activePageId === null || pageContentsRef.current["home"]) {
+      promises.push(
+        supabase
+          .from("events")
+          .update({ page_content: JSON.parse(activePageId === null ? currentJson : homeContent) })
+          .eq("id", event.id)
+          .then()
+      );
     }
-  }, [event.id, query]);
+
+    // Save any sub-pages that have been edited (stored in ref)
+    for (const page of pages) {
+      const content = pageContentsRef.current[page.id];
+      if (content) {
+        promises.push(
+          supabase
+            .from("event_pages")
+            .update({ page_content: JSON.parse(content) })
+            .eq("id", page.id)
+            .then()
+        );
+      }
+    }
+
+    await Promise.all(promises);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }, [event.id, query, activePageId, pages]);
 
   return (
     <div className="h-screen flex flex-col">
@@ -205,7 +313,11 @@ function EditorLayout({ event }: { event: Event }) {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => window.open(`/events/${event.slug}?preview=true`, "_blank")}
+          disabled={saving}
+          onClick={async () => {
+            await handleSave();
+            window.open(`/events/${event.slug}?preview=true`, "_blank");
+          }}
         >
           Preview
         </Button>
@@ -219,13 +331,15 @@ function EditorLayout({ event }: { event: Event }) {
       </div>
 
       {/* Body */}
-      <div className="flex-1 flex overflow-hidden">
-        <Viewport
-          initialContent={event.page_content ? JSON.stringify(event.page_content) : null}
-          canvasWidth={viewports[activeViewport].width}
-        />
-        <RightPanel />
-      </div>
+      <PageContextProvider value={{ activePageId, switchPage, pages, setPages, refreshPages: fetchPages }}>
+        <div className="flex-1 flex overflow-hidden">
+          <Viewport
+            initialContent={event.page_content ? JSON.stringify(event.page_content) : null}
+            canvasWidth={viewports[activeViewport].width}
+          />
+          <RightPanel />
+        </div>
+      </PageContextProvider>
     </div>
   );
 }

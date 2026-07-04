@@ -61,8 +61,48 @@ export default async function EventPage({ params, searchParams }: Props) {
 
   const typedEvent = event as unknown as Event;
 
+  const typedPages = (eventPages ?? []) as unknown as EventPage[];
+  const navPages = typedPages.map((p) => ({ title: p.title, slug: p.slug }));
+
   // If event has Craft.js page_content, render with the lightweight renderer
   if (typedEvent.page_content) {
+    // Check if a sub-page slug is requested
+    const subPageSlug = pageSlug?.[0];
+
+    if (subPageSlug) {
+      // Find the matching sub-page from event_pages
+      const subPage = typedPages.find((p) => p.slug === subPageSlug);
+      if (!subPage) notFound();
+
+      // Render sub-page content if it has Craft.js content
+      if (subPage.page_content) {
+        return (
+          <div>
+            {isPreview && (
+              <div className="bg-amber-500 text-amber-950 text-center text-sm font-medium py-2 px-4">
+                Preview Mode — This page is not yet published.
+                <Link href="/admin/events" className="underline ml-2">Back to Admin</Link>
+              </div>
+            )}
+            <CraftPageRenderer
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              content={subPage.page_content as any}
+              event={typedEvent}
+              pages={navPages}
+            />
+          </div>
+        );
+      }
+
+      // Sub-page exists but has no content yet
+      return (
+        <div className="min-h-[400px] flex items-center justify-center">
+          <p className="text-gray-400 text-lg">This page is under construction.</p>
+        </div>
+      );
+    }
+
+    // Home page — render event.page_content
     return (
       <div>
         {isPreview && (
@@ -75,12 +115,11 @@ export default async function EventPage({ params, searchParams }: Props) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           content={typedEvent.page_content as any}
           event={typedEvent}
+          pages={navPages}
         />
       </div>
     );
   }
-
-  const typedPages = (eventPages ?? []) as unknown as EventPage[];
 
   // If no pages configured, fall back to legacy fixed layout
   if (typedPages.length === 0) {

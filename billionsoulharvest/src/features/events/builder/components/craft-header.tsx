@@ -2,13 +2,12 @@
 
 import { useNode } from "@craftjs/core";
 import { useEventData } from "../event-context";
+import { usePageContext } from "../page-context";
 
 interface CraftHeaderProps {
   backgroundColor?: string;
   textColor?: string;
   logoText?: string;
-  showRegister?: boolean;
-  navLinks?: string;
   height?: number;
   sticky?: boolean;
 }
@@ -17,8 +16,6 @@ export function CraftHeader({
   backgroundColor = "#0f2744",
   textColor = "#ffffff",
   logoText = "",
-  showRegister = true,
-  navLinks = "Home, About, Schedule",
   height = 56,
   sticky = false,
 }: CraftHeaderProps) {
@@ -26,8 +23,8 @@ export function CraftHeader({
     selected: state.events.selected,
   }));
   const event = useEventData();
+  const { pages } = usePageContext();
 
-  const links = navLinks.split(",").map((l) => l.trim()).filter(Boolean);
   const displayLogo = logoText || event.title;
 
   return (
@@ -50,28 +47,25 @@ export function CraftHeader({
         {displayLogo}
       </span>
 
-      {/* Nav Links */}
+      {/* Nav Links — auto-generated from actual pages */}
       <nav className="hidden md:flex items-center gap-1 flex-1">
-        {links.map((link) => (
+        <span
+          className="px-3 py-1.5 rounded-lg text-sm font-medium cursor-default"
+          style={{ color: textColor, opacity: 0.7 }}
+        >
+          Home
+        </span>
+        {pages.map((page) => (
           <span
-            key={link}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-default"
+            key={page.id}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium cursor-default"
             style={{ color: textColor, opacity: 0.7 }}
           >
-            {link}
+            {page.title}
           </span>
         ))}
       </nav>
 
-      {/* Register CTA */}
-      {showRegister && (
-        <span
-          className="ml-auto inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg"
-          style={{ backgroundColor: "#29BDD6", color: "#ffffff" }}
-        >
-          Register
-        </span>
-      )}
     </header>
   );
 }
@@ -94,14 +88,8 @@ function CraftHeaderSettings() {
         />
       </div>
 
-      <div>
-        <label className="text-xs font-medium text-gray-700 block mb-1">Nav Links (comma-separated)</label>
-        <input
-          type="text"
-          value={props.navLinks ?? "Home, About, Schedule"}
-          onChange={(e) => setProp((p: CraftHeaderProps) => { p.navLinks = e.target.value; })}
-          className="w-full text-sm border border-gray-200 rounded-md px-2 py-1.5"
-        />
+      <div className="bg-gray-50 rounded-md p-2">
+        <p className="text-[10px] text-gray-500">Nav links are auto-generated from your pages. Add pages in the Pages tab.</p>
       </div>
 
       <div>
@@ -165,16 +153,6 @@ function CraftHeaderSettings() {
         <label htmlFor="header-sticky" className="text-xs font-medium text-gray-700">Sticky header</label>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="header-register"
-          checked={props.showRegister ?? true}
-          onChange={(e) => setProp((p: CraftHeaderProps) => { p.showRegister = e.target.checked; })}
-          className="rounded"
-        />
-        <label htmlFor="header-register" className="text-xs font-medium text-gray-700">Show Register button</label>
-      </div>
     </div>
   );
 }
@@ -185,8 +163,6 @@ CraftHeader.craft = {
     backgroundColor: "#0f2744",
     textColor: "#ffffff",
     logoText: "",
-    showRegister: true,
-    navLinks: "Home, About, Schedule",
     height: 56,
     sticky: false,
   },

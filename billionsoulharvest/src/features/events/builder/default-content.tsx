@@ -32,7 +32,6 @@ export const defaultContentChildren = [
   <CraftHeader
     key="header"
     backgroundColor="#0a1e35"
-    navLinks="Home, About, Speakers, Schedule"
   />,
 
   /* ═══════════════════════════════════════════════════════

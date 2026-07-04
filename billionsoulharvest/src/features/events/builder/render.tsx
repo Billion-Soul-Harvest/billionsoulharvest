@@ -13,19 +13,25 @@ interface CraftJSON {
   [nodeId: string]: CraftNode;
 }
 
+interface NavPage {
+  title: string;
+  slug: string;
+}
+
 interface Props {
   content: CraftJSON;
   event: Event;
+  pages?: NavPage[];
 }
 
-export function CraftPageRenderer({ content, event }: Props) {
+export function CraftPageRenderer({ content, event, pages = [] }: Props) {
   const rootNode = content["ROOT"];
   if (!rootNode) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       {rootNode.nodes.map((nodeId) => (
-        <RenderNode key={nodeId} nodeId={nodeId} nodes={content} event={event} />
+        <RenderNode key={nodeId} nodeId={nodeId} nodes={content} event={event} pages={pages} />
       ))}
     </div>
   );
@@ -35,10 +41,12 @@ function RenderNode({
   nodeId,
   nodes,
   event,
+  pages = [],
 }: {
   nodeId: string;
   nodes: CraftJSON;
   event: Event;
+  pages?: NavPage[];
 }) {
   const node = nodes[nodeId];
   if (!node) return null;
@@ -46,7 +54,7 @@ function RenderNode({
   const { resolvedName } = node.type;
   const props = node.props;
   const children = node.nodes.map((childId) => (
-    <RenderNode key={childId} nodeId={childId} nodes={nodes} event={event} />
+    <RenderNode key={childId} nodeId={childId} nodes={nodes} event={event} pages={pages} />
   ));
 
   switch (resolvedName) {
@@ -211,11 +219,15 @@ function RenderNode({
       );
 
     case "CraftHeader": {
-      const headerLinks = ((props.navLinks as string) ?? "Home, About, Schedule")
-        .split(",")
-        .map((l: string) => l.trim())
-        .filter(Boolean);
       const headerLogo = (props.logoText as string) || event.title;
+      // Build nav from actual event pages (Home + sub-pages)
+      const navItems: { label: string; href: string }[] = [
+        { label: "Home", href: `/events/${event.slug}` },
+        ...pages.map((p) => ({
+          label: p.title,
+          href: `/events/${event.slug}/${p.slug}`,
+        })),
+      ];
       return (
         <header
           style={{
@@ -231,20 +243,23 @@ function RenderNode({
             overflow: "hidden",
           }}
         >
-          <span
+          <Link
+            href={`/events/${event.slug}`}
             style={{
               color: (props.textColor as string) ?? "#ffffff",
               fontWeight: 700,
               fontSize: "16px",
               marginRight: "24px",
+              textDecoration: "none",
             }}
           >
             {headerLogo}
-          </span>
+          </Link>
           <nav className="hidden md:flex" style={{ alignItems: "center", gap: "4px", flex: 1 }}>
-            {headerLinks.map((link: string) => (
-              <span
-                key={link}
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
                 style={{
                   color: (props.textColor as string) ?? "#ffffff",
                   opacity: 0.7,
@@ -252,28 +267,13 @@ function RenderNode({
                   fontWeight: 500,
                   padding: "6px 12px",
                   borderRadius: "8px",
+                  textDecoration: "none",
                 }}
               >
-                {link}
-              </span>
+                {item.label}
+              </Link>
             ))}
           </nav>
-          {(props.showRegister as boolean) !== false && event.status === "registration_open" && (
-            <Link
-              href={`/register/${event.slug}`}
-              style={{
-                backgroundColor: "#29BDD6",
-                color: "#ffffff",
-                fontSize: "12px",
-                fontWeight: 600,
-                padding: "6px 12px",
-                borderRadius: "8px",
-                textDecoration: "none",
-              }}
-            >
-              Register
-            </Link>
-          )}
         </header>
       );
     }
