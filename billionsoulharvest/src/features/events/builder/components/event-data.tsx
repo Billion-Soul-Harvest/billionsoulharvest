@@ -235,13 +235,9 @@ export const CraftRegisterButton = ({ text = "Register Now", bgColor = "#29BDD6"
           borderRadius: `${borderRadius}px`,
           fontWeight: 600,
           textAlign: "center",
-          opacity: event.status === "registration_open" ? 1 : 0.5,
         }}
       >
         {text}
-        {event.status !== "registration_open" && (
-          <span className="block text-xs opacity-60 mt-1">Registration not open</span>
-        )}
       </div>
     </div>
   );
