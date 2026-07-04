@@ -76,11 +76,36 @@ const viewports = [
   )},
 ];
 
+const statusOptions = [
+  { value: "draft", label: "Draft", color: "bg-gray-100 text-gray-600" },
+  { value: "published", label: "Published", color: "bg-blue-100 text-blue-700" },
+  { value: "registration_open", label: "Registration Open", color: "bg-green-100 text-green-700" },
+  { value: "completed", label: "Completed", color: "bg-amber-100 text-amber-700" },
+  { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-700" },
+];
+
 function EditorLayout({ event }: { event: Event }) {
   const { query } = useEditor();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeViewport, setActiveViewport] = useState(0);
+  const [status, setStatus] = useState<string>(event.status ?? "draft");
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  const handleStatusChange = useCallback(async (newStatus: string) => {
+    setStatusSaving(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("events")
+      .update({ status: newStatus })
+      .eq("id", event.id);
+    setStatusSaving(false);
+    if (!error) {
+      setStatus(newStatus);
+    }
+    setStatusOpen(false);
+  }, [event.id]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -119,6 +144,41 @@ function EditorLayout({ event }: { event: Event }) {
         <h1 className="text-sm font-semibold text-gray-900 truncate">
           {event.title}
         </h1>
+
+        {/* Status Badge + Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setStatusOpen(!statusOpen)}
+            disabled={statusSaving}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              statusOptions.find((s) => s.value === status)?.color ?? "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {statusSaving ? "..." : statusOptions.find((s) => s.value === status)?.label ?? status}
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {statusOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setStatusOpen(false)} />
+              <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg z-50 py-1 min-w-[160px]">
+                {statusOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleStatusChange(opt.value)}
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 ${
+                      status === opt.value ? "font-semibold" : ""
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${opt.color.split(" ")[0]}`} />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Viewport Switcher - centered */}
         <div className="flex-1 flex items-center justify-center gap-1">
