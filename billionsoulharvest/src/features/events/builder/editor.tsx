@@ -25,6 +25,9 @@ import { CraftSpacer } from "./components/craft-spacer";
 import { CraftHeader } from "./components/craft-header";
 import { CraftEmbed } from "./components/craft-embed";
 import { CraftSocialLinks } from "./components/craft-social-links";
+import { CraftMap } from "./components/craft-map";
+import { CraftYouTube } from "./components/craft-youtube";
+import { CraftCarousel } from "./components/craft-carousel";
 
 interface Props {
   event: Event;
@@ -47,6 +50,9 @@ const resolver = {
   CraftRegisterButton,
   CraftEmbed,
   CraftSocialLinks,
+  CraftMap,
+  CraftYouTube,
+  CraftCarousel,
 };
 
 export function PageBuilder({ event }: Props) {

@@ -3,14 +3,7 @@ import { notFound } from "next/navigation";
 import { EventForm } from "@/features/events/event-form";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Metadata } from "next";
-import type { EventStatus, EventSpeaker, EventProgram, EventFaq, EventSection, EventPage, EventPageBlock } from "@/shared/types/database";
-import { SpeakersEditor } from "@/features/events/admin/speakers-editor";
-import { ProgramEditor } from "@/features/events/admin/program-editor";
-import { FaqEditor } from "@/features/events/admin/faq-editor";
-import { SectionsEditor } from "@/features/events/admin/sections-editor";
-import { PageManager } from "@/features/events/admin/page-manager";
+import type { EventStatus } from "@/shared/types/database";
 import { DeleteEventButton } from "@/features/events/admin/delete-event-button";
 
 interface Props {
@@ -45,60 +38,13 @@ export default async function EventDetailPage({ params }: Props) {
     .select("id, name")
     .order("name");
 
-  const [
-    { data: registrations },
-    { data: speakers },
-    { data: programs },
-    { data: faqs },
-    { data: sections },
-    { data: eventPages },
-    { data: pageBlocks },
-  ] = await Promise.all([
-    supabase
-      .from("registrations")
-      .select("*, contact:contacts(first_name, last_name, email, phone)")
-      .eq("event_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("event_speakers")
-      .select("*")
-      .eq("event_id", id)
-      .order("sort_order"),
-    supabase
-      .from("event_programs")
-      .select("*")
-      .eq("event_id", id)
-      .order("day_date")
-      .order("start_time"),
-    supabase
-      .from("event_faqs")
-      .select("*")
-      .eq("event_id", id)
-      .order("sort_order"),
-    supabase
-      .from("event_sections")
-      .select("*")
-      .eq("event_id", id)
-      .order("sort_order"),
-    supabase
-      .from("event_pages")
-      .select("*")
-      .eq("event_id", id)
-      .order("sort_order"),
-    supabase
-      .from("event_page_blocks")
-      .select("*")
-      .eq("event_id", id)
-      .order("sort_order"),
-  ]);
+  const { data: registrations } = await supabase
+    .from("registrations")
+    .select("*, contact:contacts(first_name, last_name, email, phone)")
+    .eq("event_id", id)
+    .order("created_at", { ascending: false });
 
   const regCount = registrations?.filter((r) => r.status !== "cancelled").length ?? 0;
-  const typedSpeakers = (speakers ?? []) as unknown as EventSpeaker[];
-  const typedPrograms = (programs ?? []) as unknown as EventProgram[];
-  const typedFaqs = (faqs ?? []) as unknown as EventFaq[];
-  const typedSections = (sections ?? []) as unknown as EventSection[];
-  const typedPages = (eventPages ?? []) as unknown as EventPage[];
-  const typedBlocks = (pageBlocks ?? []) as unknown as EventPageBlock[];
 
   return (
     <div>
@@ -137,70 +83,69 @@ export default async function EventDetailPage({ params }: Props) {
         )}
       </div>
 
-      <Tabs defaultValue="details" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="speakers">Speakers ({typedSpeakers.length})</TabsTrigger>
-          <TabsTrigger value="program">Program ({typedPrograms.length})</TabsTrigger>
-          <TabsTrigger value="faqs">FAQ ({typedFaqs.length})</TabsTrigger>
-          <TabsTrigger value="sections">Sections ({typedSections.length})</TabsTrigger>
-          <TabsTrigger value="pages">Pages ({typedPages.length})</TabsTrigger>
-          <TabsTrigger value="registrations">Registrations ({registrations?.length ?? 0})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit Event</h2>
-              <EventForm
-                event={{
-                  id: event.id,
-                  title: event.title,
-                  slug: event.slug,
-                  description: event.description ?? "",
-                  event_type: event.event_type ?? "conference",
-                  location: event.location ?? "",
-                  city: event.city ?? "",
-                  country: event.country ?? "",
-                  start_date: event.start_date ?? "",
-                  end_date: event.end_date ?? "",
-                  status: event.status as EventStatus,
-                  region_id: event.region_id ?? "",
-                  max_registrations: event.max_registrations?.toString() ?? "",
-                }}
-                regions={regions ?? []}
-              />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Public event page:</p>
-              <code className="text-sm bg-gray-50 px-3 py-1 rounded border text-blue-700">
-                /events/{event.slug}
-              </code>
-            </div>
+      {/* Page Builder CTA */}
+      <div className="bg-white rounded-xl border p-6 mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Event Page</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Design your event&apos;s public page with the drag-and-drop builder.
+          </p>
+          <div className="flex gap-4 mt-2">
+            <p className="text-xs text-gray-400">
+              Public page: <code className="bg-gray-50 px-2 py-0.5 rounded border text-blue-700">/events/{event.slug}</code>
+            </p>
           </div>
-        </TabsContent>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href={`/events/${event.slug}`}
+            target="_blank"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Preview
+          </Link>
+          <Link
+            href={`/admin/events/edit/${event.id}/builder`}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#29BDD6] rounded-lg hover:bg-[#29BDD6]/90 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Open Page Builder
+          </Link>
+        </div>
+      </div>
 
-        <TabsContent value="speakers">
-          <SpeakersEditor eventId={event.id} initialSpeakers={typedSpeakers} />
-        </TabsContent>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Event Details Form */}
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Event Details</h2>
+          <EventForm
+            event={{
+              id: event.id,
+              title: event.title,
+              slug: event.slug,
+              description: event.description ?? "",
+              event_type: event.event_type ?? "conference",
+              location: event.location ?? "",
+              city: event.city ?? "",
+              country: event.country ?? "",
+              start_date: event.start_date ?? "",
+              end_date: event.end_date ?? "",
+              status: event.status as EventStatus,
+              region_id: event.region_id ?? "",
+              max_registrations: event.max_registrations?.toString() ?? "",
+              banner_url: event.banner_url ?? "",
+            }}
+            regions={regions ?? []}
+          />
+        </div>
 
-        <TabsContent value="program">
-          <ProgramEditor eventId={event.id} initialPrograms={typedPrograms} speakers={typedSpeakers} />
-        </TabsContent>
-
-        <TabsContent value="faqs">
-          <FaqEditor eventId={event.id} initialFaqs={typedFaqs} />
-        </TabsContent>
-
-        <TabsContent value="sections">
-          <SectionsEditor eventId={event.id} initialSections={typedSections} />
-        </TabsContent>
-
-        <TabsContent value="pages">
-          <PageManager eventId={event.id} initialPages={typedPages} initialBlocks={typedBlocks} />
-        </TabsContent>
-
-        <TabsContent value="registrations">
+        {/* Registrations */}
+        <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Registrations ({registrations?.length ?? 0})
           </h2>
@@ -219,7 +164,7 @@ export default async function EventDetailPage({ params }: Props) {
                   {registrations && registrations.length > 0 ? registrations.map((reg) => (
                     <tr key={reg.id} className="hover:bg-gray-50/50">
                       <td className="px-4 py-3">
-                        <Link href={`/contacts/${reg.contact_id}`} className="font-medium text-gray-900 hover:text-blue-700">
+                        <Link href={`/admin/contacts/${reg.contact_id}`} className="font-medium text-gray-900 hover:text-blue-700">
                           {reg.contact?.first_name} {reg.contact?.last_name}
                         </Link>
                       </td>
@@ -244,8 +189,8 @@ export default async function EventDetailPage({ params }: Props) {
               </table>
             </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

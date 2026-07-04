@@ -5,21 +5,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/shared/utils/supabase/client";
-import type { EventPage } from "@/shared/types/database";
+import type { EventPage, EventPageBlock, Event, EventSpeaker, EventProgram, EventFaq } from "@/shared/types/database";
 import { BlockEditor } from "./block-editor";
-import type { EventPageBlock } from "@/shared/types/database";
+import { BlockPreview } from "./block-preview";
 
 interface Props {
   eventId: string;
+  eventSlug: string;
+  event: Event;
   initialPages: EventPage[];
   initialBlocks: EventPageBlock[];
+  speakers: EventSpeaker[];
+  programs: EventProgram[];
+  faqs: EventFaq[];
 }
 
 function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-export function PageManager({ eventId, initialPages, initialBlocks }: Props) {
+export function PageManager({
+  eventId,
+  eventSlug,
+  event,
+  initialPages,
+  initialBlocks,
+  speakers,
+  programs,
+  faqs,
+}: Props) {
   const [pages, setPages] = useState<EventPage[]>(initialPages);
   const [blocks, setBlocks] = useState<EventPageBlock[]>(initialBlocks);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(
@@ -29,6 +43,7 @@ export function PageManager({ eventId, initialPages, initialBlocks }: Props) {
   const [form, setForm] = useState({ title: "", slug: "", icon: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(true);
 
   function startAdd() {
     setEditing("new");
@@ -131,13 +146,22 @@ export function PageManager({ eventId, initialPages, initialBlocks }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Page list */}
+      {/* Page list + actions */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-900">Pages ({pages.length})</h3>
-          {!editing && (
-            <Button size="sm" onClick={startAdd}>Add Page</Button>
-          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.open(`/events/${eventSlug}?preview=true`, "_blank")}
+            >
+              Preview in New Tab
+            </Button>
+            {!editing && (
+              <Button size="sm" onClick={startAdd}>Add Page</Button>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -202,7 +226,7 @@ export function PageManager({ eventId, initialPages, initialBlocks }: Props) {
         </div>
       </div>
 
-      {/* Selected page actions & blocks */}
+      {/* Split pane: editor + preview */}
       {selectedPage && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 border-b pb-3">
@@ -222,19 +246,48 @@ export function PageManager({ eventId, initialPages, initialBlocks }: Props) {
             <Button size="sm" variant="ghost" className="text-red-600" onClick={() => remove(selectedPage.id)} disabled={!!editing}>
               Delete
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowPreview((v) => !v)}
+              className="ml-2"
+            >
+              {showPreview ? "Hide Preview" : "Show Preview"}
+            </Button>
           </div>
 
-          <BlockEditor
-            eventId={eventId}
-            pageId={selectedPage.id}
-            initialBlocks={pageBlocks}
-            onBlocksChange={(newBlocks) => {
-              setBlocks((prev) => [
-                ...prev.filter((b) => b.page_id !== selectedPage.id),
-                ...newBlocks,
-              ]);
-            }}
-          />
+          <div className={showPreview ? "grid grid-cols-1 xl:grid-cols-2 gap-6" : ""}>
+            {/* Editor panel */}
+            <div>
+              <BlockEditor
+                eventId={eventId}
+                pageId={selectedPage.id}
+                initialBlocks={pageBlocks}
+                onBlocksChange={(newBlocks) => {
+                  setBlocks((prev) => [
+                    ...prev.filter((b) => b.page_id !== selectedPage.id),
+                    ...newBlocks,
+                  ]);
+                }}
+              />
+            </div>
+
+            {/* Preview panel */}
+            {showPreview && (
+              <div className="border rounded-xl overflow-hidden bg-[#0f2744] max-h-[700px] overflow-y-auto">
+                <div className="bg-gray-800 text-gray-400 text-xs px-3 py-1.5 border-b border-white/10 sticky top-0 z-10">
+                  Live Preview
+                </div>
+                <BlockPreview
+                  event={event}
+                  blocks={pageBlocks}
+                  speakers={speakers}
+                  programs={programs}
+                  faqs={faqs}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 

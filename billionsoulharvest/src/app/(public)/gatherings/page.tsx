@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/shared/utils/supabase/server";
 import { PastGatherings } from "./past-gatherings";
 
 export const metadata: Metadata = {
@@ -8,31 +9,29 @@ export const metadata: Metadata = {
   description: "Upcoming and past Billion Soul Harvest gatherings around the world.",
 };
 
-const upcomingGatherings = [
-  {
-    title: "Brazil Global Summit 2026",
-    date: "November 5-7, 2026",
-    location: "Sao Jose dos Campos, Brazil",
-    flag: "🇧🇷",
-    image: "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=640&q=80",
-  },
-  {
-    title: "Nepal Leadership Gathering",
-    date: "September 2026",
-    location: "Nepal",
-    flag: "🇳🇵",
-    image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=640&q=80",
-  },
-  {
-    title: "Kazakhstan Leadership Summit",
-    date: "August 2026",
-    location: "Kazakhstan",
-    flag: "🇰🇿",
-    image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=640&q=80",
-  },
-];
+export default async function GatheringsPage() {
+  const supabase = await createClient();
+  const today = new Date().toISOString().split("T")[0];
 
-export default function GatheringsPage() {
+  // Upcoming: published or registration_open with future start_date
+  const { data: upcoming } = await supabase
+    .from("events")
+    .select("id, title, slug, description, start_date, end_date, city, country, banner_url, status")
+    .in("status", ["published", "registration_open"])
+    .gte("start_date", today)
+    .order("start_date");
+
+  // Past: completed or end_date in the past
+  const { data: past } = await supabase
+    .from("events")
+    .select("id, title, slug, start_date, end_date, city, country, banner_url, status")
+    .or(`status.eq.completed,end_date.lt.${today}`)
+    .not("status", "in", '("draft","cancelled")')
+    .order("start_date", { ascending: false });
+
+  const upcomingEvents = upcoming ?? [];
+  const pastEvents = past ?? [];
+
   return (
     <div>
       {/* Hero with background image */}
@@ -58,7 +57,7 @@ export default function GatheringsPage() {
         </div>
       </section>
 
-      {/* Upcoming Gatherings — white background */}
+      {/* Upcoming Gatherings */}
       <section className="bg-white py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
@@ -67,41 +66,69 @@ export default function GatheringsPage() {
               Upcoming Gatherings
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {upcomingGatherings.map((event) => (
-              <div
-                key={event.title}
-                className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-[#29BDD6]/30 hover:shadow-lg transition-all"
-              >
-                <div className="relative aspect-[16/10] overflow-hidden">
-                  <Image
-                    src={event.image}
-                    alt={event.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <span className="absolute top-4 left-4 text-3xl">{event.flag}</span>
-                </div>
-                <div className="p-6">
-                  <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#0f2744] mb-2">
-                    {event.title}
-                  </h3>
-                  <p className="text-[#29BDD6] text-sm font-medium mb-1">{event.date}</p>
-                  <p className="text-gray-500 text-sm mb-4">{event.location}</p>
-                  <Link
-                    href="/events"
-                    className="inline-flex items-center gap-1 text-[#29BDD6] hover:text-[#3dcde6] text-sm font-semibold transition-colors"
-                  >
-                    Learn More
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+
+          {upcomingEvents.length > 0 ? (
+            <div className="grid md:grid-cols-3 gap-8">
+              {upcomingEvents.map((event) => (
+                <Link
+                  key={event.id}
+                  href={`/events/${event.slug}`}
+                  className="group bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-[#29BDD6]/30 hover:shadow-lg transition-all"
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden">
+                    {event.banner_url ? (
+                      <Image
+                        src={event.banner_url}
+                        alt={event.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] flex items-center justify-center">
+                        <span className="text-[#29BDD6]/30 text-3xl font-bold">BSH</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#0f2744] mb-2">
+                      {event.title}
+                    </h3>
+                    {event.start_date && (
+                      <p className="text-[#29BDD6] text-sm font-medium mb-1">
+                        {new Date(event.start_date + "T00:00:00").toLocaleDateString("en-US", {
+                          month: "long", day: "numeric", year: "numeric",
+                        })}
+                        {event.end_date && (
+                          <>
+                            {" "}&ndash;{" "}
+                            {new Date(event.end_date + "T00:00:00").toLocaleDateString("en-US", {
+                              month: "long", day: "numeric", year: "numeric",
+                            })}
+                          </>
+                        )}
+                      </p>
+                    )}
+                    {(event.city || event.country) && (
+                      <p className="text-gray-500 text-sm mb-4">
+                        {[event.city, event.country].filter(Boolean).join(", ")}
+                      </p>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-[#29BDD6] hover:text-[#3dcde6] text-sm font-semibold transition-colors">
+                      Learn More
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-400">
+              No upcoming gatherings at this time. Check back soon.
+            </p>
+          )}
         </div>
       </section>
 
@@ -114,11 +141,11 @@ export default function GatheringsPage() {
               Past Gatherings
             </h2>
           </div>
-          <PastGatherings />
+          <PastGatherings events={pastEvents} />
         </div>
       </section>
 
-      {/* CTA — white background */}
+      {/* CTA */}
       <section className="bg-white py-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold text-[#0f2744] mb-4">

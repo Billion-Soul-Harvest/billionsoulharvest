@@ -22,3 +22,8 @@
 ### Migration script safety
 - Never run `migrate-from-csv.ts` against production without explicit user confirmation.
 - Always confirm the target environment before running any data migration.
+
+### Email safety
+- NEVER send or test emails locally unless the user explicitly provides sample email addresses to use.
+- Do not use existing contacts from the database for email testing.
+- Always ask the user for test email addresses before any send operation.

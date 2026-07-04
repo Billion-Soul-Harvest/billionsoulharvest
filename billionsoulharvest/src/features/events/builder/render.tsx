@@ -1,6 +1,16 @@
 import type { Event } from "@/shared/types/database";
 import Link from "next/link";
 
+function hexToRgba(hex: string, alpha: number): string {
+  if (hex === "transparent") return `rgba(0,0,0,${alpha})`;
+  const h = hex.replace("#", "");
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(0,0,0,${alpha})`;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 interface CraftNode {
   type: { resolvedName: string };
   props: Record<string, unknown>;
@@ -188,7 +198,7 @@ function RenderNode({
           style={{
             backgroundColor: bgImage ? undefined : bgColor,
             backgroundImage: bgImage
-              ? `linear-gradient(${bgColor}, ${bgColor}), url(${bgImage})`
+              ? `linear-gradient(${hexToRgba(bgColor, 0.6)}, ${hexToRgba(bgColor, 0.6)}), url(${bgImage})`
               : undefined,
             backgroundSize: bgImage ? "cover" : undefined,
             backgroundPosition: bgImage ? "center" : undefined,
@@ -218,65 +228,9 @@ function RenderNode({
         <div style={{ height: `${props.height ?? 40}px`, width: "100%" }} />
       );
 
-    case "CraftHeader": {
-      const headerLogo = (props.logoText as string) || event.title;
-      // Build nav from actual event pages (Home + sub-pages)
-      const navItems: { label: string; href: string }[] = [
-        { label: "Home", href: `/events/${event.slug}` },
-        ...pages.map((p) => ({
-          label: p.title,
-          href: `/events/${event.slug}/${p.slug}`,
-        })),
-      ];
-      return (
-        <header
-          style={{
-            backgroundColor: (props.backgroundColor as string) ?? "#0f2744",
-            height: `${props.height ?? 56}px`,
-            position: (props.sticky as boolean) ? "sticky" : "relative",
-            top: (props.sticky as boolean) ? 0 : undefined,
-            zIndex: (props.sticky as boolean) ? 50 : undefined,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 16px",
-            width: "100%",
-            overflow: "hidden",
-          }}
-        >
-          <Link
-            href={`/events/${event.slug}`}
-            style={{
-              color: (props.textColor as string) ?? "#ffffff",
-              fontWeight: 700,
-              fontSize: "16px",
-              marginRight: "24px",
-              textDecoration: "none",
-            }}
-          >
-            {headerLogo}
-          </Link>
-          <nav className="hidden md:flex" style={{ alignItems: "center", gap: "4px", flex: 1 }}>
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  color: (props.textColor as string) ?? "#ffffff",
-                  opacity: 0.7,
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  textDecoration: "none",
-                }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </header>
-      );
-    }
+    case "CraftHeader":
+      // Skip — the site-level EventSiteHeader already renders navigation
+      return null;
 
     case "CraftDivider":
       return (
@@ -429,6 +383,96 @@ function RenderNode({
                 <SocialIcon platform={link.platform} color={(props.iconColor as string) ?? "#ffffff"} size={(props.iconSize as number) ?? 24} />
               </a>
             ))}
+        </div>
+      );
+    }
+
+    case "CraftMap": {
+      const mapAddress = (props.address as string) ?? "";
+      const mapZoom = (props.zoom as number) ?? 14;
+      if (!mapAddress) return null;
+      const mapQ = encodeURIComponent(mapAddress);
+      return (
+        <iframe
+          src={`https://www.google.com/maps?q=${mapQ}&z=${mapZoom}&output=embed`}
+          style={{
+            width: (props.width as number) ?? 600,
+            maxWidth: "100%",
+            aspectRatio: `${(props.width as number) ?? 600} / ${(props.height as number) ?? 400}`,
+            border: "none",
+            borderRadius: (props.borderRadius as number) ?? 8,
+            display: "block",
+          }}
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      );
+    }
+
+    case "CraftYouTube": {
+      const ytUrl = (props.url as string) ?? "";
+      const ytMatch = ytUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/);
+      if (!ytMatch) return null;
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${ytMatch[1]}`}
+          style={{
+            width: (props.width as number) ?? 600,
+            maxWidth: "100%",
+            aspectRatio: `${(props.width as number) ?? 600} / ${(props.height as number) ?? 340}`,
+            border: "none",
+            borderRadius: (props.borderRadius as number) ?? 8,
+            display: "block",
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+
+    case "CraftCarousel": {
+      const carouselImages = (props.images as string[]) ?? [];
+      if (carouselImages.length === 0) return null;
+      const carouselW = (props.width as number) ?? 600;
+      const carouselH = (props.height as number) ?? 400;
+      const carouselRadius = (props.borderRadius as number) ?? 8;
+      // Server-rendered: CSS scroll-snap carousel
+      return (
+        <div
+          style={{
+            width: carouselW,
+            maxWidth: "100%",
+            aspectRatio: `${carouselW} / ${carouselH}`,
+            borderRadius: carouselRadius,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              overflowX: "auto",
+              scrollSnapType: "x mandatory",
+              scrollBehavior: "smooth",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            {carouselImages.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={`Slide ${i + 1}`}
+                style={{
+                  minWidth: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  scrollSnapAlign: "start",
+                }}
+              />
+            ))}
+          </div>
         </div>
       );
     }

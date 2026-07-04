@@ -1,8 +1,6 @@
 "use client";
 
 import { useNode } from "@craftjs/core";
-import { useEventData } from "../event-context";
-import { usePageContext } from "../page-context";
 
 interface CraftHeaderProps {
   backgroundColor?: string;
@@ -22,51 +20,27 @@ export function CraftHeader({
   const { connectors: { connect, drag }, selected } = useNode((state) => ({
     selected: state.events.selected,
   }));
-  const event = useEventData();
-  const { pages } = usePageContext();
-
-  const displayLogo = logoText || event.title;
-
+  // Header is rendered by PersistentHeader outside the canvas.
+  // This node exists only so its settings panel can customize colors/height.
+  // Show a compact placeholder when selected, otherwise hidden.
   return (
-    <header
+    <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full flex items-center px-4 sm:px-6 overflow-hidden ${selected ? "outline outline-2 outline-blue-400" : ""}`}
+      className={`w-full flex items-center justify-center ${selected ? "outline outline-2 outline-blue-400" : ""}`}
       style={{
-        backgroundColor,
-        height: `${height}px`,
-        position: sticky ? "sticky" : "relative",
-        top: sticky ? 0 : undefined,
-        zIndex: sticky ? 50 : undefined,
+        backgroundColor: selected ? backgroundColor : "transparent",
+        height: selected ? "32px" : "0px",
+        overflow: "hidden",
+        opacity: selected ? 0.7 : 0,
+        transition: "height 0.15s, opacity 0.15s",
       }}
     >
-      {/* Logo / Title */}
-      <span
-        className="font-bold text-sm sm:text-base truncate mr-6"
-        style={{ color: textColor }}
-      >
-        {displayLogo}
-      </span>
-
-      {/* Nav Links — auto-generated from actual pages */}
-      <nav className="hidden md:flex items-center gap-1 flex-1">
-        <span
-          className="px-3 py-1.5 rounded-lg text-sm font-medium cursor-default"
-          style={{ color: textColor, opacity: 0.7 }}
-        >
-          Home
+      {selected && (
+        <span className="text-xs font-medium" style={{ color: textColor }}>
+          Header Settings (styled via the persistent header above)
         </span>
-        {pages.map((page) => (
-          <span
-            key={page.id}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium cursor-default"
-            style={{ color: textColor, opacity: 0.7 }}
-          >
-            {page.title}
-          </span>
-        ))}
-      </nav>
-
-    </header>
+      )}
+    </div>
   );
 }
 

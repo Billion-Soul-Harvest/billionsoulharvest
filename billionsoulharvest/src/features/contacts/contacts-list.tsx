@@ -556,6 +556,22 @@ export function ContactsListClient({
           <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={() => { setBulkType(""); setBulkDialog("type"); }}>
             Type
           </Button>
+          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={async () => {
+            const res = await fetch("/api/campaigns", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: `Email to ${selected.size} contacts`,
+                segment_filter: { contact_ids: [...selected] },
+              }),
+            });
+            if (res.ok) {
+              const campaign = await res.json();
+              router.push(`/admin/campaigns/${campaign.id}`);
+            }
+          }}>
+            Send Email
+          </Button>
           <Button variant="ghost" size="sm" className="text-red-400 hover:bg-gray-700 hover:text-red-300" onClick={() => setBulkDialog("delete")}>
             Delete
           </Button>

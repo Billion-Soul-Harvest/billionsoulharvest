@@ -1,19 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
-const pastGatherings: Record<string, string[]> = {
-  "2026": ["Brazil", "Kazakhstan", "Nepal", "India", "Mexico", "Atlanta"],
-  "2025": ["Jeju Global Summit", "United Kingdom", "Dubai", "Brazil", "Ethiopia"],
-  "2024": ["Pyeongchang Global Summit", "Young Generation Summit", "Regional gatherings"],
-};
+interface PastEvent {
+  id: string;
+  title: string;
+  slug: string;
+  start_date: string | null;
+  city: string | null;
+  country: string | null;
+}
 
-export function PastGatherings() {
-  const [openYear, setOpenYear] = useState<string | null>("2026");
+interface Props {
+  events: PastEvent[];
+}
+
+export function PastGatherings({ events }: Props) {
+  // Group events by year from start_date
+  const grouped: Record<string, PastEvent[]> = {};
+  for (const event of events) {
+    const year = event.start_date
+      ? new Date(event.start_date + "T00:00:00").getFullYear().toString()
+      : "Unknown";
+    if (!grouped[year]) grouped[year] = [];
+    grouped[year].push(event);
+  }
+
+  const years = Object.keys(grouped).sort((a, b) => Number(b) - Number(a));
+  const [openYear, setOpenYear] = useState<string | null>(years[0] ?? null);
+
+  if (years.length === 0) {
+    return <p className="text-center text-gray-400">No past gatherings yet.</p>;
+  }
 
   return (
     <div className="space-y-4">
-      {Object.entries(pastGatherings).map(([year, events]) => (
+      {years.map((year) => (
         <div key={year} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
           <button
             onClick={() => setOpenYear(openYear === year ? null : year)}
@@ -22,7 +45,7 @@ export function PastGatherings() {
           >
             <div className="flex items-center gap-3">
               <span className="text-[#29BDD6] font-bold text-2xl">{year}</span>
-              <span className="text-gray-400 text-sm">{events.length} gatherings</span>
+              <span className="text-gray-400 text-sm">{grouped[year].length} gatherings</span>
             </div>
             <svg
               className={`w-5 h-5 text-gray-400 transition-transform ${openYear === year ? "rotate-180" : ""}`}
@@ -36,10 +59,20 @@ export function PastGatherings() {
           {openYear === year && (
             <div className="px-6 pb-5 border-t border-white/5 pt-4">
               <ul className="space-y-3">
-                {events.map((event) => (
-                  <li key={event} className="flex items-center gap-3 text-gray-300 text-sm">
-                    <div className="w-2 h-2 bg-[#29BDD6]/60 rounded-full shrink-0" />
-                    {event}
+                {grouped[year].map((event) => (
+                  <li key={event.id}>
+                    <Link
+                      href={`/events/${event.slug}`}
+                      className="flex items-center gap-3 text-gray-300 text-sm hover:text-[#29BDD6] transition-colors"
+                    >
+                      <div className="w-2 h-2 bg-[#29BDD6]/60 rounded-full shrink-0" />
+                      <span>{event.title}</span>
+                      {(event.city || event.country) && (
+                        <span className="text-gray-500 text-xs ml-auto">
+                          {[event.city, event.country].filter(Boolean).join(", ")}
+                        </span>
+                      )}
+                    </Link>
                   </li>
                 ))}
               </ul>

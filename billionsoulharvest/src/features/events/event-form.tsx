@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUpload } from "@/shared/components/image-upload";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { EventStatus, EventType } from "@/shared/types/database";
+import { eventTemplates } from "@/features/events/templates/event-templates";
+import { applyTemplate } from "@/features/events/templates/apply-template";
 
 interface Region {
   id: string;
@@ -35,6 +38,7 @@ interface EventData {
   status: EventStatus;
   region_id: string;
   max_registrations: string;
+  banner_url: string;
 }
 
 interface Props {
@@ -51,6 +55,7 @@ export function EventForm({ event, regions }: Props) {
   const isEditing = !!event?.id;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState("conference");
 
   const [form, setForm] = useState<EventData>({
     title: event?.title ?? "",
@@ -65,6 +70,7 @@ export function EventForm({ event, regions }: Props) {
     status: event?.status ?? "draft",
     region_id: event?.region_id ?? "",
     max_registrations: event?.max_registrations ?? "",
+    banner_url: event?.banner_url ?? "",
   });
 
   function updateField(field: keyof EventData, value: string) {
@@ -94,19 +100,32 @@ export function EventForm({ event, regions }: Props) {
       status: form.status,
       region_id: form.region_id || null,
       max_registrations: form.max_registrations ? parseInt(form.max_registrations) : null,
+      banner_url: form.banner_url || null,
     };
 
     if (isEditing) {
       const { error: err } = await supabase.from("events").update(payload).eq("id", event.id!);
       if (err) { setError(err.message); setSaving(false); return; }
+      setSaving(false);
+      router.push("/admin/events");
+      router.refresh();
     } else {
-      const { error: err } = await supabase.from("events").insert(payload);
-      if (err) { setError(err.message); setSaving(false); return; }
-    }
+      const { data: newEvent, error: err } = await supabase
+        .from("events")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (err || !newEvent) { setError(err?.message ?? "Failed to create event"); setSaving(false); return; }
 
-    setSaving(false);
-    router.push("/admin/events");
-    router.refresh();
+      // Apply page template
+      if (selectedTemplate !== "blank") {
+        await applyTemplate(supabase, newEvent.id, selectedTemplate);
+      }
+
+      setSaving(false);
+      router.push(`/admin/events/edit/${newEvent.id}/builder`);
+      router.refresh();
+    }
   }
 
   const eventTypes: { value: EventType; label: string; color: string }[] = [
@@ -178,6 +197,15 @@ export function EventForm({ event, regions }: Props) {
       </div>
 
       <div className="bg-white rounded-xl border p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900">Banner Image</h3>
+        <ImageUpload
+          value={form.banner_url}
+          onChange={(url) => setForm((prev) => ({ ...prev, banner_url: url }))}
+          folder={event?.id ?? "new-event"}
+        />
+      </div>
+
+      <div className="bg-white rounded-xl border p-6 space-y-4">
         <h3 className="font-semibold text-gray-900">Location & Dates</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -237,6 +265,35 @@ export function EventForm({ event, regions }: Props) {
           </div>
         </div>
       </div>
+
+      {!isEditing && (
+        <div className="bg-white rounded-xl border p-6 space-y-4">
+          <h3 className="font-semibold text-gray-900">Page Template</h3>
+          <p className="text-sm text-gray-500">Choose a starting layout for your event pages. You can customize everything later.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {eventTemplates.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setSelectedTemplate(t.id)}
+                className={`text-left p-4 rounded-lg border-2 transition-colors ${
+                  selectedTemplate === t.id
+                    ? "border-[#29BDD6] bg-[#29BDD6]/5"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <p className="font-medium text-gray-900 text-sm">{t.name}</p>
+                <p className="text-xs text-gray-500 mt-1">{t.description}</p>
+                {t.pages.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    {t.pages.length} page{t.pages.length > 1 ? "s" : ""}: {t.pages.map((p) => p.title).join(", ")}
+                  </p>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <Button type="submit" disabled={saving}>

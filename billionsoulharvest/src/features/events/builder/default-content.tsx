@@ -1,6 +1,6 @@
 import { Element } from "@craftjs/core";
 import { CraftContainer } from "./components/craft-container";
-import { CraftHeader } from "./components/craft-header";
+
 import { CraftSpacer } from "./components/craft-spacer";
 import { CraftText } from "./components/craft-text";
 import { CraftImage } from "./components/craft-image";
@@ -26,14 +26,6 @@ const HERO_IMG =
   "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1400&q=80";
 
 export const defaultContentChildren = [
-  /* ═══════════════════════════════════════════════════════
-     HEADER
-     ═══════════════════════════════════════════════════════ */
-  <CraftHeader
-    key="header"
-    backgroundColor="#0a1e35"
-  />,
-
   /* ═══════════════════════════════════════════════════════
      HERO SECTION — background image with overlay content
      ═══════════════════════════════════════════════════════ */

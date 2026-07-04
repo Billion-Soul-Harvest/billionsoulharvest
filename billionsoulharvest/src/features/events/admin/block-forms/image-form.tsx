@@ -1,22 +1,22 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageUpload } from "@/shared/components/image-upload";
 
 interface Props {
   content: Record<string, unknown>;
   onChange: (content: Record<string, unknown>) => void;
+  eventId: string;
 }
 
-export function ImageForm({ content, onChange }: Props) {
+export function ImageForm({ content, onChange, eventId }: Props) {
   return (
     <div className="space-y-3">
-      <div className="space-y-1">
-        <Label>Image URL</Label>
-        <Input
-          value={(content.url as string) ?? ""}
-          onChange={(e) => onChange({ ...content, url: e.target.value })}
-          placeholder="https://..."
-        />
-      </div>
+      <ImageUpload
+        value={(content.url as string) ?? ""}
+        onChange={(url) => onChange({ ...content, url })}
+        folder={eventId}
+        label="Image"
+      />
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label>Alt Text</Label>

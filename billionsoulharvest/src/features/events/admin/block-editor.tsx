@@ -54,18 +54,20 @@ function BlockContentForm({
   blockType,
   content,
   onChange,
+  eventId,
 }: {
   blockType: BlockType;
   content: Record<string, unknown>;
   onChange: (content: Record<string, unknown>) => void;
+  eventId: string;
 }) {
   switch (blockType) {
     case "rich_text": return <RichTextForm content={content} onChange={onChange} />;
     case "speakers": return <SpeakersForm content={content} onChange={onChange} />;
     case "schedule": return <ScheduleForm content={content} onChange={onChange} />;
     case "faq": return <FaqForm content={content} onChange={onChange} />;
-    case "hero": return <HeroForm content={content} onChange={onChange} />;
-    case "image": return <ImageForm content={content} onChange={onChange} />;
+    case "hero": return <HeroForm content={content} onChange={onChange} eventId={eventId} />;
+    case "image": return <ImageForm content={content} onChange={onChange} eventId={eventId} />;
     case "video": return <VideoForm content={content} onChange={onChange} />;
     case "cta": return <CtaForm content={content} onChange={onChange} />;
   }
@@ -234,6 +236,7 @@ export function BlockEditor({ eventId, pageId, initialBlocks, onBlocksChange }: 
               blockType={formType}
               content={formContent}
               onChange={setFormContent}
+              eventId={eventId}
             />
           </div>
 

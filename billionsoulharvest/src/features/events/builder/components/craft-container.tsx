@@ -13,6 +13,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+function hexToRgba(hex: string, alpha: number): string {
+  if (hex === "transparent") return `rgba(0,0,0,${alpha})`;
+  const h = hex.replace("#", "");
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(0,0,0,${alpha})`;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 interface ContainerProps {
   backgroundColor?: string;
   backgroundImage?: string;
@@ -53,7 +63,7 @@ export const CraftContainer: UserComponent<ContainerProps> = ({
       style={{
         backgroundColor: backgroundImage ? undefined : backgroundColor,
         backgroundImage: backgroundImage
-          ? `linear-gradient(${backgroundColor}, ${backgroundColor}), url(${backgroundImage})`
+          ? `linear-gradient(${hexToRgba(backgroundColor, 0.6)}, ${hexToRgba(backgroundColor, 0.6)}), url(${backgroundImage})`
           : undefined,
         backgroundSize: backgroundImage ? "cover" : undefined,
         backgroundPosition: backgroundImage ? "center" : undefined,
