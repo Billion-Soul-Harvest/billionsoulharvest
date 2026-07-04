@@ -23,7 +23,7 @@ export function CraftPageRenderer({ content, event }: Props) {
   if (!rootNode) return null;
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       {rootNode.nodes.map((nodeId) => (
         <RenderNode key={nodeId} nodeId={nodeId} nodes={content} event={event} />
       ))}
