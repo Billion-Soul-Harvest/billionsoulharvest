@@ -4,6 +4,7 @@ import { useNode, UserComponent } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageUpload } from "@/shared/components/image-upload";
 import {
   Select,
   SelectContent,
@@ -122,17 +123,15 @@ function ContainerSettings() {
       </div>
 
       <div>
-        <Label htmlFor="backgroundImage">Background Image URL</Label>
-        <Input
-          id="backgroundImage"
-          type="text"
+        <Label>Background Image</Label>
+        <ImageUpload
           value={backgroundImage}
-          placeholder="https://example.com/image.jpg"
-          onChange={(e) =>
+          onChange={(url) =>
             setProp((props: ContainerProps) => {
-              props.backgroundImage = e.target.value;
+              props.backgroundImage = url;
             })
           }
+          folder="builder"
         />
       </div>
 
