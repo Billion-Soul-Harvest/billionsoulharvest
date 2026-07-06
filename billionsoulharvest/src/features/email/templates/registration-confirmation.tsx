@@ -5,6 +5,7 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
   Preview,
   Section,
   Text,
@@ -15,6 +16,8 @@ interface RegistrationConfirmationEmailProps {
   eventTitle: string;
   eventDate: string | null;
   eventLocation: string;
+  qrCodeUrl: string;
+  registrationId: string;
 }
 
 export function RegistrationConfirmationEmail({
@@ -22,6 +25,8 @@ export function RegistrationConfirmationEmail({
   eventTitle,
   eventDate,
   eventLocation,
+  qrCodeUrl,
+  registrationId,
 }: RegistrationConfirmationEmailProps) {
   const formattedDate = eventDate
     ? new Date(eventDate + "T00:00:00").toLocaleDateString("en-US", {
@@ -65,6 +70,26 @@ export function RegistrationConfirmationEmail({
               </Text>
               <Text style={detailItem}>
                 <strong>Location:</strong> {eventLocation}
+              </Text>
+            </Section>
+
+            {/* QR Code Section */}
+            <Section style={detailsBox}>
+              <Text style={detailsTitle}>YOUR CHECK-IN QR CODE</Text>
+              <Section style={qrCodeContainer}>
+                <Img
+                  src={qrCodeUrl}
+                  width="200"
+                  height="200"
+                  alt="Check-in QR Code"
+                  style={qrCodeImage}
+                />
+              </Section>
+              <Text style={qrCaption}>
+                Present this QR code at the event for quick check-in.
+              </Text>
+              <Text style={confirmationNumber}>
+                Confirmation #{registrationId.substring(0, 8).toUpperCase()}
               </Text>
             </Section>
 
@@ -174,6 +199,32 @@ const detailItem = {
   fontSize: "15px",
   lineHeight: "1.4",
   margin: "0 0 8px",
+};
+
+const qrCodeContainer = {
+  textAlign: "center" as const,
+  margin: "16px 0",
+};
+
+const qrCodeImage = {
+  margin: "0 auto",
+  borderRadius: "8px",
+};
+
+const qrCaption = {
+  color: "#4a4a4a",
+  fontSize: "14px",
+  textAlign: "center" as const,
+  margin: "12px 0 4px",
+};
+
+const confirmationNumber = {
+  color: "#1a3a2a",
+  fontSize: "16px",
+  fontWeight: "700" as const,
+  textAlign: "center" as const,
+  letterSpacing: "1px",
+  margin: "4px 0 0",
 };
 
 const hr = {

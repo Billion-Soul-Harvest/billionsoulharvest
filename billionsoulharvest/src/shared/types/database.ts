@@ -90,6 +90,7 @@ export interface Event {
   page_content: Record<string, unknown> | null;
   max_registrations: number | null;
   registration_fee_cents: number;
+  registration_config: RegistrationConfig | null;
   created_at: string;
   updated_at: string;
 }
@@ -107,6 +108,7 @@ export interface Registration {
   special_needs: string | null;
   how_heard: string | null;
   notes: string | null;
+  custom_fields: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -261,6 +263,51 @@ export interface EventSection {
   published: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// Registration Config types
+export interface RegistrationFieldConfig {
+  visible: boolean;
+  required: boolean;
+}
+
+export type RegistrationCustomFieldType =
+  | "text"
+  | "textarea"
+  | "select"
+  | "checkbox"
+  | "number"
+  | "date"
+  | "email"
+  | "tel"
+  | "url";
+
+export interface RegistrationCustomField {
+  id: string;
+  label: string;
+  type: RegistrationCustomFieldType;
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+}
+
+export interface RegistrationConfig {
+  enabled: boolean;
+  fields: {
+    region: RegistrationFieldConfig;
+    country: RegistrationFieldConfig;
+    visaRequired: RegistrationFieldConfig;
+    passportNumber: RegistrationFieldConfig;
+    phone: RegistrationFieldConfig;
+    churchName: RegistrationFieldConfig;
+    churchRole: RegistrationFieldConfig;
+    referredBy: RegistrationFieldConfig;
+    city: RegistrationFieldConfig;
+    dietaryRequirements: RegistrationFieldConfig;
+    howHeard: RegistrationFieldConfig;
+    specialNeeds: RegistrationFieldConfig;
+  };
+  customFields: RegistrationCustomField[];
 }
 
 // Page Builder types

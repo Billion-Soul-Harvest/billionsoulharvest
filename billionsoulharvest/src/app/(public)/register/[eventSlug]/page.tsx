@@ -1,6 +1,8 @@
 import { createClient } from "@/shared/utils/supabase/server";
 import { notFound } from "next/navigation";
 import { RegistrationForm } from "@/features/registration/registration-form";
+import { DynamicRegistrationForm } from "@/features/registration/dynamic-registration-form";
+import type { RegistrationConfig } from "@/shared/types/database";
 import type { Metadata } from "next";
 
 interface Props {
@@ -130,7 +132,14 @@ export default async function RegisterPage({ params }: Props) {
             </p>
           </div>
 
-          <RegistrationForm eventSlug={eventSlug} eventTitle={event.title} />
+          {(event.registration_config as RegistrationConfig | null)?.enabled ? (
+            <DynamicRegistrationForm
+              registrationConfig={event.registration_config as RegistrationConfig}
+              eventSlug={eventSlug}
+            />
+          ) : (
+            <RegistrationForm eventSlug={eventSlug} eventTitle={event.title} />
+          )}
         </div>
 
         {/* Footer */}

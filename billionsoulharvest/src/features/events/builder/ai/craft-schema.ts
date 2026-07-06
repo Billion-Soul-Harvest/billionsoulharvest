@@ -243,6 +243,21 @@ export const componentSchemas: ComponentSchema[] = [
       { name: "borderRadius", type: "number", default: 12 },
     ],
   },
+  {
+    resolvedName: "CraftRegistrationForm",
+    isCanvas: false,
+    description: "Inline registration form. Reads field config from event registration_config. Style-only props.",
+    props: [
+      { name: "backgroundColor", type: "string (hex/rgba)", default: "#ffffff" },
+      { name: "textColor", type: "string (hex/rgba)", default: "#111827" },
+      { name: "labelColor", type: "string (hex/rgba)", default: "#374151" },
+      { name: "buttonBgColor", type: "string (hex/rgba)", default: "#29BDD6" },
+      { name: "buttonTextColor", type: "string (hex/rgba)", default: "#ffffff" },
+      { name: "borderRadius", type: "number", default: 12 },
+      { name: "padding", type: "number", default: 32 },
+      { name: "width", type: "number", default: 500 },
+    ],
+  },
 ];
 
 export function buildSchemaReference(): string {

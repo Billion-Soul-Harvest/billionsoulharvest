@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { EventForm } from "@/features/events/event-form";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import type { EventStatus } from "@/shared/types/database";
+import type { EventStatus, RegistrationConfig } from "@/shared/types/database";
 import { DeleteEventButton } from "@/features/events/admin/delete-event-button";
 
 interface Props {
@@ -139,6 +139,7 @@ export default async function EventDetailPage({ params }: Props) {
               region_id: event.region_id ?? "",
               max_registrations: event.max_registrations?.toString() ?? "",
               banner_url: event.banner_url ?? "",
+              registration_config: event.registration_config as RegistrationConfig | null,
             }}
             regions={regions ?? []}
           />

@@ -28,6 +28,7 @@ import { CraftSocialLinks } from "./components/craft-social-links";
 import { CraftMap } from "./components/craft-map";
 import { CraftYouTube } from "./components/craft-youtube";
 import { CraftCarousel } from "./components/craft-carousel";
+import { CraftRegistrationForm } from "./components/craft-registration-form";
 
 interface Props {
   event: Event;
@@ -53,6 +54,7 @@ const resolver = {
   CraftMap,
   CraftYouTube,
   CraftCarousel,
+  CraftRegistrationForm,
 };
 
 export function PageBuilder({ event }: Props) {

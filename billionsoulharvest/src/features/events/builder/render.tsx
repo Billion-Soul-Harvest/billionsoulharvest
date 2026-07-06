@@ -1,5 +1,6 @@
-import type { Event } from "@/shared/types/database";
+import type { Event, RegistrationConfig } from "@/shared/types/database";
 import Link from "next/link";
+import { InlineRegistrationForm } from "@/features/registration/inline-registration-form";
 
 function hexToRgba(hex: string, alpha: number): string {
   if (hex === "transparent") return `rgba(0,0,0,${alpha})`;
@@ -474,6 +475,25 @@ function RenderNode({
             ))}
           </div>
         </div>
+      );
+    }
+
+    case "CraftRegistrationForm": {
+      const regConfig = event.registration_config as RegistrationConfig | null;
+      if (!regConfig || !regConfig.enabled) return null;
+      return (
+        <InlineRegistrationForm
+          registrationConfig={regConfig}
+          eventSlug={event.slug}
+          style={{
+            width: (props.width as number) ?? 500,
+            maxWidth: "100%",
+            padding: (props.padding as number) ?? 32,
+            borderRadius: (props.borderRadius as number) ?? 12,
+            backgroundColor: (props.backgroundColor as string) ?? "#ffffff",
+            color: (props.textColor as string) ?? "#111827",
+          }}
+        />
       );
     }
 

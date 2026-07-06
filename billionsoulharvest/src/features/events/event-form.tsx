@@ -14,8 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createClient } from "@/shared/utils/supabase/client";
-import type { EventStatus, EventType } from "@/shared/types/database";
+import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType } from "@/shared/types/database";
 import { eventTemplates } from "@/features/events/templates/event-templates";
 import { applyTemplate } from "@/features/events/templates/apply-template";
 
@@ -39,6 +40,7 @@ interface EventData {
   region_id: string;
   max_registrations: string;
   banner_url: string;
+  registration_config?: RegistrationConfig | null;
 }
 
 interface Props {
@@ -57,6 +59,25 @@ export function EventForm({ event, regions }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState("conference");
 
+  const defaultRegConfig: RegistrationConfig = {
+    enabled: false,
+    fields: {
+      region: { visible: true, required: true },
+      country: { visible: true, required: true },
+      visaRequired: { visible: true, required: true },
+      passportNumber: { visible: true, required: true },
+      phone: { visible: true, required: true },
+      churchName: { visible: true, required: true },
+      churchRole: { visible: true, required: true },
+      referredBy: { visible: true, required: true },
+      city: { visible: false, required: false },
+      dietaryRequirements: { visible: false, required: false },
+      howHeard: { visible: false, required: false },
+      specialNeeds: { visible: false, required: false },
+    },
+    customFields: [],
+  };
+
   const [form, setForm] = useState<EventData>({
     title: event?.title ?? "",
     slug: event?.slug ?? "",
@@ -72,6 +93,10 @@ export function EventForm({ event, regions }: Props) {
     max_registrations: event?.max_registrations ?? "",
     banner_url: event?.banner_url ?? "",
   });
+
+  const [regConfig, setRegConfig] = useState<RegistrationConfig>(
+    event?.registration_config ?? defaultRegConfig
+  );
 
   function updateField(field: keyof EventData, value: string) {
     const updates: Partial<EventData> = { [field]: value };
@@ -101,6 +126,7 @@ export function EventForm({ event, regions }: Props) {
       region_id: form.region_id || null,
       max_registrations: form.max_registrations ? parseInt(form.max_registrations) : null,
       banner_url: form.banner_url || null,
+      registration_config: regConfig,
     };
 
     if (isEditing) {
@@ -222,15 +248,16 @@ export function EventForm({ event, regions }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label>Region</Label>
-            <Select value={form.region_id} onValueChange={(v: string | null) => { if (v) updateField("region_id", v === "none" ? "" : v); }}>
-              <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No region</SelectItem>
-                {regions.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={form.region_id}
+              onValueChange={(v) => updateField("region_id", v === "none" ? "" : v)}
+              options={[
+                { value: "none", label: "No region" },
+                ...regions.map((r) => ({ value: r.id, label: r.name })),
+              ]}
+              placeholder="Select region"
+              searchPlaceholder="Search regions..."
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Start Date</Label>
@@ -264,6 +291,219 @@ export function EventForm({ event, regions }: Props) {
               placeholder="Unlimited" />
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl border p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Registration</h3>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={regConfig.enabled}
+              onChange={(e) => setRegConfig((prev) => ({ ...prev, enabled: e.target.checked }))}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#29BDD6]" />
+          </label>
+        </div>
+
+        {regConfig.enabled && (
+          <div className="space-y-4">
+            {/* Default fields */}
+            <div>
+              <p className="text-sm text-gray-500 mb-3">Configure which fields appear on the registration form.</p>
+              <div className="space-y-1">
+                {/* Always-on fields */}
+                <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded text-sm text-gray-400">
+                  <input type="checkbox" checked disabled className="w-4 h-4 rounded" />
+                  <span className="flex-1">First Name, Last Name, Email</span>
+                  <span className="text-xs">Always required</span>
+                </div>
+
+                {/* Configurable fields */}
+                {(Object.entries(regConfig.fields) as Array<[keyof RegistrationConfig["fields"], { visible: boolean; required: boolean }]>).map(([key, field]) => {
+                  const labels: Record<string, string> = {
+                    region: "Region",
+                    country: "Country",
+                    visaRequired: "VISA Requirement",
+                    passportNumber: "Passport Number",
+                    phone: "Phone / WhatsApp Number",
+                    churchName: "Organization / Movement / Church",
+                    churchRole: "Ministry Title / Role",
+                    referredBy: "Referred By",
+                    city: "City",
+                    dietaryRequirements: "Dietary Requirements",
+                    howHeard: "How Did You Hear",
+                    specialNeeds: "Special Needs",
+                  };
+                  return (
+                    <div key={key} className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-50 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={field.visible}
+                        onChange={(e) => setRegConfig((prev) => ({
+                          ...prev,
+                          fields: {
+                            ...prev.fields,
+                            [key]: { ...prev.fields[key], visible: e.target.checked },
+                          },
+                        }))}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <span className="flex-1 text-gray-700">{labels[key] ?? key}</span>
+                      {field.visible && (
+                        <label className="flex items-center gap-1 text-xs text-gray-500">
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={(e) => setRegConfig((prev) => ({
+                              ...prev,
+                              fields: {
+                                ...prev.fields,
+                                [key]: { ...prev.fields[key], required: e.target.checked },
+                              },
+                            }))}
+                            className="w-3 h-3 rounded"
+                          />
+                          Required
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Fields */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-700">Custom Fields</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newField: RegistrationCustomField = {
+                      id: `custom_${Date.now()}`,
+                      label: "",
+                      type: "text",
+                      required: false,
+                    };
+                    setRegConfig((prev) => ({
+                      ...prev,
+                      customFields: [...prev.customFields, newField],
+                    }));
+                  }}
+                  className="text-xs text-[#29BDD6] hover:text-[#1ea8c0] font-medium"
+                >
+                  + Add Field
+                </button>
+              </div>
+
+              {regConfig.customFields.length === 0 && (
+                <p className="text-xs text-gray-400">No custom fields added.</p>
+              )}
+
+              <div className="space-y-3">
+                {regConfig.customFields.map((field, idx) => (
+                  <div key={field.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={field.label}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          const updated = [...regConfig.customFields];
+                          updated[idx] = { ...updated[idx], label: e.target.value };
+                          setRegConfig((prev) => ({ ...prev, customFields: updated }));
+                        }}
+                        placeholder="Field label"
+                        className="text-sm flex-1"
+                      />
+                      <Input
+                        value={field.placeholder ?? ""}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          const updated = [...regConfig.customFields];
+                          updated[idx] = { ...updated[idx], placeholder: e.target.value };
+                          setRegConfig((prev) => ({ ...prev, customFields: updated }));
+                        }}
+                        placeholder="Placeholder (optional)"
+                        className="text-sm flex-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRegConfig((prev) => ({
+                            ...prev,
+                            customFields: prev.customFields.filter((_, i) => i !== idx),
+                          }));
+                        }}
+                        className="text-gray-400 hover:text-red-500 p-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Select
+                        value={field.type}
+                        onValueChange={(v: string | null) => {
+                          if (!v) return;
+                          const updated = [...regConfig.customFields];
+                          updated[idx] = { ...updated[idx], type: v as RegistrationCustomFieldType };
+                          if (v === "select" && !updated[idx].options?.length) {
+                            updated[idx].options = ["Option 1"];
+                          }
+                          setRegConfig((prev) => ({ ...prev, customFields: updated }));
+                        }}
+                      >
+                        <SelectTrigger className="w-[130px] text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Text</SelectItem>
+                          <SelectItem value="number">Number</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="tel">Phone</SelectItem>
+                          <SelectItem value="url">URL</SelectItem>
+                          <SelectItem value="date">Date</SelectItem>
+                          <SelectItem value="textarea">Text Area</SelectItem>
+                          <SelectItem value="select">Dropdown</SelectItem>
+                          <SelectItem value="checkbox">Checkbox</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <label className="flex items-center gap-1 text-xs text-gray-500">
+                        <input
+                          type="checkbox"
+                          checked={field.required}
+                          onChange={(e) => {
+                            const updated = [...regConfig.customFields];
+                            updated[idx] = { ...updated[idx], required: e.target.checked };
+                            setRegConfig((prev) => ({ ...prev, customFields: updated }));
+                          }}
+                          className="w-3 h-3 rounded"
+                        />
+                        Required
+                      </label>
+                    </div>
+                    {field.type === "select" && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500">Options (one per line)</p>
+                        <Textarea
+                          value={(field.options ?? []).join("\n")}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                            const updated = [...regConfig.customFields];
+                            updated[idx] = { ...updated[idx], options: e.target.value.split("\n") };
+                            setRegConfig((prev) => ({ ...prev, customFields: updated }));
+                          }}
+                          className="text-sm min-h-[60px]"
+                          placeholder="Option 1&#10;Option 2&#10;Option 3"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {!isEditing && (
