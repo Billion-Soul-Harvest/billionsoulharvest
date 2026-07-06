@@ -5,7 +5,7 @@ import { Editor, useEditor } from "@craftjs/core";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/shared/utils/supabase/client";
-import type { SitePage } from "@/shared/types/database";
+import type { SitePage, FooterConfig } from "@/shared/types/database";
 
 import { Viewport } from "@/features/events/builder/viewport";
 import { RightPanel } from "@/features/events/builder/right-panel";
@@ -59,6 +59,7 @@ const resolver = {
 interface Props {
   pages: SitePage[];
   initialPageId: string;
+  footerConfig?: FooterConfig | null;
 }
 
 // Dummy event object so EventProvider/useEventData doesn't crash
@@ -85,11 +86,11 @@ const dummyEvent: Event = {
   updated_at: "",
 };
 
-export function SitePageBuilder({ pages: initialPages, initialPageId }: Props) {
+export function SitePageBuilder({ pages: initialPages, initialPageId, footerConfig }: Props) {
   return (
     <EventProvider value={dummyEvent}>
       <Editor resolver={resolver}>
-        <SiteEditorLayout initialPages={initialPages} initialPageId={initialPageId} />
+        <SiteEditorLayout initialPages={initialPages} initialPageId={initialPageId} footerConfig={footerConfig} />
       </Editor>
     </EventProvider>
   );
@@ -134,7 +135,7 @@ const EMPTY_CANVAS = JSON.stringify({
   },
 });
 
-function SiteEditorLayout({ initialPages, initialPageId }: { initialPages: SitePage[]; initialPageId: string }) {
+function SiteEditorLayout({ initialPages, initialPageId, footerConfig }: { initialPages: SitePage[]; initialPageId: string; footerConfig?: FooterConfig | null }) {
   const { query, actions } = useEditor();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -329,6 +330,7 @@ function SiteEditorLayout({ initialPages, initialPageId }: { initialPages: SiteP
             initialContent={initialContent}
             canvasWidth={viewports[activeViewport].width}
             hideHeader
+            footerConfig={footerConfig}
           />
           <RightPanel />
         </div>

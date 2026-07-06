@@ -10,10 +10,13 @@ import { usePageContext } from "./page-context";
 import { AIAssistantDialog } from "./ai/ai-assistant-dialog";
 import { useBuilderKeyboardShortcuts } from "./use-keyboard-shortcuts";
 
+import type { FooterConfig } from "@/shared/types/database";
+
 interface Props {
   initialContent?: string | null;
   canvasWidth: number;
   hideHeader?: boolean;
+  footerConfig?: FooterConfig | null;
 }
 
 function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
@@ -84,7 +87,36 @@ function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
   );
 }
 
-export function Viewport({ initialContent, canvasWidth, hideHeader }: Props) {
+function PersistentFooter({ canvasWidth, config }: { canvasWidth: number; config: FooterConfig }) {
+  return (
+    <footer
+      className="w-full shrink-0 border-t border-white/10"
+      style={{ backgroundColor: "#0a1e38", maxWidth: `${canvasWidth}px` }}
+    >
+      <div className="px-6 py-8">
+        <div className="flex gap-8">
+          <div className="flex-1 min-w-0">
+            <p className="text-gray-400 text-xs leading-relaxed line-clamp-3">
+              {config.description}
+            </p>
+          </div>
+          {config.email && (
+            <div className="shrink-0">
+              <span className="text-gray-400 text-xs">{config.email}</span>
+            </div>
+          )}
+        </div>
+        <div className="border-t border-white/10 mt-4 pt-3">
+          <p className="text-gray-500 text-[10px]">
+            {config.copyrightText || `© ${new Date().getFullYear()} Billion Soul Harvest. All rights reserved.`}
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export function Viewport({ initialContent, canvasWidth, hideHeader, footerConfig }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [aiOpen, setAiOpen] = useState(false);
@@ -138,6 +170,9 @@ export function Viewport({ initialContent, canvasWidth, hideHeader }: Props) {
               {!initialContent && defaultContentChildren}
             </Element>
           </Frame>
+
+          {/* Persistent footer — always visible across all pages */}
+          {footerConfig && <PersistentFooter canvasWidth={canvasWidth} config={footerConfig} />}
         </div>
       </div>
 
