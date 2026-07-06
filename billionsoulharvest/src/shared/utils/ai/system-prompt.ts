@@ -32,6 +32,7 @@ ${DESIGN_GUIDELINES_SECTION}
   For churches/worship: 1438232992991-995b7058bbb3, 1507692049790-de58290a4334
   For cities/venues: 1513635269975-59663e0ac1ad, 1486325212027-8a9ce835b075
   Always use real Unsplash URLs — never use placeholder URLs.
+- A CraftFooter node already exists in the canvas as the last child of ROOT. To modify the footer, use edit_node on the CraftFooter and its children (footer-brand-title, footer-brand-desc, footer-links-list, footer-connect-email, etc.). Do NOT create new footer sections with CraftContainer — use the existing CraftFooter.
 
 ## Current Event Context
 
