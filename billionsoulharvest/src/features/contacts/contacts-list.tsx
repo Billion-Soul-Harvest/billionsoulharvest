@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Pencil, Mail } from "lucide-react";
+import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +63,7 @@ interface Props {
   page: number;
   pageSize: number;
   search: string;
+  searchField: string;
   typeFilter: string;
   regionFilter: string;
   positionFilter: string;
@@ -92,6 +93,205 @@ const contactTypeColors: Record<ContactType, string> = {
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
+type ColumnKey =
+  | "contact"
+  | "email"
+  | "phone"
+  | "type"
+  | "church"
+  | "language"
+  | "region"
+  | "position"
+  | "tags"
+  | "city"
+  | "country"
+  | "gender"
+  | "created_at";
+
+interface ColumnDef {
+  key: ColumnKey;
+  label: string;
+  group: string;
+  sortable?: string;
+}
+
+const ALL_COLUMNS: ColumnDef[] = [
+  { key: "contact", label: "Contact", group: "default", sortable: "first_name" },
+  { key: "email", label: "Email address", group: "default", sortable: "email" },
+  { key: "phone", label: "Phone", group: "default" },
+  { key: "type", label: "Type", group: "default", sortable: "contact_type" },
+  { key: "church", label: "Church", group: "default", sortable: "church_name" },
+  { key: "language", label: "Language", group: "Basic details" },
+  { key: "region", label: "Region", group: "Basic details" },
+  { key: "position", label: "Position", group: "Basic details" },
+  { key: "tags", label: "Tags", group: "Basic details" },
+  { key: "city", label: "City", group: "Location" },
+  { key: "country", label: "Country", group: "Location" },
+  { key: "gender", label: "Gender", group: "Basic details" },
+  { key: "created_at", label: "Date added", group: "System", sortable: "created_at" },
+];
+
+const DEFAULT_VISIBLE: ColumnKey[] = [
+  "contact", "email", "phone", "type", "church", "language", "region", "position", "tags",
+];
+
+const COLUMN_GROUPS = ["default", "Basic details", "Location", "System"] as const;
+
+function TableSettingsDrawer({
+  visible,
+  onToggle,
+  onClose,
+}: {
+  visible: Set<ColumnKey>;
+  onToggle: (key: ColumnKey) => void;
+  onClose: () => void;
+}) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleGroup(group: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+      {/* Drawer */}
+      <div className="fixed top-0 right-0 bottom-0 w-[320px] bg-white border-l shadow-xl z-50 flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b">
+          <h2 className="font-semibold text-gray-900">Table settings</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto py-2">
+          {COLUMN_GROUPS.map((group) => {
+            const cols = ALL_COLUMNS.filter((c) => c.group === group);
+            if (cols.length === 0) return null;
+            const isDefault = group === "default";
+            const isCollapsed = collapsed.has(group);
+
+            return (
+              <div key={group}>
+                {!isDefault && (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group)}
+                    className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    {group}
+                    {isCollapsed ? (
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <ChevronUp className="w-4 h-4 text-gray-400" />
+                    )}
+                  </button>
+                )}
+                {(isDefault || !isCollapsed) && (
+                  <div className="px-5 space-y-0.5">
+                    {cols.map((col) => (
+                      <label
+                        key={col.key}
+                        className="flex items-center gap-3 py-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={visible.has(col.key)}
+                          onChange={() => onToggle(col.key)}
+                          className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                        />
+                        <span className="text-sm text-gray-700">{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+const searchFieldOptions = [
+  { value: "name_email", label: "Name or email" },
+  { value: "email", label: "Email address" },
+  { value: "first_name", label: "First name" },
+  { value: "last_name", label: "Last name" },
+  { value: "job_title", label: "Job title" },
+  { value: "church_name", label: "Church name" },
+  { value: "city", label: "City" },
+  { value: "country", label: "Country" },
+];
+
+function FilterDropdown({
+  value,
+  label,
+  options,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const activeLabel = options.find((o) => o.value === value)?.label ?? label;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[160px] ${
+          open
+            ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
+            : value !== "all"
+              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+              : "border-gray-200 text-gray-600 hover:border-gray-300"
+        }`}
+      >
+        {activeLabel}
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg py-1 z-50 min-w-[200px] max-h-64 overflow-y-auto">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                opt.value === value
+                  ? "bg-cyan-50 text-cyan-700 font-medium"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ContactsListClient({
   contacts,
   regions,
@@ -100,6 +300,7 @@ export function ContactsListClient({
   page,
   pageSize,
   search,
+  searchField,
   typeFilter,
   regionFilter,
   positionFilter,
@@ -112,6 +313,20 @@ export function ContactsListClient({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() => new Set(DEFAULT_VISIBLE));
+
+  function toggleColumn(key: ColumnKey) {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const isCol = (key: ColumnKey) => visibleColumns.has(key);
+  const visibleCount = visibleColumns.size + 2; // +2 for checkbox and actions columns
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -216,9 +431,9 @@ export function ContactsListClient({
   const navigate = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams();
-      const merged = { page: String(page), pageSize: String(pageSize), search, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, sort, dir, ...updates };
+      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, sort, dir, ...updates };
       for (const [k, v] of Object.entries(merged)) {
-        if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc")) {
+        if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc") && !(k === "searchField" && v === "name_email")) {
           params.set(k, v);
         }
       }
@@ -227,7 +442,7 @@ export function ContactsListClient({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, page, pageSize, search, typeFilter, regionFilter, positionFilter, sort, dir, startTransition]
+    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, sort, dir, startTransition]
   );
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -285,74 +500,91 @@ export function ContactsListClient({
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      {/* Filters — Constant Contact style */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        {/* Search field picker + input */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             const formData = new FormData(e.currentTarget);
             navigate({ search: formData.get("search") as string, page: "1" });
           }}
-          className="flex gap-2 max-w-sm"
+          className="flex"
         >
-          <Input
-            name="search"
-            placeholder="Search by name, email, church..."
-            defaultValue={search}
+          <FilterDropdown
+            value={searchField}
+            label="Name or email"
+            options={searchFieldOptions}
+            onChange={(v) => navigate({ searchField: v, page: "1" })}
           />
-          <Button type="submit" variant="outline" size="sm">
-            Search
-          </Button>
+          <div className="relative flex-1 min-w-[220px] -ml-px">
+            <Input
+              name="search"
+              placeholder={`Search by ${searchFieldOptions.find((o) => o.value === searchField)?.label.toLowerCase() ?? "name or email"}...`}
+              defaultValue={search}
+              className="rounded-l-none border-gray-200 pr-10 h-[42px]"
+            />
+            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
         </form>
-        <Select value={typeFilter} onValueChange={(v: string | null) => { if (v) navigate({ type: v, page: "1" }); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {Object.entries(contactTypeLabels).map(([val, label]) => (
-              <SelectItem key={val} value={val}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={regionFilter} onValueChange={(v: string | null) => { if (v) navigate({ region: v, page: "1" }); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Regions" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Regions</SelectItem>
-            {regions.map((r) => (
-              <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={positionFilter} onValueChange={(v: string | null) => { if (v) navigate({ position: v, page: "1" }); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Positions" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Positions</SelectItem>
-            {positions.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={languageFilter} onValueChange={(v: string | null) => { if (v) navigate({ language: v, page: "1" }); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Languages" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Languages</SelectItem>
-            {languages.map((lang) => (
-              <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Filter dropdowns */}
+        <FilterDropdown
+          value={typeFilter}
+          label="All Types"
+          options={[
+            { value: "all", label: "All Types" },
+            ...Object.entries(contactTypeLabels).map(([val, label]) => ({ value: val, label })),
+          ]}
+          onChange={(v) => navigate({ type: v, page: "1" })}
+        />
+        <FilterDropdown
+          value={regionFilter}
+          label="All Regions"
+          options={[
+            { value: "all", label: "All Regions" },
+            ...regions.map((r) => ({ value: r.id, label: r.name })),
+          ]}
+          onChange={(v) => navigate({ region: v, page: "1" })}
+        />
+        <FilterDropdown
+          value={positionFilter}
+          label="All Positions"
+          options={[
+            { value: "all", label: "All Positions" },
+            ...positions.map((p) => ({ value: p.id, label: p.name })),
+          ]}
+          onChange={(v) => navigate({ position: v, page: "1" })}
+        />
+        <FilterDropdown
+          value={languageFilter}
+          label="All Languages"
+          options={[
+            { value: "all", label: "All Languages" },
+            ...languages.map((l) => ({ value: l, label: l })),
+          ]}
+          onChange={(v) => navigate({ language: v, page: "1" })}
+        />
       </div>
 
-      <p className="text-sm text-gray-500 mb-3">
-        {totalCount} contact{totalCount !== 1 ? "s" : ""}
-      </p>
+      {/* All contacts header + gear icon */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <p className="text-base font-semibold text-gray-900">All contacts</p>
+          <span className="text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2.5 py-0.5">
+            {totalCount.toLocaleString()}
+          </span>
+        </div>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
+          title="Table settings"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Table */}
       <div className={`bg-white rounded-xl border overflow-hidden relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
@@ -373,15 +605,19 @@ export function ContactsListClient({
                     className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                   />
                 </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Name", "first_name")}</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Email", "email")}</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Type", "contact_type")}</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Church", "church_name")}</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Language</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Region</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Position</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Tags</th>
+                {isCol("contact") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Contact", "first_name")}</th>}
+                {isCol("email") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Email address", "email")}</th>}
+                {isCol("phone") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>}
+                {isCol("type") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Type", "contact_type")}</th>}
+                {isCol("church") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Church", "church_name")}</th>}
+                {isCol("language") && <th className="text-left px-4 py-3 font-medium text-gray-600">Language</th>}
+                {isCol("region") && <th className="text-left px-4 py-3 font-medium text-gray-600">Region</th>}
+                {isCol("position") && <th className="text-left px-4 py-3 font-medium text-gray-600">Position</th>}
+                {isCol("tags") && <th className="text-left px-4 py-3 font-medium text-gray-600">Tags</th>}
+                {isCol("city") && <th className="text-left px-4 py-3 font-medium text-gray-600">City</th>}
+                {isCol("country") && <th className="text-left px-4 py-3 font-medium text-gray-600">Country</th>}
+                {isCol("gender") && <th className="text-left px-4 py-3 font-medium text-gray-600">Gender</th>}
+                {isCol("created_at") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Date added", "created_at")}</th>}
                 <th className="px-4 py-3 w-24"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
@@ -397,64 +633,76 @@ export function ContactsListClient({
                         className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/contacts/${c.id}`}
-                        className="font-medium text-gray-900 hover:text-cyan-700"
-                      >
-                        {c.first_name} {c.last_name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{c.email}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.phone}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant="secondary" className={contactTypeColors[c.contact_type]}>
-                        {contactTypeLabels[c.contact_type]}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{c.church_name}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.language}</td>
-                    <td className="px-4 py-3">
-                      {c.region ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: c.region.color }}
-                          />
-                          <span className="text-gray-700">{c.region.name}</span>
-                        </span>
-                      ) : (
-                        null
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {c.position?.name}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {(expandedTags.has(c.id) ? c.tags : c.tags.slice(0, 2)).map((tag) => (
-                          <span key={tag} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">
-                            {tag}
+                    {isCol("contact") && (
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/admin/contacts/${c.id}`}
+                          className="font-medium text-gray-900 hover:text-cyan-700"
+                        >
+                          {c.first_name} {c.last_name}
+                        </Link>
+                      </td>
+                    )}
+                    {isCol("email") && <td className="px-4 py-3 text-gray-600">{c.email}</td>}
+                    {isCol("phone") && <td className="px-4 py-3 text-gray-600">{c.phone}</td>}
+                    {isCol("type") && (
+                      <td className="px-4 py-3">
+                        <Badge variant="secondary" className={contactTypeColors[c.contact_type]}>
+                          {contactTypeLabels[c.contact_type]}
+                        </Badge>
+                      </td>
+                    )}
+                    {isCol("church") && <td className="px-4 py-3 text-gray-600">{c.church_name}</td>}
+                    {isCol("language") && <td className="px-4 py-3 text-gray-600">{c.language}</td>}
+                    {isCol("region") && (
+                      <td className="px-4 py-3">
+                        {c.region ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full"
+                              style={{ backgroundColor: c.region.color }}
+                            />
+                            <span className="text-gray-700">{c.region.name}</span>
                           </span>
-                        ))}
-                        {c.tags.length > 2 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setExpandedTags((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(c.id)) next.delete(c.id);
-                                else next.add(c.id);
-                                return next;
-                              });
-                            }}
-                            className="text-cyan-600 hover:text-cyan-800 text-xs font-medium px-1"
-                          >
-                            {expandedTags.has(c.id) ? "show less" : `+${c.tags.length - 2}`}
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                        ) : null}
+                      </td>
+                    )}
+                    {isCol("position") && <td className="px-4 py-3 text-gray-600">{c.position?.name}</td>}
+                    {isCol("tags") && (
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {(expandedTags.has(c.id) ? c.tags : c.tags.slice(0, 2)).map((tag) => (
+                            <span key={tag} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">
+                              {tag}
+                            </span>
+                          ))}
+                          {c.tags.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExpandedTags((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(c.id)) next.delete(c.id);
+                                  else next.add(c.id);
+                                  return next;
+                                });
+                              }}
+                              className="text-cyan-600 hover:text-cyan-800 text-xs font-medium px-1"
+                            >
+                              {expandedTags.has(c.id) ? "show less" : `+${c.tags.length - 2}`}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                    {isCol("city") && <td className="px-4 py-3 text-gray-600">{c.city}</td>}
+                    {isCol("country") && <td className="px-4 py-3 text-gray-600">{c.country}</td>}
+                    {isCol("gender") && <td className="px-4 py-3 text-gray-600 capitalize">{c.gender}</td>}
+                    {isCol("created_at") && (
+                      <td className="px-4 py-3 text-gray-600">
+                        {new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
                         <Link
@@ -486,7 +734,7 @@ export function ContactsListClient({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={11} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={visibleCount} className="px-4 py-12 text-center text-gray-400">
                     No contacts found
                   </td>
                 </tr>
@@ -705,6 +953,15 @@ export function ContactsListClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Table Settings Drawer */}
+      {settingsOpen && (
+        <TableSettingsDrawer
+          visible={visibleColumns}
+          onToggle={toggleColumn}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 }

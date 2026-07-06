@@ -11,6 +11,7 @@ interface Props {
     page?: string;
     pageSize?: string;
     search?: string;
+    searchField?: string;
     type?: string;
     region?: string;
     position?: string;
@@ -27,6 +28,9 @@ export default async function ContactsPage({ searchParams }: Props) {
     ? Number(params.pageSize)
     : 25;
   const search = params.search ?? "";
+  const SEARCH_FIELDS = ["name_email", "email", "first_name", "last_name", "job_title", "church_name", "city", "country"] as const;
+  type SearchField = (typeof SEARCH_FIELDS)[number];
+  const searchField: SearchField = SEARCH_FIELDS.includes(params.searchField as SearchField) ? (params.searchField as SearchField) : "name_email";
   const typeFilter = params.type ?? "all";
   const regionFilter = params.region ?? "all";
   const positionFilter = params.position ?? "all";
@@ -45,9 +49,34 @@ export default async function ContactsPage({ searchParams }: Props) {
     .select("*, region:ministry_regions(id, name, color), position:positions(id, name)", { count: "exact" });
 
   if (search) {
-    query = query.or(
-      `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,church_name.ilike.%${search}%`
-    );
+    const s = search;
+    switch (searchField) {
+      case "email":
+        query = query.ilike("email", `%${s}%`);
+        break;
+      case "first_name":
+        query = query.ilike("first_name", `%${s}%`);
+        break;
+      case "last_name":
+        query = query.ilike("last_name", `%${s}%`);
+        break;
+      case "job_title":
+        query = query.ilike("job_title", `%${s}%`);
+        break;
+      case "church_name":
+        query = query.ilike("church_name", `%${s}%`);
+        break;
+      case "city":
+        query = query.ilike("city", `%${s}%`);
+        break;
+      case "country":
+        query = query.ilike("country", `%${s}%`);
+        break;
+      default:
+        query = query.or(
+          `first_name.ilike.%${s}%,last_name.ilike.%${s}%,email.ilike.%${s}%`
+        );
+    }
   }
 
   if (typeFilter !== "all") {
@@ -102,6 +131,7 @@ export default async function ContactsPage({ searchParams }: Props) {
         page={page}
         pageSize={pageSize}
         search={search}
+        searchField={searchField}
         typeFilter={typeFilter}
         regionFilter={regionFilter}
         positionFilter={positionFilter}
