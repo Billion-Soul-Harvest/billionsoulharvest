@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+.localized
+
+# Other projects and directories
+personal/
+work/
+
+# Media files
+*.mp4
