@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import type { SitePage } from "@/shared/types/database";
 import { CraftPageRenderer } from "@/features/events/builder/render";
 import Link from "next/link";
+import { AdminEditButton } from "@/shared/components/admin-edit-button";
 
 interface Props {
   params: Promise<{ slug: string[] }>;
@@ -68,6 +69,7 @@ export default async function CatchAllPage({ params, searchParams }: Props) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <p className="text-gray-400 text-lg">This page is under construction.</p>
+        <AdminEditButton pageId={page.id} />
       </div>
     );
   }
@@ -98,6 +100,7 @@ export default async function CatchAllPage({ params, searchParams }: Props) {
         event={dummyEvent as any}
         pages={[]}
       />
+      <AdminEditButton pageId={page.id} />
     </div>
   );
 }

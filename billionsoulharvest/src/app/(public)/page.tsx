@@ -1,5 +1,6 @@
 import { createClient } from "@/shared/utils/supabase/server";
 import { CraftPageRenderer } from "@/features/events/builder/render";
+import { AdminEditButton } from "@/shared/components/admin-edit-button";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -25,11 +26,14 @@ export default async function HomePage() {
       registration_config: null,
     };
     return (
-      <CraftPageRenderer
-        content={sitePage.page_content as any}
-        event={dummyEvent as any}
-        pages={[]}
-      />
+      <>
+        <CraftPageRenderer
+          content={sitePage.page_content as any}
+          event={dummyEvent as any}
+          pages={[]}
+        />
+        <AdminEditButton pageId={sitePage.id} />
+      </>
     );
   }
 
