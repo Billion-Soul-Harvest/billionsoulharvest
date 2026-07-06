@@ -53,7 +53,7 @@ create policy "Admins have full access to site_pages"
 -- ============================================================
 
 insert into site_pages (title, slug, sort_order, published, show_in_nav, is_home) values
-  ('Home', 'home', 0, true, false, true),
+  ('Home', 'home', 0, true, true, true),
   ('About', 'about', 1, true, true, false),
   ('Initiatives', 'initiatives', 2, true, true, false),
   ('Global Gatherings', 'gatherings', 3, true, true, false),
