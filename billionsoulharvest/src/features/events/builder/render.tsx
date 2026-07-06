@@ -238,6 +238,29 @@ function RenderNode({
       // Skip — the site-level EventSiteHeader already renders navigation
       return null;
 
+    case "CraftFooter": {
+      const footerBg = (props.backgroundColor as string) ?? "#0a1e38";
+      const footerPad = (props.padding as number) ?? 48;
+      const footerBorderColor = (props.borderTopColor as string) ?? "rgba(255,255,255,0.1)";
+      const footerBorderWidth = (props.borderTopWidth as number) ?? 1;
+      return (
+        <footer
+          style={{
+            backgroundColor: footerBg,
+            padding: `${footerPad}px`,
+            width: "100%",
+            maxWidth: "100%",
+            borderTop: footerBorderWidth > 0 ? `${footerBorderWidth}px solid ${footerBorderColor}` : "none",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
+          {children}
+        </footer>
+      );
+    }
+
     case "CraftDivider":
       return (
         <div
