@@ -1035,7 +1035,7 @@ export function ContactsListClient({
       </div>
 
       {/* Filters — Constant Contact style */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className={`flex flex-wrap items-center gap-3 mb-4 transition-opacity ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
         {/* Search field picker + input */}
         <div className="flex">
           <FilterDropdown
