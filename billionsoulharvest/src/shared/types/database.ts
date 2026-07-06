@@ -398,3 +398,15 @@ export interface SitePage {
   created_at: string;
   updated_at: string;
 }
+
+export interface SiteSettings {
+  key: string;
+  value: Record<string, unknown>;
+  updated_at: string;
+}
+
+export interface FooterConfig {
+  description: string;
+  email: string;
+  copyrightText?: string;
+}
