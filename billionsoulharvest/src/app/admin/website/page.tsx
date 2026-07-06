@@ -1,17 +1,30 @@
 import { createClient } from "@/shared/utils/supabase/server";
 import { WebsitePageList } from "@/features/website/admin/website-page-list";
-import type { SitePage } from "@/shared/types/database";
+import { FooterSettings } from "@/features/website/admin/footer-settings";
+import type { SitePage, FooterConfig } from "@/shared/types/database";
 
 export const dynamic = "force-dynamic";
 
 export default async function WebsitePagesAdmin() {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("site_pages")
-    .select("*")
-    .order("sort_order");
+
+  const [{ data, error }, { data: footerRow }] = await Promise.all([
+    supabase
+      .from("site_pages")
+      .select("*")
+      .order("sort_order"),
+    supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "footer_config")
+      .single(),
+  ]);
 
   if (error) console.error("site_pages fetch error:", error);
+
+  const footerConfig = footerRow
+    ? (footerRow.value as unknown as FooterConfig)
+    : null;
 
   return (
     <div>
@@ -24,6 +37,10 @@ export default async function WebsitePagesAdmin() {
         </div>
       </div>
       <WebsitePageList initialPages={(data ?? []) as unknown as SitePage[]} />
+
+      <div className="mt-8">
+        <FooterSettings initialConfig={footerConfig} />
+      </div>
     </div>
   );
 }
