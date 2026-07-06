@@ -241,16 +241,19 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
             message={msg}
             isApplied={appliedOps.has(msg.id)}
             isStreaming={isStreaming && idx === messages.length - 1 && msg.role === "assistant"}
+            isLastAssistant={!isStreaming && idx === messages.length - 1 && msg.role === "assistant"}
+            error={!isStreaming && idx === messages.length - 1 && msg.role === "assistant" ? (error || applyError) : null}
             onApply={() => handleApply(msg)}
             onDiscard={() => handleDiscard(msg)}
+            onRetry={() => {
+              const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+              if (lastUserMsg) {
+                setApplyError(null);
+                sendMessage(lastUserMsg.content, undefined, lastUserMsg.attachments);
+              }
+            }}
           />
         ))}
-
-        {(error || applyError) && (
-          <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-            {error || applyError}
-          </div>
-        )}
 
         <div ref={messagesEndRef} />
       </div>
@@ -345,14 +348,20 @@ function MessageBubble({
   message,
   isApplied,
   isStreaming,
+  isLastAssistant,
+  error,
   onApply,
   onDiscard,
+  onRetry,
 }: {
   message: ChatMessage;
   isApplied: boolean;
   isStreaming?: boolean;
+  isLastAssistant?: boolean;
+  error?: string | null;
   onApply: () => void;
   onDiscard: () => void;
+  onRetry: () => void;
 }) {
   const isUser = message.role === "user";
   const hasJsonBlock = !isUser && message.content.includes("```");
@@ -438,6 +447,42 @@ function MessageBubble({
                 </button>
               </>
             )}
+          </div>
+        )}
+
+        {/* Error — no actionable changes from AI */}
+        {!isUser && isLastAssistant && !message.operation && !isStreaming && error && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 rounded-md px-2 py-1.5 border border-amber-200">
+              <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={onRetry}
+              className="mt-1.5 text-xs bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors font-medium"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* No operation, no error — show hint */}
+        {!isUser && isLastAssistant && !message.operation && !isStreaming && !error && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <div className="flex items-start gap-1.5 text-xs text-gray-500">
+              <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>No changes generated. Try a more specific request.</span>
+            </div>
+            <button
+              onClick={onRetry}
+              className="mt-1.5 text-xs bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors font-medium"
+            >
+              Retry
+            </button>
           </div>
         )}
       </div>
