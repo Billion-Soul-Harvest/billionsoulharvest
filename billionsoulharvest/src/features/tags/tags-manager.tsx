@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,19 @@ function formatDate(dateStr: string) {
 
 export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
   const [tags, setTags] = useState<Tag[]>(initialTags);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setSearch(value), 300);
+  }
+
+  useEffect(() => {
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
   const [sort, setSort] = useState<{ col: SortCol; dir: SortDir }>({
     col: "created_at",
     dir: "desc",
@@ -265,9 +277,9 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
               <Input
-                value={search}
+                value={searchInput}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearch(e.target.value)
+                  handleSearchChange(e.target.value)
                 }
                 placeholder="Search by tag name"
                 className="pl-9 w-[220px]"
@@ -278,14 +290,22 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
       </div>
 
       {/* Table */}
-      {sorted.length === 0 ? (
+      {sorted.length === 0 && searchInput === search ? (
         <div className="text-center py-12 text-gray-400">
           {tags.length === 0
             ? "No tags yet. Create one to get started."
             : "No tags match your search."}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-t-0 rounded-t-none overflow-hidden">
+        <div className="relative bg-white rounded-xl border border-t-0 rounded-t-none overflow-hidden">
+          {searchInput !== search && (
+            <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
+              <svg className="w-6 h-6 text-cyan-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+          )}
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b">
