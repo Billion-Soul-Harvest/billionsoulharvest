@@ -45,13 +45,39 @@ export default async function AudiencesPage({ searchParams }: Props) {
 
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-  const { data: audiences, count: totalCount } = await query.range(from, to);
 
-  // Get list-type contact counts and email counts via RPC
-  const [{ data: listCounts }, { data: emailCounts }] = await Promise.all([
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  // Run all independent queries in parallel
+  const [
+    { data: audiences, count: totalCount },
+    { data: listCounts },
+    { data: emailCounts },
+    { count: newContactsCount },
+    { count: subscribedCount },
+    { count: unsubscribedCount },
+  ] = await Promise.all([
+    query.range(from, to),
     supabase.rpc("audience_list_counts"),
     supabase.rpc("audience_list_email_counts"),
+    supabase
+      .from("contacts")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", thirtyDaysAgo.toISOString())
+      .not("email", "is", null),
+    supabase
+      .from("contacts")
+      .select("*", { count: "exact", head: true })
+      .not("email", "is", null)
+      .eq("email_unsubscribed", false),
+    supabase
+      .from("contacts")
+      .select("*", { count: "exact", head: true })
+      .not("email", "is", null)
+      .eq("email_unsubscribed", true),
   ]);
+
   const listCountMap: Record<string, number> = {};
   listCounts?.forEach((row: { list_name: string; contact_count: number }) => {
     listCountMap[row.list_name] = row.contact_count;
@@ -61,7 +87,7 @@ export default async function AudiencesPage({ searchParams }: Props) {
     emailCountMap[row.list_name] = row.email_count;
   });
 
-  // Get segment-type contact counts for current page
+  // Get segment-type contact counts (depends on audiences result)
   const segmentCountMap: Record<string, number> = {};
   const segmentAudiences = (audiences ?? []).filter(
     (a: Audience) => a.type === "segment" && a.segment_filter
@@ -89,29 +115,6 @@ export default async function AudiencesPage({ searchParams }: Props) {
       audienceEmailCounts[a.id] = segmentCountMap[a.id] ?? 0;
     }
   });
-
-  // Stats: new contacts in last 30 days
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const { count: newContactsCount } = await supabase
-    .from("contacts")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", thirtyDaysAgo.toISOString())
-    .not("email", "is", null);
-
-  // Total subscribed (has email, not unsubscribed)
-  const { count: subscribedCount } = await supabase
-    .from("contacts")
-    .select("*", { count: "exact", head: true })
-    .not("email", "is", null)
-    .eq("email_unsubscribed", false);
-
-  // Total unsubscribed
-  const { count: unsubscribedCount } = await supabase
-    .from("contacts")
-    .select("*", { count: "exact", head: true })
-    .not("email", "is", null)
-    .eq("email_unsubscribed", true);
 
   return (
     <AudiencesClient

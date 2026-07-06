@@ -122,40 +122,24 @@ export default async function ContactsPage({ searchParams }: Props) {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data: contacts, count } = await query
-    .order(sort, { ascending: dir === "asc" })
-    .range(from, to);
-
-  const { data: regions } = await supabase
-    .from("ministry_regions")
-    .select("id, name, color")
-    .order("name");
-
-  const { data: positions } = await supabase
-    .from("positions")
-    .select("id, name")
-    .order("name");
-
-  const { data: languageRows } = await supabase
-    .from("contacts")
-    .select("language")
-    .not("language", "is", null)
-    .not("language", "eq", "")
-    .order("language");
+  const [
+    { data: contacts, count },
+    { data: regions },
+    { data: positions },
+    { data: languageRows },
+    { data: audienceLists },
+    { data: tagRows },
+  ] = await Promise.all([
+    query.order(sort, { ascending: dir === "asc" }).range(from, to),
+    supabase.from("ministry_regions").select("id, name, color").order("name"),
+    supabase.from("positions").select("id, name").order("name"),
+    supabase.from("contacts").select("language").not("language", "is", null).not("language", "eq", "").order("language"),
+    supabase.from("audiences").select("name").eq("type", "list").order("name"),
+    supabase.from("contacts").select("tags").not("tags", "eq", "{}"),
+  ]);
 
   const languages = [...new Set((languageRows ?? []).map((r) => r.language as string))];
-
-  const { data: audienceLists } = await supabase
-    .from("audiences")
-    .select("name")
-    .eq("type", "list")
-    .order("name");
   const listNames = (audienceLists ?? []).map((a) => a.name);
-
-  const { data: tagRows } = await supabase
-    .from("contacts")
-    .select("tags")
-    .not("tags", "eq", "{}");
   const allTags = [...new Set((tagRows ?? []).flatMap((r) => (r.tags as string[]) ?? []))].sort();
 
   return (
