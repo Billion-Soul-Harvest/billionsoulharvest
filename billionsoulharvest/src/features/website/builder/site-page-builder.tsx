@@ -31,6 +31,7 @@ import { CraftCarousel } from "@/features/events/builder/components/craft-carous
 import { CraftIcon } from "@/features/events/builder/components/craft-icon";
 import { CraftEventTitle, CraftEventDates, CraftEventLocation, CraftRegisterButton } from "@/features/events/builder/components/event-data";
 import { CraftRegistrationForm } from "@/features/events/builder/components/craft-registration-form";
+import { CraftFooter } from "@/features/events/builder/components/craft-footer";
 
 const resolver = {
   CraftText,
@@ -54,6 +55,7 @@ const resolver = {
   CraftEventLocation,
   CraftRegisterButton,
   CraftRegistrationForm,
+  CraftFooter,
 };
 
 interface Props {

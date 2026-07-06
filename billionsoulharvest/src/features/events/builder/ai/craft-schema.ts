@@ -111,6 +111,19 @@ export const componentSchemas: ComponentSchema[] = [
     ],
   },
   {
+    resolvedName: "CraftFooter",
+    isCanvas: true,
+    description: "Site footer section. Persistent across all pages. Cannot be deleted. Contains child nodes for footer content (text, links, social icons, etc.).",
+    props: [
+      { name: "backgroundColor", type: "string (hex/rgba)", default: "#0a1e38" },
+      { name: "padding", type: "number", default: 48 },
+      { name: "width", type: "number", default: 1200 },
+      { name: "minHeight", type: "number", default: 100 },
+      { name: "borderTopColor", type: "string (hex/rgba)", default: "rgba(255,255,255,0.1)" },
+      { name: "borderTopWidth", type: "number", default: 1 },
+    ],
+  },
+  {
     resolvedName: "CraftSpacer",
     isCanvas: true,
     description: "Vertical spacer. Used to add vertical spacing between elements.",
