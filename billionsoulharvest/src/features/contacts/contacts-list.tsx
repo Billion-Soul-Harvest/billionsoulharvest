@@ -493,6 +493,7 @@ export function ContactsListClient({
   const isCol = (key: ColumnKey) => visibleColumns.has(key);
   const visibleCount = visibleColumns.size + 2; // +2 for checkbox and actions columns
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectAllMode, setSelectAllMode] = useState(false);
   const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkTagInput, setBulkTagInput] = useState("");
@@ -515,9 +516,18 @@ export function ContactsListClient({
   }, [actionMenu]);
 
   const allOnPageSelected = contacts.length > 0 && contacts.every((c) => selected.has(c.id));
-  const someSelected = selected.size > 0;
+  const someSelected = selected.size > 0 || selectAllMode;
+  const effectiveCount = selectAllMode ? totalCount : selected.size;
 
   function toggleOne(id: string) {
+    if (selectAllMode) {
+      setSelectAllMode(false);
+      // Keep all page contacts selected except the toggled one
+      const next = new Set(contacts.map((c) => c.id));
+      next.delete(id);
+      setSelected(next);
+      return;
+    }
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -527,7 +537,8 @@ export function ContactsListClient({
   }
 
   function toggleAll() {
-    if (allOnPageSelected) {
+    if (allOnPageSelected || selectAllMode) {
+      setSelectAllMode(false);
       setSelected((prev) => {
         const next = new Set(prev);
         contacts.forEach((c) => next.delete(c.id));
@@ -547,6 +558,7 @@ export function ContactsListClient({
     try {
       await action();
       setSelected(new Set());
+      setSelectAllMode(false);
       setBulkDialog(null);
       router.refresh();
     } finally {
@@ -558,32 +570,59 @@ export function ContactsListClient({
     const supabase = createClient();
     const newTags = bulkTagInput.split(",").map((t) => t.trim()).filter(Boolean);
     if (newTags.length === 0) return;
-    const ids = [...selected];
 
     if (bulkTagMode === "replace") {
-      await supabase.from("contacts").update({ tags: newTags }).in("id", ids);
+      if (selectAllMode) {
+        await supabase.from("contacts").update({ tags: newTags }).gte("created_at", "1970-01-01");
+      } else {
+        await supabase.from("contacts").update({ tags: newTags }).in("id", [...selected]);
+      }
     } else {
-      const { data } = await supabase.from("contacts").select("id, tags").in("id", ids);
-      for (const contact of data ?? []) {
-        const merged = [...new Set([...(contact.tags ?? []), ...newTags])];
-        await supabase.from("contacts").update({ tags: merged }).eq("id", contact.id);
+      // For "add" mode, we need to fetch and merge per-contact
+      let allIds: string[];
+      if (selectAllMode) {
+        const { data } = await supabase.from("contacts").select("id");
+        allIds = (data ?? []).map((r) => r.id);
+      } else {
+        allIds = [...selected];
+      }
+      // Process in batches of 100
+      for (let i = 0; i < allIds.length; i += 100) {
+        const batch = allIds.slice(i, i + 100);
+        const { data } = await supabase.from("contacts").select("id, tags").in("id", batch);
+        for (const contact of data ?? []) {
+          const merged = [...new Set([...(contact.tags ?? []), ...newTags])];
+          await supabase.from("contacts").update({ tags: merged }).eq("id", contact.id);
+        }
       }
     }
   }
 
   async function bulkAssignRegion() {
     const supabase = createClient();
-    await supabase.from("contacts").update({ region_id: bulkRegion || null }).in("id", [...selected]);
+    if (selectAllMode) {
+      await supabase.from("contacts").update({ region_id: bulkRegion || null }).gte("created_at", "1970-01-01");
+    } else {
+      await supabase.from("contacts").update({ region_id: bulkRegion || null }).in("id", [...selected]);
+    }
   }
 
   async function bulkChangeType() {
     const supabase = createClient();
-    await supabase.from("contacts").update({ contact_type: bulkType as ContactType }).in("id", [...selected]);
+    if (selectAllMode) {
+      await supabase.from("contacts").update({ contact_type: bulkType as ContactType }).gte("created_at", "1970-01-01");
+    } else {
+      await supabase.from("contacts").update({ contact_type: bulkType as ContactType }).in("id", [...selected]);
+    }
   }
 
   async function bulkDelete() {
     const supabase = createClient();
-    await supabase.from("contacts").delete().in("id", [...selected]);
+    if (selectAllMode) {
+      await supabase.from("contacts").delete().gte("created_at", "1970-01-01");
+    } else {
+      await supabase.from("contacts").delete().in("id", [...selected]);
+    }
   }
 
   function exportSelectedCSV() {
@@ -744,6 +783,54 @@ export function ContactsListClient({
         </button>
       </div>
 
+      {/* Select all banner */}
+      {allOnPageSelected && !selectAllMode && totalCount > contacts.length && (
+        <div className="bg-cyan-50 border border-cyan-200 rounded-lg px-4 py-2.5 mb-3 flex items-center gap-2 text-sm">
+          <span className="text-gray-700">{contacts.length} contacts on this page selected.</span>
+          <span className="text-gray-300">|</span>
+          <button
+            type="button"
+            onClick={() => setSelectAllMode(true)}
+            className="font-semibold text-cyan-700 hover:text-cyan-800"
+          >
+            Select all {totalCount.toLocaleString()} contacts
+          </button>
+          <span className="text-gray-300">|</span>
+          <button
+            type="button"
+            onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}
+            className="font-semibold text-gray-600 hover:text-gray-800"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+      {selectAllMode && (
+        <div className="bg-cyan-50 border border-cyan-200 rounded-lg px-4 py-2.5 mb-3 flex items-center gap-2 text-sm">
+          <span className="text-gray-700">All {totalCount.toLocaleString()} contacts selected.</span>
+          <span className="text-gray-300">|</span>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectAllMode(false);
+              const next = new Set(contacts.map((c) => c.id));
+              setSelected(next);
+            }}
+            className="font-semibold text-cyan-700 hover:text-cyan-800"
+          >
+            Select only contacts from this page
+          </button>
+          <span className="text-gray-300">|</span>
+          <button
+            type="button"
+            onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}
+            className="font-semibold text-gray-600 hover:text-gray-800"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className={`bg-white rounded-xl border overflow-hidden relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
         {isPending && (
@@ -758,7 +845,7 @@ export function ContactsListClient({
                 <th className="px-4 py-3 w-10">
                   <input
                     type="checkbox"
-                    checked={allOnPageSelected}
+                    checked={allOnPageSelected || selectAllMode}
                     onChange={toggleAll}
                     className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                   />
@@ -806,7 +893,7 @@ export function ContactsListClient({
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
-                        checked={selected.has(c.id)}
+                        checked={selectAllMode || selected.has(c.id)}
                         onChange={() => toggleOne(c.id)}
                         className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                       />
@@ -1045,7 +1132,7 @@ export function ContactsListClient({
       {/* Bulk Action Bar */}
       {someSelected && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white rounded-xl shadow-2xl px-6 py-3 flex items-center gap-3">
-          <span className="text-sm font-medium">{selected.size} selected</span>
+          <span className="text-sm font-medium">{effectiveCount.toLocaleString()} selected</span>
           <div className="w-px h-5 bg-gray-600" />
           <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={exportSelectedCSV}>
             Export
@@ -1064,8 +1151,8 @@ export function ContactsListClient({
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                name: `Email to ${selected.size} contacts`,
-                segment_filter: { contact_ids: [...selected] },
+                name: `Email to ${effectiveCount.toLocaleString()} contacts`,
+                segment_filter: selectAllMode ? { all: true } : { contact_ids: [...selected] },
               }),
             });
             if (res.ok) {
@@ -1079,7 +1166,7 @@ export function ContactsListClient({
             Delete
           </Button>
           <div className="w-px h-5 bg-gray-600" />
-          <Button variant="ghost" size="sm" className="text-gray-400 hover:bg-gray-700 hover:text-white" onClick={() => setSelected(new Set())}>
+          <Button variant="ghost" size="sm" className="text-gray-400 hover:bg-gray-700 hover:text-white" onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}>
             Clear
           </Button>
         </div>
@@ -1089,7 +1176,7 @@ export function ContactsListClient({
       <Dialog open={bulkDialog === "tags"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Assign Tags to {selected.size} contacts</DialogTitle>
+            <DialogTitle>Assign Tags to {effectiveCount.toLocaleString()} contacts</DialogTitle>
             <DialogDescription>Enter tags separated by commas.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -1122,7 +1209,7 @@ export function ContactsListClient({
       <Dialog open={bulkDialog === "region"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Assign Region to {selected.size} contacts</DialogTitle>
+            <DialogTitle>Assign Region to {effectiveCount.toLocaleString()} contacts</DialogTitle>
           </DialogHeader>
           <Select value={bulkRegion} onValueChange={(v: string | null) => setBulkRegion(v ?? "")}>
             <SelectTrigger>
@@ -1147,7 +1234,7 @@ export function ContactsListClient({
       <Dialog open={bulkDialog === "type"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change Type for {selected.size} contacts</DialogTitle>
+            <DialogTitle>Change Type for {effectiveCount.toLocaleString()} contacts</DialogTitle>
           </DialogHeader>
           <Select value={bulkType} onValueChange={(v: string | null) => setBulkType((v ?? "") as ContactType | "")}>
             <SelectTrigger>
@@ -1172,7 +1259,7 @@ export function ContactsListClient({
       <Dialog open={bulkDialog === "delete"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete {selected.size} contacts?</DialogTitle>
+            <DialogTitle>Delete {effectiveCount.toLocaleString()} contacts?</DialogTitle>
             <DialogDescription>This action cannot be undone. These contacts and all their associated data will be permanently deleted.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
