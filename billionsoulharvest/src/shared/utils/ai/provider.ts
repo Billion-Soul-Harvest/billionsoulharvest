@@ -32,7 +32,7 @@ class AnthropicProvider implements AIProvider {
         "Content-Type": "application/json",
         "x-api-key": this.apiKey,
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "pdfs-2024-09-25",
+        "anthropic-beta": "pdfs-2024-09-25,output-128k-2025-02-19",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
