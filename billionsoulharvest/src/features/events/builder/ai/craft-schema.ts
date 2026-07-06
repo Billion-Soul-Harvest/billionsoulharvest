@@ -200,6 +200,20 @@ export const componentSchemas: ComponentSchema[] = [
     ],
   },
   {
+    resolvedName: "CraftIcon",
+    isCanvas: false,
+    description: "Icon element using Lucide icons. Renders an icon inside an optional circular background.",
+    props: [
+      { name: "icon", type: "string (icon name)", default: "star", description: "Available icons: megaphone, book-open, users, globe, heart, shield, eye-off, star, target, zap, award, crown, flame, handshake, church, cross, lightbulb, message-circle, music, send, trending-up, compass, flag, gift, hand-heart, layers, map, mic, rocket, sprout, sun" },
+      { name: "size", type: "number", default: 28 },
+      { name: "color", type: "string (hex/rgba)", default: "#06b6d4" },
+      { name: "strokeWidth", type: "number", default: 1.5 },
+      { name: "backgroundColor", type: "string (hex/rgba)", default: "#06b6d41a" },
+      { name: "backgroundSize", type: "number", default: 56 },
+      { name: "borderRadius", type: "number", default: 9999, description: "9999 for circle" },
+    ],
+  },
+  {
     resolvedName: "CraftEventTitle",
     isCanvas: false,
     description: "Displays the event title dynamically from event data.",

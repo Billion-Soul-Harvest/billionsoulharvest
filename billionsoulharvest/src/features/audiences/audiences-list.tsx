@@ -3,10 +3,8 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -170,13 +168,25 @@ export function AudiencesClient({
         });
       }
       await supabase.from("audiences").update(payload).eq("id", editingId);
+      setSaving(false);
+      setDialogOpen(false);
+      router.refresh();
     } else {
       await supabase.from("audiences").insert(payload);
+      // Query back to get the ID (insert+select may not return due to RLS)
+      const { data: created } = await supabase
+        .from("audiences")
+        .select("id, type")
+        .eq("name", payload.name)
+        .single();
+      setSaving(false);
+      setDialogOpen(false);
+      if (created && created.type === "list") {
+        router.push(`/admin/audiences/lists/${created.id}`);
+      } else {
+        router.refresh();
+      }
     }
-
-    setSaving(false);
-    setDialogOpen(false);
-    router.refresh();
   }
 
   async function handleDelete(audience: Audience) {
@@ -350,7 +360,18 @@ export function AudiencesClient({
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-medium text-gray-900">{audience.name}</span>
+                      <button
+                        onClick={() => {
+                          if (audience.type === "list") {
+                            router.push(`/admin/audiences/lists/${audience.id}`);
+                          } else {
+                            router.push(`/admin/audiences/segments/${audience.id}`);
+                          }
+                        }}
+                        className="font-medium text-gray-900 hover:text-cyan-600 hover:underline text-left"
+                      >
+                        {audience.name}
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-gray-700">{count.toLocaleString()}</td>
                     <td className="px-4 py-3 text-gray-700">{emailCount.toLocaleString()}</td>
@@ -503,44 +524,56 @@ export function AudiencesClient({
       <Dialog open={typePickerOpen} onOpenChange={setTypePickerOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Audience</DialogTitle>
+            <DialogTitle>Create an audience</DialogTitle>
             <DialogDescription>Choose the type of audience you want to create.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 mt-2">
-            <button
-              type="button"
-              onClick={() => setTypePickerChoice("segment")}
-              className={`flex flex-col items-center gap-3 p-6 rounded-xl border-2 text-center transition-colors ${
-                typePickerChoice === "segment"
-                  ? "border-cyan-600 bg-cyan-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <svg className="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span className="font-semibold text-gray-900">Segment</span>
-              <span className="text-xs text-gray-500 leading-snug">
-                Create a list from a set of criteria that updates contacts automatically.
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTypePickerChoice("list")}
-              className={`flex flex-col items-center gap-3 p-6 rounded-xl border-2 text-center transition-colors ${
-                typePickerChoice === "list"
-                  ? "border-cyan-600 bg-cyan-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <svg className="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              <span className="font-semibold text-gray-900">List</span>
-              <span className="text-xs text-gray-500 leading-snug">
-                Manually add contacts to a list that can only be updated by you.
-              </span>
-            </button>
+          <div className="flex flex-col gap-3 mt-2">
+            {([
+              {
+                type: "segment" as const,
+                label: "Segment",
+                desc: "Create a list from a set of criteria that updates contacts automatically.",
+                icon: (
+                  <svg className="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                ),
+              },
+              {
+                type: "list" as const,
+                label: "List",
+                desc: "Manually add contacts to a list that can only be updated by you.",
+                icon: (
+                  <svg className="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                ),
+              },
+            ]).map((opt) => (
+              <button
+                key={opt.type}
+                type="button"
+                onClick={() => setTypePickerChoice(opt.type)}
+                className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-colors ${
+                  typePickerChoice === opt.type
+                    ? "border-cyan-600 bg-cyan-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                  {opt.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-gray-900 block">{opt.label}</span>
+                  <span className="text-xs text-gray-500 leading-snug">{opt.desc}</span>
+                </div>
+                {typePickerChoice === opt.type && (
+                  <svg className="w-5 h-5 text-cyan-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                )}
+              </button>
+            ))}
           </div>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
@@ -549,38 +582,40 @@ export function AudiencesClient({
         </DialogContent>
       </Dialog>
 
-      {/* List Form Dialog */}
+      {/* List Name Dialog (CC-style) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit List" : "New List"}</DialogTitle>
+            <DialogTitle>{editingId ? "Rename list" : "Name your list"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Name</Label>
               <Input
                 value={form.name}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setForm({ ...form, name: e.target.value })
+                  setForm({ ...form, name: e.target.value.slice(0, 255) })
                 }
                 required
-                placeholder="e.g. Newsletter Subscribers"
+                placeholder="Untitled list"
+                autoFocus
               />
+              <p className="text-xs text-gray-400 text-right">{form.name.length}/255</p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Description</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-                placeholder="Brief description..."
-                className="min-h-[60px]"
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={saving}>
-              {saving ? "Saving..." : editingId ? "Update List" : "Create List"}
-            </Button>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setDialogOpen(false);
+                  if (!editingId) setTypePickerOpen(true);
+                }}
+              >
+                {editingId ? "Cancel" : "Back"}
+              </Button>
+              <Button type="submit" disabled={saving || !form.name.trim()}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

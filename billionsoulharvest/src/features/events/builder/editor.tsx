@@ -28,6 +28,7 @@ import { CraftSocialLinks } from "./components/craft-social-links";
 import { CraftMap } from "./components/craft-map";
 import { CraftYouTube } from "./components/craft-youtube";
 import { CraftCarousel } from "./components/craft-carousel";
+import { CraftIcon } from "./components/craft-icon";
 import { CraftRegistrationForm } from "./components/craft-registration-form";
 
 interface Props {
@@ -54,6 +55,7 @@ const resolver = {
   CraftMap,
   CraftYouTube,
   CraftCarousel,
+  CraftIcon,
   CraftRegistrationForm,
 };
 

@@ -9,6 +9,7 @@ export interface PageInfo {
   sort_order: number;
   published: boolean;
   page_content: Record<string, unknown> | null;
+  parent_id?: string | null;
 }
 
 interface PageContextValue {

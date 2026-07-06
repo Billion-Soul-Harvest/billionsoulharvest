@@ -76,23 +76,88 @@ export function validateCraftJson(json: Record<string, unknown>): {
   return { valid: errors.length === 0, errors };
 }
 
+// Map resolvedName → expected isCanvas value from the schema
+const canvasComponentNames = new Set(
+  componentSchemas.filter((s) => s.isCanvas).map((s) => s.resolvedName)
+);
+
+/**
+ * Sanitize AI-generated JSON to fix common structural issues before deserialization.
+ * Craft.js is strict about node structure — missing fields cause silent crashes.
+ */
+function sanitizeCraftJson(json: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+
+  for (const [nodeId, rawNode] of Object.entries(json)) {
+    const node = { ...(rawNode as Record<string, unknown>) };
+    const typeDef = node.type as Record<string, unknown> | undefined;
+    const resolvedName = typeDef?.resolvedName as string | undefined;
+
+    // Ensure linkedNodes exists
+    if (!node.linkedNodes) {
+      node.linkedNodes = {};
+    }
+
+    // Ensure nodes is an array
+    if (!Array.isArray(node.nodes)) {
+      node.nodes = [];
+    }
+
+    // Fix isCanvas based on schema (AI often gets this wrong)
+    if (resolvedName && nodeId !== "ROOT") {
+      node.isCanvas = canvasComponentNames.has(resolvedName);
+    }
+
+    // Non-canvas nodes must not have children
+    if (!node.isCanvas && Array.isArray(node.nodes) && (node.nodes as string[]).length > 0) {
+      node.nodes = [];
+    }
+
+    sanitized[nodeId] = node;
+  }
+
+  // Remove child references to nodes that don't exist
+  for (const [, rawNode] of Object.entries(sanitized)) {
+    const node = rawNode as Record<string, unknown>;
+    if (Array.isArray(node.nodes)) {
+      node.nodes = (node.nodes as string[]).filter((childId) => sanitized[childId]);
+    }
+  }
+
+  // Fix parent references — ensure every non-ROOT node points to a valid parent
+  for (const [nodeId, rawNode] of Object.entries(sanitized)) {
+    if (nodeId === "ROOT") continue;
+    const node = rawNode as Record<string, unknown>;
+    if (node.parent && !sanitized[node.parent as string]) {
+      node.parent = "ROOT";
+    }
+  }
+
+  return sanitized;
+}
+
 export function applyFullPageGeneration(
   actions: CraftActions,
   pageJson: Record<string, unknown>
 ): { success: boolean; error?: string } {
-  const { valid, errors } = validateCraftJson(pageJson);
+  const sanitized = sanitizeCraftJson(pageJson);
+  const { valid, errors } = validateCraftJson(sanitized);
   if (!valid) {
     return { success: false, error: `Invalid JSON: ${errors.join(", ")}` };
   }
 
   try {
-    actions.deserialize(JSON.stringify(pageJson));
+    console.log("[AI] Sanitized JSON node types:", Object.entries(sanitized).map(([id, n]) => {
+      const node = n as Record<string, unknown>;
+      const t = node.type as Record<string, unknown> | undefined;
+      return `${id}: ${t?.resolvedName} (isCanvas: ${node.isCanvas}, children: ${(node.nodes as string[])?.length ?? 0})`;
+    }));
+    actions.deserialize(JSON.stringify(sanitized));
     return { success: true };
   } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Failed to deserialize",
-    };
+    const msg = err instanceof Error ? err.message : "Failed to deserialize";
+    console.error("[AI] Deserialize failed:", msg, err);
+    return { success: false, error: msg };
   }
 }
 
@@ -165,6 +230,7 @@ function findNodeByHint(nodes: Record<string, unknown>, hint: string): string | 
     spacer: "CraftSpacer",
     row: "CraftRow",
     column: "CraftColumn",
+    icon: "CraftIcon",
     map: "CraftMap",
     youtube: "CraftYouTube",
     dates: "CraftEventDates",

@@ -1,6 +1,8 @@
 import type { Event, RegistrationConfig } from "@/shared/types/database";
 import Link from "next/link";
 import { InlineRegistrationForm } from "@/features/registration/inline-registration-form";
+import { Star } from "lucide-react";
+import { ICON_MAP } from "./icon-map";
 
 function hexToRgba(hex: string, alpha: number): string {
   if (hex === "transparent") return `rgba(0,0,0,${alpha})`;
@@ -40,7 +42,7 @@ export function CraftPageRenderer({ content, event, pages = [] }: Props) {
   if (!rootNode) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "0 16px", boxSizing: "border-box" as const }}>
       {rootNode.nodes.map((nodeId) => (
         <RenderNode key={nodeId} nodeId={nodeId} nodes={content} event={event} pages={pages} />
       ))}
@@ -74,6 +76,8 @@ function RenderNode({
         <div
           style={{
             fontSize: `${props.fontSize ?? 16}px`,
+            fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
+            lineHeight: 1.7,
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "left",
             color: (props.color as string) ?? "#ffffff",
             width: "100%",
@@ -88,19 +92,19 @@ function RenderNode({
       const imgW = (props.width as number) ?? 400;
       const imgH = (props.height as number) ?? 300;
       return (props.src as string) ? (
-        <img
-          src={props.src as string}
-          alt={(props.alt as string) ?? ""}
-          style={{
-            width: imgW,
-            maxWidth: "100%",
-            aspectRatio: `${imgW} / ${imgH}`,
-            height: "auto",
-            borderRadius: (props.borderRadius as number) ?? 0,
-            objectFit: (props.objectFit as React.CSSProperties["objectFit"]) ?? "cover",
-            display: "block",
-          }}
-        />
+        <div style={{ width: imgW, maxWidth: "100%", aspectRatio: `${imgW} / ${imgH}` }}>
+          <img
+            src={props.src as string}
+            alt={(props.alt as string) ?? ""}
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: (props.borderRadius as number) ?? 0,
+              objectFit: (props.objectFit as React.CSSProperties["objectFit"]) ?? "cover",
+              display: "block",
+            }}
+          />
+        </div>
       ) : null;
     }
 
@@ -115,6 +119,7 @@ function RenderNode({
             maxWidth: "100%",
             backgroundColor: (props.bgColor as string) ?? "#29BDD6",
             color: (props.textColor as string) ?? "#ffffff",
+            fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
             fontSize: (props.fontSize as number) ?? 16,
             paddingLeft: (props.paddingX as number) ?? 32,
             paddingRight: (props.paddingX as number) ?? 32,
@@ -282,6 +287,8 @@ function RenderNode({
         <div
           style={{
             fontSize: `${props.fontSize ?? 16}px`,
+            fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
+            lineHeight: 1.5,
             color: (props.color as string) ?? "#d1d5db",
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "center",
             maxWidth: "100%",
@@ -305,6 +312,8 @@ function RenderNode({
         <div
           style={{
             fontSize: `${props.fontSize ?? 16}px`,
+            fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
+            lineHeight: 1.5,
             color: (props.color as string) ?? "#d1d5db",
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "center",
             maxWidth: "100%",
@@ -323,6 +332,7 @@ function RenderNode({
             display: "inline-block",
             backgroundColor: (props.bgColor as string) ?? "#29BDD6",
             color: (props.textColor as string) ?? "#ffffff",
+            fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
             fontSize: `${props.fontSize ?? 18}px`,
             padding: `${props.paddingY ?? 16}px ${props.paddingX ?? 32}px`,
             borderRadius: `${props.borderRadius ?? 12}px`,
@@ -474,6 +484,32 @@ function RenderNode({
               />
             ))}
           </div>
+        </div>
+      );
+    }
+
+    case "CraftIcon": {
+      const IconComp = ICON_MAP[(props.icon as string) ?? "star"] ?? Star;
+      const iconSize = (props.size as number) ?? 28;
+      const iconColor = (props.color as string) ?? "#06b6d4";
+      const iconStroke = (props.strokeWidth as number) ?? 1.5;
+      const iconBgSize = (props.backgroundSize as number) ?? 56;
+      const iconBgColor = (props.backgroundColor as string) ?? "#06b6d41a";
+      const iconRadius = (props.borderRadius as number) ?? 9999;
+      return (
+        <div
+          style={{
+            width: iconBgSize,
+            height: iconBgSize,
+            borderRadius: iconRadius,
+            backgroundColor: iconBgColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {IconComp ? <IconComp size={iconSize} color={iconColor} strokeWidth={iconStroke} /> : null}
         </div>
       );
     }

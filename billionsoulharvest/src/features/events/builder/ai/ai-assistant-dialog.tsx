@@ -173,6 +173,9 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
       case "suggest":
         setInput("Suggest content ideas for this event page");
         break;
+      case "enhance":
+        setInput("Enhance the UI of this page by regenerating it with generate_full_page. CRITICAL: preserve ALL existing headings, section titles, body text, and content EXACTLY as they are — do NOT rename, rephrase, or invent new text. Only restructure the layout: use side-by-side CraftRow layouts for text+image sections, add CraftIcon components above card titles, and improve spacing, typography, colors, and visual hierarchy. Do NOT use edit_node — rebuild the full page.");
+        break;
     }
   };
 
@@ -263,6 +266,7 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
         <QuickActionChip label="Generate Page" onClick={() => handleQuickAction("generate")} />
         <QuickActionChip label="Edit Selected" onClick={() => handleQuickAction("edit")} />
         <QuickActionChip label="Suggest Content" onClick={() => handleQuickAction("suggest")} />
+        <QuickActionChip label="Enhance UI" onClick={() => handleQuickAction("enhance")} />
       </div>
 
       {/* Attachments preview */}
@@ -432,20 +436,30 @@ function MessageBubble({
                 </button>
               </>
             ) : (
-              <>
-                <button
-                  onClick={onApply}
-                  className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Apply to Canvas
-                </button>
-                <button
-                  onClick={onDiscard}
-                  className="text-xs text-gray-500 hover:text-gray-700 px-2.5 py-1 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Discard
-                </button>
-              </>
+              <div className="flex flex-col gap-1.5 w-full">
+                {error && (
+                  <div className="flex items-start gap-1.5 text-xs text-red-700 bg-red-50 rounded-md px-2 py-1.5 border border-red-200">
+                    <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>{error}</span>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={onApply}
+                    className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Apply to Canvas
+                  </button>
+                  <button
+                    onClick={onDiscard}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2.5 py-1 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}

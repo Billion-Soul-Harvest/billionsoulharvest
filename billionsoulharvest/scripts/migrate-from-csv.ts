@@ -127,6 +127,13 @@ function matchRegion(row: Record<string, string>, regionMap: Map<string, string>
 }
 
 function classifyType(row: Record<string, string>): "pastor" | "leader" | "donor" | "attendee" | "subscriber" | "other" {
+  // If "type" column exists and is a valid contact_type, use it directly
+  const validTypes = ["pastor", "leader", "donor", "attendee", "subscriber", "other"];
+  const directType = (row["type"] ?? "").toLowerCase().trim();
+  if (directType && validTypes.includes(directType)) {
+    return directType as "pastor" | "leader" | "donor" | "attendee" | "subscriber" | "other";
+  }
+
   const role = (row["role"] ?? row["job title"] ?? "").toLowerCase();
   const lists = (row["email lists"] ?? "").toLowerCase();
   const tags = (row["tags"] ?? "").toLowerCase();
@@ -143,7 +150,7 @@ function classifyType(row: Record<string, string>): "pastor" | "leader" | "donor
 }
 
 function getPhone(row: Record<string, string>): string | null {
-  return row["phone - mobile"] || row["phone - work"] || row["phone - home"] || row["phone - home 2"] || null;
+  return row["phone"] || row["phone - mobile"] || row["phone - work"] || row["phone - home"] || row["phone - home 2"] || null;
 }
 
 function parseBirthday(raw: string): string | null {
@@ -160,6 +167,14 @@ function parseBirthday(raw: string): string | null {
   return d.toISOString().slice(0, 10);
 }
 
+function parseTimestamp(raw: string): string | null {
+  if (!raw) return null;
+  // CC format: "2025-09-27 02:02:33 +0000"
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 function getEmailLists(row: Record<string, string>): string[] {
   const raw = row["email lists"] ?? "";
   return raw.split(",").map((s) => s.trim()).filter(Boolean);
@@ -170,7 +185,7 @@ function getTags(row: Record<string, string>): string[] {
   const listStr = row["email lists"] ?? "";
   const combined = `${tagStr},${listStr}`;
   return combined
-    .split(",")
+    .split(/[,;]\s*/)
     .map((t) => t.trim())
     .filter(Boolean)
     .filter((v, i, a) => a.indexOf(v) === i); // deduplicate
@@ -217,20 +232,20 @@ async function main() {
 
   // Map rows
   const contacts = rows
-    .filter((row) => row["email address"])
+    .filter((row) => row["email"] || row["email address"])
     .map((row) => ({
       first_name: row["first name"] || "Unknown",
       last_name: row["last name"] || "",
-      email: (row["email address"] ?? "").toLowerCase() || null,
+      email: (row["email"] || row["email address"] || "").toLowerCase() || null,
       phone: getPhone(row),
       phone_home: row["phone - home"] || null,
       phone_mobile: row["phone - mobile"] || null,
       phone_work: row["phone - work"] || null,
       contact_type: classifyType(row),
       tags: getTags(row),
-      church_name: row["ministry/organization"] || row["company"] || null,
+      church_name: row["church"] || row["ministry/organization"] || row["company"] || null,
       church_role: row["role"] || null,
-      city: row["city - home"] || null,
+      city: row["city"] || row["city - home"] || null,
       state: row["state/province - home"] || row["state/province - work"] || null,
       country: row["country"] || row["country - home"] || null,
       street_address: row["street address line 1 - home"] || null,
@@ -250,6 +265,8 @@ async function main() {
       email_lists: getEmailLists(row),
       region_id: matchRegion(row, regionMap),
       notes: row["notes"] || null,
+      ...(parseTimestamp(row["created at"]) ? { created_at: parseTimestamp(row["created at"]) } : {}),
+      ...(parseTimestamp(row["updated at"]) ? { updated_at: parseTimestamp(row["updated at"]) } : {}),
     }));
 
   const skipped = rows.length - contacts.length;
