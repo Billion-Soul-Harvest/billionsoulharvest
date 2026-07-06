@@ -276,14 +276,51 @@ export function applyAddNodes(
   query: CraftQuery,
   data: { parentId: string; index?: number; nodes: Record<string, unknown> }
 ): { success: boolean; error?: string } {
+  if (!data.nodes || typeof data.nodes !== "object") {
+    return { success: false, error: "No valid nodes provided" };
+  }
+
+  // Fallback strategy: merge new nodes into the existing canvas JSON and deserialize the whole thing.
+  // This is more reliable than using query.parseSerializedNode which is picky about node format.
   try {
-    // Build a tree structure for Craft.js to parse
-    const nodeEntries = Object.entries(data.nodes);
-    for (const [, nodeData] of nodeEntries) {
-      const parsed = query.parseSerializedNode(nodeData);
-      const node = parsed.toNode();
-      actions.add(node, data.parentId, data.index);
+    const currentJson = JSON.parse(query.serialize()) as Record<string, unknown>;
+    const parentId = data.parentId || "ROOT";
+    const parent = currentJson[parentId] as Record<string, unknown> | undefined;
+
+    if (!parent) {
+      return { success: false, error: `Parent node "${parentId}" not found in canvas` };
     }
+
+    // Add new nodes to the canvas JSON
+    const newNodeIds: string[] = [];
+    for (const [nodeId, rawNode] of Object.entries(data.nodes)) {
+      const node = rawNode as Record<string, unknown>;
+      // Ensure parent reference and required fields
+      node.parent = parentId;
+      if (!node.linkedNodes) node.linkedNodes = {};
+      if (!Array.isArray(node.nodes)) node.nodes = [];
+
+      // Fix isCanvas based on schema
+      const resolvedName = (node.type as Record<string, unknown>)?.resolvedName as string;
+      if (resolvedName) {
+        node.isCanvas = canvasComponentNames.has(resolvedName);
+      }
+
+      currentJson[nodeId] = node;
+      newNodeIds.push(nodeId);
+    }
+
+    // Append new node IDs to parent's children
+    const parentNodes = (parent.nodes as string[]) || [];
+    if (data.index !== undefined) {
+      parentNodes.splice(data.index, 0, ...newNodeIds);
+    } else {
+      parentNodes.push(...newNodeIds);
+    }
+    parent.nodes = parentNodes;
+
+    const sanitized = sanitizeCraftJson(currentJson);
+    actions.deserialize(JSON.stringify(sanitized));
     return { success: true };
   } catch (err) {
     return {

@@ -235,6 +235,7 @@ function SiteEditorLayout({ initialPages, initialPageId }: { initialPages: SiteP
     published: p.published,
     page_content: p.page_content,
     parent_id: p.parent_id,
+    nav_anchor: p.nav_anchor,
   }));
 
   return (

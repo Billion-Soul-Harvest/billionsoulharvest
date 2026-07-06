@@ -10,6 +10,7 @@ export interface PageInfo {
   published: boolean;
   page_content: Record<string, unknown> | null;
   parent_id?: string | null;
+  nav_anchor?: string | null;
 }
 
 interface PageContextValue {

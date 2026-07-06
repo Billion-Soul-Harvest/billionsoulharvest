@@ -2,10 +2,51 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { NavItem } from "./public-header";
+
+function NavLink({ href, onClick, className, children }: {
+  href: string;
+  onClick?: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const isAnchor = href.includes("#");
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isAnchor) {
+      e.preventDefault();
+      const [path, hash] = href.split("#");
+      const currentPath = window.location.pathname;
+      const targetPath = path || "/";
+
+      const scrollToEl = () => {
+        const el = document.getElementById(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      };
+
+      if (currentPath === targetPath) {
+        scrollToEl();
+      } else {
+        router.push(targetPath);
+        // Wait for navigation, then scroll
+        setTimeout(scrollToEl, 500);
+      }
+    }
+    onClick?.();
+  };
+
+  return (
+    <Link href={href} onClick={handleClick} className={className}>
+      {children}
+    </Link>
+  );
+}
 
 interface Props {
   navItems: NavItem[];
@@ -73,9 +114,10 @@ function DesktopDropdown({ item, pathname }: { item: NavItem; pathname: string }
             const childActive = pathname === child.href ||
               (child.href !== "/" && pathname.startsWith(child.href));
             return (
-              <Link
+              <NavLink
                 key={child.href}
                 href={child.href}
+                onClick={() => setOpen(false)}
                 className={cn(
                   "block px-4 py-2 text-sm transition-colors",
                   childActive
@@ -84,7 +126,7 @@ function DesktopDropdown({ item, pathname }: { item: NavItem; pathname: string }
                 )}
               >
                 {child.label}
-              </Link>
+              </NavLink>
             );
           })}
         </div>
@@ -194,7 +236,7 @@ export function PublicHeaderNav({ navItems }: Props) {
                           const childActive = pathname === child.href ||
                             (child.href !== "/" && pathname.startsWith(child.href));
                           return (
-                            <Link
+                            <NavLink
                               key={child.href}
                               href={child.href}
                               onClick={() => setMobileOpen(false)}
@@ -206,7 +248,7 @@ export function PublicHeaderNav({ navItems }: Props) {
                               )}
                             >
                               {child.label}
-                            </Link>
+                            </NavLink>
                           );
                         })}
                       </div>

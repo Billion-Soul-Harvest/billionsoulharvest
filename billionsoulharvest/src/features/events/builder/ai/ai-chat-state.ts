@@ -273,16 +273,22 @@ function parseOperation(content: string): AIOperation | undefined {
               nodeEdits: Array.isArray(parsed.data) ? parsed.data : parsed.data?.edits,
               explanation,
             };
-          case "add_nodes":
+          case "add_nodes": {
+            const addData = parsed.data || parsed;
+            if (!addData.parentId && !addData.nodes) {
+              console.log("[AI] add_nodes missing data fields:", Object.keys(parsed));
+              break;
+            }
             return {
               type: "add_nodes",
               nodesToAdd: {
-                parentId: parsed.data.parentId,
-                index: parsed.data.index,
-                tree: parsed.data.nodes,
+                parentId: addData.parentId || "ROOT",
+                index: addData.index,
+                tree: addData.nodes || addData.tree,
               },
               explanation,
             };
+          }
           case "suggest_content":
             return { type: "suggest_content", explanation };
         }

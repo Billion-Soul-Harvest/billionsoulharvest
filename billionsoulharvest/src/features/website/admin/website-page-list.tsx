@@ -69,6 +69,13 @@ export function WebsitePageList({ initialPages }: Props) {
     setPages((prev) => prev.map((p) => (p.id === id ? { ...p, parent_id: parentId } : p)));
   }
 
+  async function handleAnchorChange(id: string, anchor: string) {
+    const supabase = createClient();
+    const value = anchor.trim() || null;
+    await supabase.from("site_pages").update({ nav_anchor: value }).eq("id", id);
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, nav_anchor: value } : p)));
+  }
+
   async function handleAdd() {
     if (!newTitle.trim() || !newSlug.trim()) return;
     const supabase = createClient();
@@ -157,18 +164,31 @@ export function WebsitePageList({ initialPages }: Props) {
               </div>
             </div>
 
-            {/* Parent selector */}
+            {/* Parent selector & anchor */}
             {!page.is_home && (
-              <select
-                value={page.parent_id ?? ""}
-                onChange={(e) => handleParentChange(page.id, e.target.value || null)}
-                className="text-xs border rounded-lg px-2 py-1.5 text-gray-600 bg-white"
-              >
-                <option value="">Top-level</option>
-                {getParentOptions(page.id).map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.title}</option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2">
+                <select
+                  value={page.parent_id ?? ""}
+                  onChange={(e) => handleParentChange(page.id, e.target.value || null)}
+                  className="text-xs border rounded-lg px-2 py-1.5 text-gray-600 bg-white"
+                >
+                  <option value="">Top-level</option>
+                  {getParentOptions(page.id).map((opt) => (
+                    <option key={opt.id} value={opt.id}>{opt.title}</option>
+                  ))}
+                </select>
+                {page.parent_id && (
+                  <input
+                    type="text"
+                    defaultValue={page.nav_anchor ?? ""}
+                    placeholder="#anchor"
+                    onBlur={(e) => handleAnchorChange(page.id, e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    className="text-xs border rounded-lg px-2 py-1.5 text-gray-600 bg-white w-24"
+                    title="Scroll-to anchor ID (optional). If set, clicking this nav item scrolls to that section on the parent page."
+                  />
+                )}
+              </div>
             )}
 
             <div className="flex items-center gap-2">

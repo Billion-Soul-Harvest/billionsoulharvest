@@ -394,6 +394,7 @@ export interface SitePage {
   meta_title: string | null;
   meta_description: string | null;
   parent_id: string | null;
+  nav_anchor: string | null;
   created_at: string;
   updated_at: string;
 }
