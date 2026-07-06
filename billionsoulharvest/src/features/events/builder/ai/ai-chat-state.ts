@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useEditor } from "@craftjs/core";
-import type { ChatMessage, AIOperation, AIBuilderRequest } from "@/shared/utils/ai/types";
+import type { ChatMessage, AIOperation, AIBuilderRequest, Attachment } from "@/shared/utils/ai/types";
 import {
   applyFullPageGeneration,
   applyNodeEdits,
@@ -28,13 +28,14 @@ export function useAIChat(eventData: EventData) {
   const abortRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
-    async (userMessage: string, selectedNodeId?: string) => {
+    async (userMessage: string, selectedNodeId?: string, attachments?: Attachment[]) => {
       setError(null);
 
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "user",
         content: userMessage,
+        attachments,
         timestamp: Date.now(),
       };
 
@@ -68,7 +69,7 @@ export function useAIChat(eventData: EventData) {
       const requestBody: AIBuilderRequest = {
         messages: [
           ...historyMessages,
-          { role: "user" as const, content: userMessage },
+          { role: "user" as const, content: userMessage, attachments },
         ],
         context: {
           currentCanvasJson: getCanvasSnapshot(query),

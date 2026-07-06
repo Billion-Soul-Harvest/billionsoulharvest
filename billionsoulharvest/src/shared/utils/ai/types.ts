@@ -1,7 +1,14 @@
+export interface Attachment {
+  name: string;
+  type: string; // MIME type
+  data: string; // base64
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachments?: Attachment[];
   operation?: AIOperation;
   timestamp: number;
 }
@@ -25,7 +32,7 @@ export interface AIOperation {
 }
 
 export interface AIBuilderRequest {
-  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  messages: Array<{ role: "user" | "assistant"; content: string; attachments?: Attachment[] }>;
   context: {
     currentCanvasJson: string;
     selectedNodeId?: string;

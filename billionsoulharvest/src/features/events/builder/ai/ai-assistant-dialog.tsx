@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useEditor } from "@craftjs/core";
 import { useAIChat } from "./ai-chat-state";
-import type { ChatMessage, AIOperation } from "@/shared/utils/ai/types";
+import type { ChatMessage, AIOperation, Attachment } from "@/shared/utils/ai/types";
 
 interface Props {
   open: boolean;
@@ -34,8 +34,10 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
   const [input, setInput] = useState("");
   const [appliedOps, setAppliedOps] = useState<Set<string>>(new Set());
   const [capturedNodeId, setCapturedNodeId] = useState<string | undefined>();
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [applyError, setApplyError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,12 +59,42 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
   };
 
   const handleSend = () => {
-    if (!input.trim() || isStreaming) return;
-    // Use captured node ID (from Edit Selected) or current selection
+    if ((!input.trim() && attachments.length === 0) || isStreaming) return;
     const nodeId = capturedNodeId || getSelectedNodeId();
-    sendMessage(input.trim(), nodeId);
+    sendMessage(input.trim(), nodeId, attachments.length > 0 ? attachments : undefined);
     setInput("");
+    setAttachments([]);
     setCapturedNodeId(undefined);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    Array.from(files).forEach((file) => {
+      if (file.size > maxSize) {
+        setApplyError(`File "${file.name}" exceeds 10MB limit`);
+        return;
+      }
+      const allowed = file.type.startsWith("image/") || file.type === "application/pdf";
+      if (!allowed) {
+        setApplyError(`Unsupported file type: ${file.type}. Use images or PDFs.`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(",")[1];
+        setAttachments((prev) => [...prev, { name: file.name, type: file.type, data: base64 }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -182,8 +214,56 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
         <QuickActionChip label="Suggest Content" onClick={() => handleQuickAction("suggest")} />
       </div>
 
+      {/* Attachments preview */}
+      {attachments.length > 0 && (
+        <div className="px-4 py-2 border-t border-gray-100 flex flex-wrap gap-1.5">
+          {attachments.map((att, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md border border-blue-200"
+            >
+              {att.type === "application/pdf" ? (
+                <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              ) : (
+                <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              )}
+              <span className="truncate max-w-[120px]">{att.name}</span>
+              <button
+                onClick={() => removeAttachment(i)}
+                className="text-blue-400 hover:text-blue-600 shrink-0"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Input */}
       <div className="px-4 py-3 border-t bg-gray-50 flex gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
+          title="Attach image or PDF"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+        </button>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -202,7 +282,7 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
         ) : (
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() && attachments.length === 0}
             className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
           >
             Send
@@ -244,6 +324,20 @@ function MessageBubble({
             ? message.content
             : message.content.split("```")[0].trim() || message.content}
         </p>
+
+        {/* Attachment indicators */}
+        {isUser && message.attachments && message.attachments.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {message.attachments.map((att, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 text-[10px] bg-blue-500/30 text-blue-100 px-1.5 py-0.5 rounded"
+              >
+                {att.type === "application/pdf" ? "PDF" : "IMG"}: {att.name}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Streaming indicator when JSON is being generated */}
         {isStreaming && hasJsonBlock && !jsonComplete && (

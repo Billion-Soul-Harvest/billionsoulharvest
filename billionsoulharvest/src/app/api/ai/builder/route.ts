@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/shared/utils/supabase/server";
-import { getProvider } from "@/shared/utils/ai/provider";
+import { getProvider, type AIMessage, type ContentBlock } from "@/shared/utils/ai/provider";
 import { buildSystemPrompt } from "@/shared/utils/ai/system-prompt";
 import type { AIBuilderRequest } from "@/shared/utils/ai/types";
 
@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(context.eventData);
 
-    // Build augmented messages with canvas context
-    const augmentedMessages = messages.map((msg, idx) => {
+    // Build augmented messages with canvas context and attachments
+    const augmentedMessages: AIMessage[] = messages.map((msg, idx) => {
       if (idx === messages.length - 1 && msg.role === "user") {
         let augmented = msg.content;
         if (context.currentCanvasJson) {
@@ -51,9 +51,29 @@ export async function POST(request: NextRequest) {
         if (context.selectedNodeId && context.selectedNodeJson) {
           augmented += `\n\n[Selected node ID]: ${context.selectedNodeId}\n[Selected node JSON]: ${context.selectedNodeJson}`;
         }
-        return { role: msg.role, content: augmented };
+
+        // Build multimodal content blocks if attachments are present
+        if (msg.attachments && msg.attachments.length > 0) {
+          const contentBlocks: ContentBlock[] = [{ type: "text", text: augmented }];
+          for (const att of msg.attachments) {
+            if (att.type === "application/pdf") {
+              contentBlocks.push({
+                type: "document",
+                source: { type: "base64", media_type: att.type, data: att.data },
+              });
+            } else if (att.type.startsWith("image/")) {
+              contentBlocks.push({
+                type: "image",
+                source: { type: "base64", media_type: att.type, data: att.data },
+              });
+            }
+          }
+          return { role: msg.role, content: contentBlocks } as AIMessage;
+        }
+
+        return { role: msg.role, content: augmented } as AIMessage;
       }
-      return msg;
+      return { role: msg.role, content: msg.content } as AIMessage;
     });
 
     const provider = getProvider();

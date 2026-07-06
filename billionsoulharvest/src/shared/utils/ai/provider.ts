@@ -1,7 +1,17 @@
+export type ContentBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+  | { type: "document"; source: { type: "base64"; media_type: string; data: string } };
+
+export interface AIMessage {
+  role: "user" | "assistant";
+  content: string | ContentBlock[];
+}
+
 interface AIProvider {
   streamChat(
     systemPrompt: string,
-    messages: Array<{ role: "user" | "assistant"; content: string }>
+    messages: AIMessage[]
   ): Promise<ReadableStream<Uint8Array>>;
 }
 
@@ -14,7 +24,7 @@ class AnthropicProvider implements AIProvider {
 
   async streamChat(
     systemPrompt: string,
-    messages: Array<{ role: "user" | "assistant"; content: string }>
+    messages: AIMessage[]
   ): Promise<ReadableStream<Uint8Array>> {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -22,6 +32,7 @@ class AnthropicProvider implements AIProvider {
         "Content-Type": "application/json",
         "x-api-key": this.apiKey,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "pdfs-2024-09-25",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
@@ -57,7 +68,7 @@ class OpenAIProvider implements AIProvider {
 
   async streamChat(
     systemPrompt: string,
-    messages: Array<{ role: "user" | "assistant"; content: string }>
+    messages: AIMessage[]
   ): Promise<ReadableStream<Uint8Array>> {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
