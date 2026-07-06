@@ -5,7 +5,7 @@ import { buildSystemPrompt } from "@/shared/utils/ai/system-prompt";
 import type { AIBuilderRequest } from "@/shared/utils/ai/types";
 
 // Allow larger payloads for file attachments and longer execution for AI streaming
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
   try {
