@@ -1037,32 +1037,20 @@ export function ContactsListClient({
       {/* Filters — Constant Contact style */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         {/* Search field picker + input */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            navigate({ search: formData.get("search") as string, page: "1" });
-          }}
-          className="flex"
-        >
+        <div className="flex">
           <FilterDropdown
             value={searchField}
             label="Name or email"
             options={searchFieldOptions}
             onChange={(v) => navigate({ searchField: v, page: "1" })}
           />
-          <div className="relative flex-1 min-w-[220px] -ml-px">
-            <Input
-              name="search"
-              placeholder={`Search by ${searchFieldOptions.find((o) => o.value === searchField)?.label.toLowerCase() ?? "name or email"}...`}
-              defaultValue={search}
-              className="rounded-l-none border-gray-200 pr-10 h-[42px]"
-            />
-            <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
+          <DebouncedSearchInput
+            defaultValue={search}
+            onSearch={(v) => navigate({ search: v, page: "1" })}
+            placeholder={`Search by ${searchFieldOptions.find((o) => o.value === searchField)?.label.toLowerCase() ?? "name or email"}...`}
+            className="rounded-l-none border-gray-200 pr-10 h-[42px] flex-1 min-w-[220px] -ml-px"
+          />
+        </div>
 
         <SearchableFilterDropdown
           value={listFilter}
@@ -1726,6 +1714,49 @@ export function ContactsListClient({
           onClose={() => setSettingsOpen(false)}
         />
       )}
+    </div>
+  );
+}
+
+function DebouncedSearchInput({
+  defaultValue,
+  onSearch,
+  placeholder,
+  className,
+}: {
+  defaultValue: string;
+  onSearch: (value: string) => void;
+  placeholder: string;
+  className?: string;
+}) {
+  const [value, setValue] = useState(defaultValue);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  function handleChange(newValue: string) {
+    setValue(newValue);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onSearch(newValue);
+    }, 350);
+  }
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  return (
+    <div className="relative">
+      <Input
+        value={value}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e.target.value)}
+        placeholder={placeholder}
+        className={className}
+      />
+      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
     </div>
   );
 }

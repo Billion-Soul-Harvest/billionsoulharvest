@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -797,6 +797,23 @@ function SearchInput({
   placeholder?: string;
 }) {
   const [value, setValue] = useState(defaultValue);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  function handleChange(newValue: string) {
+    setValue(newValue);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onSearch(newValue);
+    }, 350);
+  }
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   return (
     <div className="relative">
@@ -815,13 +832,7 @@ function SearchInput({
       </svg>
       <Input
         value={value}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(e.target.value)}
-        onKeyDown={(e: React.KeyboardEvent) => {
-          if (e.key === "Enter") onSearch(value);
-        }}
-        onBlur={() => {
-          if (value !== defaultValue) onSearch(value);
-        }}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e.target.value)}
         placeholder={placeholder}
         className="pl-9 w-[200px]"
       />
