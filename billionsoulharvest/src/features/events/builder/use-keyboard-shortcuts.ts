@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useEditor } from "@craftjs/core";
 import type { Node } from "@craftjs/core";
 import { toast } from "sonner";
@@ -64,8 +64,12 @@ function cloneSubtree(query: any, nodeId: string) {
   };
 }
 
+// Flag to skip snapshot during undo/deserialize operations
+let isUndoing = false;
+
 export function useBuilderKeyboardShortcuts() {
   const { actions, query } = useEditor();
+  const lastSnapshotRef = useRef<string>("");
 
   const pushUndo = useCallback(() => {
     try {
@@ -77,6 +81,37 @@ export function useBuilderKeyboardShortcuts() {
     } catch {
       // Ignore serialization errors
     }
+  }, [query]);
+
+  // Auto-capture undo snapshots on state changes (debounced)
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      if (isUndoing) return;
+      try {
+        const current = query.serialize();
+        if (current !== lastSnapshotRef.current) {
+          // State changed — push the previous state (before the change) to undo stack
+          if (lastSnapshotRef.current) {
+            undoStack.push(lastSnapshotRef.current);
+            if (undoStack.length > MAX_UNDO_STACK) {
+              undoStack.shift();
+            }
+          }
+          lastSnapshotRef.current = current;
+        }
+      } catch {
+        // Ignore serialization errors
+      }
+    }, 1000);
+
+    // Capture initial state
+    try {
+      lastSnapshotRef.current = query.serialize();
+    } catch {
+      // Ignore
+    }
+
+    return () => clearInterval(checkInterval);
   }, [query]);
 
   useEffect(() => {
@@ -179,10 +214,15 @@ export function useBuilderKeyboardShortcuts() {
         e.preventDefault();
         const snapshot = undoStack.pop()!;
         try {
+          isUndoing = true;
           actions.deserialize(snapshot);
+          lastSnapshotRef.current = snapshot;
           toast("Undone", { duration: 1500 });
         } catch (err) {
           console.error("[builder-shortcuts] undo failed:", err);
+        } finally {
+          // Delay reset so the interval doesn't capture this as a new change
+          setTimeout(() => { isUndoing = false; }, 200);
         }
       }
     };

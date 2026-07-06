@@ -93,6 +93,8 @@ export const CraftText: UserComponent<TextProps> = ({
       ref={craftRef(connect, drag)}
       style={{
         fontSize: `${fontSize}px`,
+        fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
+        lineHeight: 1.7,
         textAlign,
         color,
         width: `${width}px`,
@@ -103,7 +105,7 @@ export const CraftText: UserComponent<TextProps> = ({
         padding: "4px",
       }}
     >
-      {selected && editor ? (
+      {editor ? (
         <EditorContent editor={editor} />
       ) : (
         <div dangerouslySetInnerHTML={{ __html: text }} />
