@@ -148,9 +148,29 @@ export interface AdminUser {
   updated_at: string;
 }
 
+// Audience types
+export type AudienceType = "list" | "segment";
+
+export interface Audience {
+  id: string;
+  name: string;
+  description: string | null;
+  type: AudienceType;
+  segment_filter: SegmentFilter | null;
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // Campaign types
 export type CampaignStatus = "draft" | "sending" | "sent" | "failed" | "scheduled" | "cancelled";
 export type CampaignSendStatus = "queued" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed" | "unsubscribed";
+
+export interface SegmentCriterion {
+  field: string;
+  operator: string;
+  value: string | string[];
+}
 
 export interface SegmentFilter {
   contact_type?: string[];
@@ -160,6 +180,7 @@ export interface SegmentFilter {
   tags_include?: string[];
   email_lists?: string[];
   contact_ids?: string[];
+  criteria?: SegmentCriterion[];
 }
 
 export interface CampaignTemplate {
@@ -344,6 +365,21 @@ export interface EventPageBlock {
   content: Record<string, unknown>;
   sort_order: number;
   published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SitePage {
+  id: string;
+  title: string;
+  slug: string;
+  sort_order: number;
+  published: boolean;
+  show_in_nav: boolean;
+  is_home: boolean;
+  page_content: Record<string, unknown> | null;
+  meta_title: string | null;
+  meta_description: string | null;
   created_at: string;
   updated_at: string;
 }
