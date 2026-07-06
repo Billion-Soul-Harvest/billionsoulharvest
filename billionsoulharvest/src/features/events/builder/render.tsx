@@ -40,7 +40,7 @@ export function CraftPageRenderer({ content, event, pages = [] }: Props) {
   if (!rootNode) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
       {rootNode.nodes.map((nodeId) => (
         <RenderNode key={nodeId} nodeId={nodeId} nodes={content} event={event} pages={pages} />
       ))}
@@ -76,7 +76,7 @@ function RenderNode({
             fontSize: `${props.fontSize ?? 16}px`,
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "left",
             color: (props.color as string) ?? "#ffffff",
-            width: `${props.width ?? 400}px`,
+            width: "100%",
             maxWidth: "100%",
             minHeight: `${props.height ?? 40}px`,
           }}
@@ -208,7 +208,7 @@ function RenderNode({
             borderColor: (props.borderColor as string) ?? "transparent",
             borderWidth: `${props.borderWidth ?? 0}px`,
             borderStyle: ((props.borderWidth as number) ?? 0) > 0 ? "solid" : "none",
-            width: `${props.width ?? 600}px`,
+            width: "100%",
             maxWidth: "100%",
             minHeight: `${props.minHeight ?? 200}px`,
             ...(containerAlignItems ? {

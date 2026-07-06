@@ -1,7 +1,20 @@
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/shared/utils/supabase/server";
 
-export function PublicFooter() {
+export async function PublicFooter() {
+  const supabase = await createClient();
+  const { data: pages } = await supabase
+    .from("site_pages")
+    .select("title, slug, is_home, show_in_nav")
+    .eq("published", true)
+    .eq("show_in_nav", true)
+    .order("sort_order");
+
+  const links = (pages ?? [])
+    .filter((p) => !p.is_home)
+    .map((p) => ({ label: p.title, href: `/${p.slug}` }));
+
   return (
     <footer className="bg-[#0a1e38] border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -27,13 +40,7 @@ export function PublicFooter() {
           <div>
             <h4 className="text-white font-semibold text-sm mb-4">Quick Links</h4>
             <ul className="space-y-2.5">
-              {[
-                { label: "About", href: "/about" },
-                { label: "Initiatives", href: "/initiatives" },
-                { label: "Global Gatherings", href: "/gatherings" },
-                { label: "Media", href: "/media" },
-                { label: "Connect", href: "/connect" },
-              ].map((link) => (
+              {links.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-gray-400 hover:text-[#29BDD6] text-sm transition-colors">
                     {link.label}
