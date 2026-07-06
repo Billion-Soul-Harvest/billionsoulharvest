@@ -35,9 +35,11 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
   const [appliedOps, setAppliedOps] = useState<Set<string>>(new Set());
   const [capturedNodeId, setCapturedNodeId] = useState<string | undefined>();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -67,11 +69,8 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
     setCapturedNodeId(undefined);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const processFiles = (files: FileList | File[]) => {
     const maxSize = 10 * 1024 * 1024; // 10MB
-
     Array.from(files).forEach((file) => {
       if (file.size > maxSize) {
         setApplyError(`File "${file.name}" exceeds 10MB limit`);
@@ -89,8 +88,38 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
       };
       reader.readAsDataURL(file);
     });
-    // Reset input so the same file can be re-selected
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) processFiles(e.target.files);
     e.target.value = "";
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes("Files")) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    if (e.dataTransfer.files.length > 0) processFiles(e.dataTransfer.files);
   };
 
   const removeAttachment = (index: number) => {
@@ -148,7 +177,26 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-[400px] h-[560px] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col z-50 overflow-hidden">
+    <div
+      className={`fixed bottom-4 right-4 w-[400px] h-[560px] bg-white rounded-xl shadow-2xl border flex flex-col z-50 overflow-hidden transition-colors ${
+        isDragging ? "border-blue-400 border-2" : "border-gray-200"
+      }`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-10 bg-blue-50/90 flex flex-col items-center justify-center rounded-xl pointer-events-none">
+          <svg className="w-10 h-10 text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p className="text-sm font-medium text-blue-600">Drop files here</p>
+          <p className="text-xs text-blue-400 mt-1">Images or PDFs</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
         <div className="flex items-center gap-2">
