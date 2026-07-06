@@ -66,6 +66,14 @@ export function AudiencesClient({
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [typePickerChoice, setTypePickerChoice] = useState<"segment" | "list">("segment");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // Clear selection when page/filters change
+  useEffect(() => {
+    setSelected(new Set());
+  }, [page, pageSize, search, typeFilter]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -74,6 +82,47 @@ export function AudiencesClient({
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [menuOpen]);
+
+  const allSelected = audiences.length > 0 && selected.size === audiences.length;
+  const someSelected = selected.size > 0 && selected.size < audiences.length;
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(audiences.map((a) => a.id)));
+    }
+  }
+
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    const supabase = createClient();
+    const toDelete = audiences.filter((a) => selected.has(a.id));
+
+    // Remove list names from contacts for list-type audiences
+    const listNames = toDelete.filter((a) => a.type === "list").map((a) => a.name);
+    for (const name of listNames) {
+      await supabase.rpc("remove_audience_list", { p_name: name });
+    }
+
+    // Delete all selected audiences
+    const ids = toDelete.map((a) => a.id);
+    await supabase.from("audiences").delete().in("id", ids);
+
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    setSelected(new Set());
+    router.refresh();
+  }
 
   const [form, setForm] = useState({
     name: "",
@@ -285,10 +334,40 @@ export function AudiencesClient({
       <div className="bg-white rounded-xl border p-4 mb-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-900">Your lists</span>
-            <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-gray-100 text-xs font-medium text-gray-700">
-              {totalCount}
-            </span>
+            {selected.size > 0 ? (
+              <>
+                <span className="text-sm font-semibold text-gray-900">Selected lists</span>
+                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-cyan-100 text-xs font-medium text-cyan-700">
+                  {selected.size}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                  onClick={() => setBulkDeleteOpen(true)}
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-500"
+                  onClick={() => setSelected(new Set())}
+                >
+                  Clear
+                </Button>
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-semibold text-gray-900">Your lists</span>
+                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-gray-100 text-xs font-medium text-gray-700">
+                  {totalCount}
+                </span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <SearchInput
@@ -328,6 +407,15 @@ export function AudiencesClient({
             <thead>
               <tr className="bg-gray-50 border-b">
                 <th className="px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                  />
+                </th>
+                <th className="px-3 py-3 w-10">
                   <span className="sr-only">Favorite</span>
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Name</th>
@@ -345,8 +433,17 @@ export function AudiencesClient({
               {audiences.map((audience) => {
                 const count = contactCounts[audience.id] ?? 0;
                 const emailCount = emailCounts[audience.id] ?? 0;
+                const isSelected = selected.has(audience.id);
                 return (
-                  <tr key={audience.id} className="hover:bg-gray-50/50 group/row">
+                  <tr key={audience.id} className={`group/row ${isSelected ? "bg-cyan-50/50" : "hover:bg-gray-50/50"}`}>
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(audience.id)}
+                        className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-3 py-3">
                       <button
                         onClick={() => toggleFavorite(audience)}
@@ -649,6 +746,31 @@ export function AudiencesClient({
               disabled={deleting}
             >
               {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {selected.size} audience{selected.size !== 1 ? "s" : ""}?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the selected audiences.
+              {audiences.filter((a) => selected.has(a.id) && a.type === "list").length > 0 &&
+                " List-type audiences will also be removed from all contacts' email lists."}
+              {" "}This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+            >
+              {bulkDeleting ? "Deleting..." : `Delete ${selected.size} audience${selected.size !== 1 ? "s" : ""}`}
             </Button>
           </DialogFooter>
         </DialogContent>
