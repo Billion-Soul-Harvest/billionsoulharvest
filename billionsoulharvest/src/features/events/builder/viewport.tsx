@@ -10,13 +10,10 @@ import { usePageContext } from "./page-context";
 import { AIAssistantDialog } from "./ai/ai-assistant-dialog";
 import { useBuilderKeyboardShortcuts } from "./use-keyboard-shortcuts";
 
-import type { FooterConfig } from "@/shared/types/database";
-
 interface Props {
   initialContent?: string | null;
   canvasWidth: number;
   hideHeader?: boolean;
-  footerConfig?: FooterConfig | null;
 }
 
 function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
@@ -87,135 +84,10 @@ function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
   );
 }
 
-function PersistentFooter({
-  canvasWidth,
-  config,
-  onUpdate,
-}: {
-  canvasWidth: number;
-  config: FooterConfig;
-  onUpdate?: (updated: FooterConfig) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(config);
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    const { createClient } = await import("@/shared/utils/supabase/client");
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("site_settings")
-      .upsert(
-        { key: "footer_config", value: draft as unknown as Record<string, unknown> },
-        { onConflict: "key" }
-      );
-    setSaving(false);
-    if (!error) {
-      setEditing(false);
-      onUpdate?.(draft);
-    }
-  };
-
-  if (editing) {
-    return (
-      <div
-        className="w-full shrink-0 border-t border-blue-400/50 bg-[#0a1e38]"
-        style={{ maxWidth: `${canvasWidth}px` }}
-      >
-        <div className="px-6 py-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-white text-xs font-semibold">Edit Footer</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setDraft(config); setEditing(false); }}
-                className="px-2.5 py-1 text-[11px] text-gray-400 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-3 py-1 text-[11px] bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="text-gray-400 text-[10px] block mb-1">Description</label>
-            <textarea
-              value={draft.description}
-              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-              rows={2}
-              className="w-full text-xs bg-white/5 border border-white/10 rounded px-2.5 py-1.5 text-gray-300 focus:outline-none focus:border-blue-500 resize-none"
-            />
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-gray-400 text-[10px] block mb-1">Email</label>
-              <input
-                type="email"
-                value={draft.email}
-                onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-                className="w-full text-xs bg-white/5 border border-white/10 rounded px-2.5 py-1.5 text-gray-300 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="text-gray-400 text-[10px] block mb-1">Copyright (optional)</label>
-              <input
-                value={draft.copyrightText ?? ""}
-                onChange={(e) => setDraft({ ...draft, copyrightText: e.target.value || undefined })}
-                className="w-full text-xs bg-white/5 border border-white/10 rounded px-2.5 py-1.5 text-gray-300 focus:outline-none focus:border-blue-500"
-                placeholder={`© ${new Date().getFullYear()} Billion Soul Harvest...`}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <footer
-      className="w-full shrink-0 border-t border-white/10 relative group cursor-pointer"
-      style={{ backgroundColor: "#0a1e38", maxWidth: `${canvasWidth}px` }}
-      onClick={() => setEditing(true)}
-    >
-      {/* Edit overlay hint */}
-      <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 transition-colors flex items-center justify-center">
-        <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-blue-600 px-3 py-1 rounded-full shadow">
-          Click to edit footer
-        </span>
-      </div>
-      <div className="px-6 py-8">
-        <div className="flex gap-8">
-          <div className="flex-1 min-w-0">
-            <p className="text-gray-400 text-xs leading-relaxed line-clamp-3">
-              {config.description}
-            </p>
-          </div>
-          {config.email && (
-            <div className="shrink-0">
-              <span className="text-gray-400 text-xs">{config.email}</span>
-            </div>
-          )}
-        </div>
-        <div className="border-t border-white/10 mt-4 pt-3">
-          <p className="text-gray-500 text-[10px]">
-            {config.copyrightText || `© ${new Date().getFullYear()} Billion Soul Harvest. All rights reserved.`}
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-export function Viewport({ initialContent, canvasWidth, hideHeader, footerConfig: initialFooterConfig }: Props) {
+export function Viewport({ initialContent, canvasWidth, hideHeader }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [aiOpen, setAiOpen] = useState(false);
-  const [footerConfig, setFooterConfig] = useState(initialFooterConfig);
   const event = useEventData();
   useBuilderKeyboardShortcuts();
 
@@ -266,9 +138,6 @@ export function Viewport({ initialContent, canvasWidth, hideHeader, footerConfig
               {!initialContent && defaultContentChildren}
             </Element>
           </Frame>
-
-          {/* Persistent footer — always visible across all pages */}
-          {footerConfig && <PersistentFooter canvasWidth={canvasWidth} config={footerConfig} onUpdate={setFooterConfig} />}
         </div>
       </div>
 
