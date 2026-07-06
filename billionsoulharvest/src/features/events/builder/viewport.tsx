@@ -8,10 +8,12 @@ import { defaultContentChildren } from "./default-content";
 import { useEventData } from "./event-context";
 import { usePageContext } from "./page-context";
 import { AIAssistantDialog } from "./ai/ai-assistant-dialog";
+import { useBuilderKeyboardShortcuts } from "./use-keyboard-shortcuts";
 
 interface Props {
   initialContent?: string | null;
   canvasWidth: number;
+  hideHeader?: boolean;
 }
 
 function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
@@ -82,11 +84,12 @@ function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
   );
 }
 
-export function Viewport({ initialContent, canvasWidth }: Props) {
+export function Viewport({ initialContent, canvasWidth, hideHeader }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [aiOpen, setAiOpen] = useState(false);
   const event = useEventData();
+  useBuilderKeyboardShortcuts();
 
   const updateScale = useCallback(() => {
     if (!wrapperRef.current) return;
@@ -114,8 +117,8 @@ export function Viewport({ initialContent, canvasWidth }: Props) {
             zoom: scale < 1 ? scale : undefined,
           }}
         >
-          {/* Persistent header — always visible across all pages */}
-          <PersistentHeader canvasWidth={canvasWidth} />
+          {/* Persistent header — always visible across all pages (event builder only) */}
+          {!hideHeader && <PersistentHeader canvasWidth={canvasWidth} />}
 
           <Frame json={initialContent ?? undefined}>
             <Element

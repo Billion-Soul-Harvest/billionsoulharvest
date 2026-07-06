@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useEditor } from "@craftjs/core";
 import { SettingsPopover } from "./settings-popover";
+import { getUndoStack } from "./use-keyboard-shortcuts";
 
 export function ElementToolbar() {
   const { selected, actions, query } = useEditor((state, query) => {
@@ -95,8 +96,16 @@ export function ElementToolbar() {
 
   const handleDelete = useCallback(() => {
     if (!selected) return;
+    try {
+      const snapshot = query.serialize();
+      const stack = getUndoStack();
+      stack.push(snapshot);
+      if (stack.length > 50) stack.shift();
+    } catch {
+      // ignore
+    }
     actions.delete(selected.id);
-  }, [selected, actions]);
+  }, [selected, actions, query]);
 
   if (!selected || !position) return null;
 
