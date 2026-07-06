@@ -147,6 +147,7 @@ export function useAIChat(eventData: EventData) {
 
         // Parse operation from the full response
         console.log("[AI] Full response length:", fullContent.length);
+        console.log("[AI] Response tail:", fullContent.slice(-200));
         const operation = parseOperation(fullContent);
         console.log("[AI] Parsed operation:", operation ? operation.type : "none");
         if (operation) {
@@ -155,6 +156,14 @@ export function useAIChat(eventData: EventData) {
               m.id === assistantMsg.id ? { ...m, operation } : m
             )
           );
+        } else if (fullContent.length > 0) {
+          // Check if response has an incomplete JSON block (truncated)
+          const hasOpenBlock = fullContent.includes("```") && fullContent.split("```").length % 2 === 0;
+          if (hasOpenBlock) {
+            setError("Response was truncated — the JSON block was cut off. Try a simpler request or edit fewer sections at once.");
+          } else {
+            setError("AI responded without actionable changes. Try being more specific, e.g. \"Update the heading text to: ...\"");
+          }
         }
       } catch (err) {
         if ((err as Error).name === "AbortError") return;

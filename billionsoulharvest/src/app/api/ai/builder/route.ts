@@ -35,21 +35,33 @@ export async function POST(request: NextRequest) {
       if (idx === messages.length - 1 && msg.role === "user") {
         let augmented = msg.content;
         if (context.currentCanvasJson) {
-          // Add a summary of node IDs for easy reference
           try {
             const canvasObj = JSON.parse(context.currentCanvasJson);
+            // Build a compact summary with node IDs, types, and key content props
             const nodeSummary = Object.entries(canvasObj)
               .map(([id, node]) => {
                 const n = node as Record<string, unknown>;
                 const type = (n.type as Record<string, string>)?.resolvedName || "unknown";
-                return `  "${id}" → ${type}`;
-              })
-              .join("\n");
-            augmented += `\n\n[Canvas node IDs — use these EXACT IDs for edit_node operations]:\n${nodeSummary}`;
+                const props = n.props as Record<string, unknown> | undefined;
+                const keyProps: Record<string, unknown> = {};
+                if (props) {
+                  // Include content-relevant props only
+                  for (const key of ["text", "src", "alt", "url", "address", "backgroundColor", "backgroundImage", "fontSize", "color", "textAlign", "width", "height", "padding", "minHeight", "alignItems", "gap"]) {
+                    if (props[key] !== undefined) keyProps[key] = props[key];
+                  }
+                }
+                const parent = (n.parent as string) || undefined;
+                const nodes = (n.nodes as string[]) || [];
+                return { id, type, props: keyProps, parent, children: nodes };
+              });
+            augmented += `\n\n[Canvas nodes — use these EXACT IDs for edit_node operations]:\n${JSON.stringify(nodeSummary, null, 1)}`;
+            // Only include full JSON when no attachments (to save context for PDFs/images)
+            if (!msg.attachments || msg.attachments.length === 0) {
+              augmented += `\n\n[Full canvas JSON for generate_full_page]:\n${context.currentCanvasJson}`;
+            }
           } catch {
-            // Fall through to raw JSON
+            augmented += `\n\n[Current canvas JSON]:\n${context.currentCanvasJson}`;
           }
-          augmented += `\n\n[Current canvas JSON]:\n${context.currentCanvasJson}`;
         }
         if (context.selectedNodeId && context.selectedNodeJson) {
           augmented += `\n\n[Selected node ID]: ${context.selectedNodeId}\n[Selected node JSON]: ${context.selectedNodeJson}`;
