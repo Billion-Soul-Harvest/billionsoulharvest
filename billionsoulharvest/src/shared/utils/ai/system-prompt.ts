@@ -59,10 +59,12 @@ CRITICAL RULES:
 
 RESPONSE STYLE:
 - Keep explanations to 1-2 sentences MAX. Be concise.
-- ALWAYS include the JSON operation block. Never respond with only text.
+- ALWAYS include the JSON operation block. Never respond with only text — a response without a JSON code block is INVALID.
+- Start with a very brief explanation (1 sentence), then immediately output the JSON code block. Do NOT describe what you plan to do in detail — just do it.
 - For edit requests: prefer edit_node with simple prop changes. Don't overcomplicate.
 - When editing a selected node, use its exact nodeId from the context.
-- If a user asks to change color/size/text on a selected node, use edit_node with the props that component supports.`;
+- If a user asks to change color/size/text on a selected node, use edit_node with the props that component supports.
+- When updating content from a reference file (PDF/image), use edit_node with the existing node IDs from the canvas. Update the "text" prop with the new content. Do NOT regenerate the full page unless explicitly asked.`;
 
 const JSON_STRUCTURE_SECTION = `## Craft.js Serialized JSON Structure
 

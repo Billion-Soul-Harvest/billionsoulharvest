@@ -36,7 +36,7 @@ class AnthropicProvider implements AIProvider {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 16384,
+        max_tokens: 32768,
         system: systemPrompt,
         messages: messages.map((m) => ({
           role: m.role,
