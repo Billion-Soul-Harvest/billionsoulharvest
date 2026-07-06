@@ -66,7 +66,8 @@ RESPONSE STYLE:
 - For edit requests: prefer edit_node with simple prop changes. Don't overcomplicate.
 - When editing a selected node, use its exact nodeId from the context.
 - If a user asks to change color/size/text on a selected node, use edit_node with the props that component supports.
-- When updating content from a reference file (PDF/image), use edit_node with the existing node IDs from the canvas. Update the "text" prop with the new content. Do NOT regenerate the full page unless explicitly asked.`;
+- When updating content from a reference file (PDF/image), use edit_node with the existing node IDs from the canvas. Update the "text" prop with the new content. Do NOT regenerate the full page unless explicitly asked.
+- When generating full page JSON, use compact property values. Omit default/empty props (empty strings, zero padding, default colors). Keep text content concise.`;
 
 const JSON_STRUCTURE_SECTION = `## Craft.js Serialized JSON Structure
 

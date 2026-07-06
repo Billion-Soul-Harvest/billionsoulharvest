@@ -89,6 +89,12 @@ export function useAIChat(eventData: EventData) {
       const payloadSize = JSON.stringify(requestBody).length;
       console.log("[AI] Sending request, selectedNodeId:", selectedNodeId, "history:", historyMessages.length, "payload:", Math.round(payloadSize / 1024) + "KB");
 
+      if (payloadSize > 3.5 * 1024 * 1024) {
+        setError("Canvas is too large to send with attachments. Try removing attachments or simplifying the page first.");
+        setIsStreaming(false);
+        return;
+      }
+
       const abortController = new AbortController();
       abortRef.current = abortController;
 
@@ -117,33 +123,60 @@ export function useAIChat(eventData: EventData) {
           throw new Error("No response body");
         }
 
-        // Stream the response
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullContent = "";
-
+        const assistantMsgId = crypto.randomUUID();
         const assistantMsg: ChatMessage = {
-          id: crypto.randomUUID(),
+          id: assistantMsgId,
           role: "assistant",
           content: "",
           timestamp: Date.now(),
         };
-
         setMessages((prev) => [...prev, assistantMsg]);
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        // Stream the response
+        let fullContent = await streamResponse(response, assistantMsgId, setMessages);
 
-          const chunk = decoder.decode(value, { stream: true });
-          fullContent += chunk;
+        // Auto-continuation: if response was truncated, request continuation (up to 2 retries)
+        const MAX_CONTINUATIONS = 2;
+        for (let i = 0; i < MAX_CONTINUATIONS; i++) {
+          if (!fullContent.endsWith("<!--STOP:max_tokens-->")) break;
 
+          console.log(`[AI] Response truncated, requesting continuation ${i + 1}/${MAX_CONTINUATIONS}`);
+          // Strip the sentinel marker
+          fullContent = fullContent.replace(/\n<!--STOP:max_tokens-->$/, "");
+
+          // Update display
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantMsg.id ? { ...m, content: fullContent } : m
+              m.id === assistantMsgId ? { ...m, content: fullContent + "\n\n[Continuing...]" } : m
             )
           );
+
+          const continuationBody: AIBuilderRequest = {
+            messages: [
+              ...requestBody.messages.slice(0, -1),
+              { role: "user" as const, content: userMessage },
+              { role: "assistant" as const, content: fullContent },
+              { role: "user" as const, content: "Continue generating from where you stopped. Output ONLY the remaining JSON, no explanation." },
+            ],
+            context: requestBody.context,
+          };
+
+          const contResponse = await fetch("/api/ai/builder", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(continuationBody),
+            signal: abortController.signal,
+            credentials: "same-origin",
+          });
+
+          if (!contResponse.ok || !contResponse.body) break;
+
+          const contContent = await streamResponse(contResponse, assistantMsgId, setMessages, fullContent);
+          fullContent = contContent;
         }
+
+        // Strip any remaining sentinel marker
+        fullContent = fullContent.replace(/\n<!--STOP:max_tokens-->$/, "");
 
         // Parse operation from the full response
         console.log("[AI] Full response length:", fullContent.length);
@@ -153,7 +186,7 @@ export function useAIChat(eventData: EventData) {
         if (operation) {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantMsg.id ? { ...m, operation } : m
+              m.id === assistantMsgId ? { ...m, content: fullContent, operation } : m
             )
           );
         } else if (fullContent.length > 0) {
@@ -242,6 +275,33 @@ export function useAIChat(eventData: EventData) {
     stopStreaming,
     clearChat,
   };
+}
+
+async function streamResponse(
+  response: Response,
+  msgId: string,
+  setMessages: (updater: (prev: ChatMessage[]) => ChatMessage[]) => void,
+  existingContent = ""
+): Promise<string> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let fullContent = existingContent;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    fullContent += chunk;
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId ? { ...m, content: fullContent } : m
+      )
+    );
+  }
+
+  return fullContent;
 }
 
 function parseOperation(content: string): AIOperation | undefined {

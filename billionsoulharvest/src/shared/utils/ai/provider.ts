@@ -32,11 +32,11 @@ class AnthropicProvider implements AIProvider {
         "Content-Type": "application/json",
         "x-api-key": this.apiKey,
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "pdfs-2024-09-25,output-128k-2025-02-19",
+        "anthropic-beta": "pdfs-2024-09-25,output-300k-2026-03-24",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 65536,
+        max_tokens: 128000,
         system: systemPrompt,
         messages: messages.map((m) => ({
           role: m.role,
@@ -106,6 +106,7 @@ function transformAnthropicStream(
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let buffer = "";
+  let stopReason: string | null = null;
 
   return new ReadableStream({
     async start(controller) {
@@ -114,6 +115,11 @@ function transformAnthropicStream(
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
+            if (stopReason && stopReason !== "end_turn") {
+              controller.enqueue(
+                encoder.encode(`\n<!--STOP:${stopReason}-->`)
+              );
+            }
             controller.close();
             break;
           }
@@ -134,6 +140,8 @@ function transformAnthropicStream(
                 event.delta?.type === "text_delta"
               ) {
                 controller.enqueue(encoder.encode(event.delta.text));
+              } else if (event.type === "message_delta" && event.delta?.stop_reason) {
+                stopReason = event.delta.stop_reason;
               }
             } catch {
               // Skip malformed JSON lines
