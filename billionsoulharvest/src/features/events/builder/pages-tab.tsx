@@ -60,7 +60,7 @@ export function PagesTab() {
   const handleRename = async (id: string) => {
     if (!editTitle.trim()) return;
     const supabase = createClient();
-    const slug = editTitle.trim().toLowerCase().replace(/\s+/g, "-");
+    const slug = editTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const table = isSiteBuilder ? "site_pages" : "event_pages";
     await supabase.from(table).update({ title: editTitle.trim(), slug }).eq("id", id);
 

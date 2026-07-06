@@ -31,10 +31,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CatchAllPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { preview } = await searchParams;
-  const isPreview = preview === "true";
   const pageSlug = slug.join("/");
 
   const supabase = await createClient();
+
+  // Only allow preview if the current user is an admin
+  let isPreview = false;
+  if (preview === "true") {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: admin } = await supabase
+        .from("admin_users")
+        .select("id")
+        .eq("id", user.id)
+        .single();
+      isPreview = !!admin;
+    }
+  }
 
   let query = supabase
     .from("site_pages")

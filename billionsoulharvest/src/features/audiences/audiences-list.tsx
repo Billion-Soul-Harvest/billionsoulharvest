@@ -172,7 +172,12 @@ export function AudiencesClient({
       setDialogOpen(false);
       router.refresh();
     } else {
-      await supabase.from("audiences").insert(payload);
+      const { error: insertError } = await supabase.from("audiences").insert(payload);
+      if (insertError) {
+        setSaving(false);
+        alert(insertError.message);
+        return;
+      }
       // Query back to get the ID (insert+select may not return due to RLS)
       const { data: created } = await supabase
         .from("audiences")

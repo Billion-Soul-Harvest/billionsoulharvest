@@ -265,8 +265,8 @@ async function main() {
       email_lists: getEmailLists(row),
       region_id: matchRegion(row, regionMap),
       notes: row["notes"] || null,
-      ...(parseTimestamp(row["created at"]) ? { created_at: parseTimestamp(row["created at"]) } : {}),
-      ...(parseTimestamp(row["updated at"]) ? { updated_at: parseTimestamp(row["updated at"]) } : {}),
+      ...(() => { const ts = parseTimestamp(row["created at"]); return ts ? { created_at: ts } : {}; })(),
+      ...(() => { const ts = parseTimestamp(row["updated at"]); return ts ? { updated_at: ts } : {}; })(),
     }));
 
   const skipped = rows.length - contacts.length;
