@@ -30,6 +30,11 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(context.eventData);
 
+    // Detect if this is a full-page generation request (needs full canvas JSON)
+    const lastUserMsg = messages.filter((m) => m.role === "user").pop();
+    const lastUserText = (lastUserMsg?.content || "").toLowerCase();
+    const isFullPageRequest = /\b(generate|redesign|create\s+page|build\s+page|new\s+page|full\s+page|start\s+over|from\s+scratch)\b/.test(lastUserText);
+
     // Build augmented messages with canvas context and attachments
     const augmentedMessages: AIMessage[] = messages.map((msg, idx) => {
       if (idx === messages.length - 1 && msg.role === "user") {
@@ -55,8 +60,8 @@ export async function POST(request: NextRequest) {
                 return { id, type, props: keyProps, parent, children: nodes };
               });
             augmented += `\n\n[Canvas nodes — use these EXACT IDs for edit_node operations]:\n${JSON.stringify(nodeSummary, null, 1)}`;
-            // Only include full JSON when no attachments (to save context for PDFs/images)
-            if (!msg.attachments || msg.attachments.length === 0) {
+            // Include full JSON only for full-page requests without attachments
+            if (isFullPageRequest && (!msg.attachments || msg.attachments.length === 0)) {
               augmented += `\n\n[Full canvas JSON for generate_full_page]:\n${context.currentCanvasJson}`;
             }
           } catch {
