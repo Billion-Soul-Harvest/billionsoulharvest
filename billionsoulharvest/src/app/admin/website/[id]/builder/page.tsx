@@ -1,7 +1,7 @@
 import { createClient } from "@/shared/utils/supabase/server";
 import { notFound } from "next/navigation";
 import { SitePageBuilder } from "@/features/website/builder/site-page-builder";
-import type { SitePage, FooterConfig } from "@/shared/types/database";
+import type { SitePage } from "@/shared/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export default async function SiteBuilderPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Load all site pages and footer config in parallel
+  // Load all site pages and footer content in parallel
   const [{ data: allPages, error }, { data: footerRow }] = await Promise.all([
     supabase
       .from("site_pages")
@@ -22,14 +22,14 @@ export default async function SiteBuilderPage({ params }: Props) {
     supabase
       .from("site_settings")
       .select("value")
-      .eq("key", "footer_config")
+      .eq("key", "footer_content")
       .single(),
   ]);
 
   if (error || !allPages?.length) notFound();
 
-  const footerConfig = footerRow
-    ? (footerRow.value as unknown as FooterConfig)
+  const footerJson = footerRow
+    ? (footerRow.value as unknown as Record<string, unknown>)
     : null;
 
   // Verify the requested page exists
@@ -40,7 +40,7 @@ export default async function SiteBuilderPage({ params }: Props) {
     <SitePageBuilder
       pages={allPages as unknown as SitePage[]}
       initialPageId={id}
-      footerConfig={footerConfig}
+      footerJson={footerJson}
     />
   );
 }

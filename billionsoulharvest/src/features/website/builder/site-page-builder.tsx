@@ -5,7 +5,8 @@ import { Editor, useEditor } from "@craftjs/core";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/shared/utils/supabase/client";
-import type { SitePage, FooterConfig } from "@/shared/types/database";
+import type { SitePage } from "@/shared/types/database";
+import { buildDefaultFooterJson } from "@/features/events/builder/default-footer";
 
 import { Viewport } from "@/features/events/builder/viewport";
 import { RightPanel } from "@/features/events/builder/right-panel";
@@ -61,7 +62,7 @@ const resolver = {
 interface Props {
   pages: SitePage[];
   initialPageId: string;
-  footerConfig?: FooterConfig | null;
+  footerJson?: Record<string, unknown> | null;
 }
 
 // Dummy event object so EventProvider/useEventData doesn't crash
@@ -88,11 +89,11 @@ const dummyEvent: Event = {
   updated_at: "",
 };
 
-export function SitePageBuilder({ pages: initialPages, initialPageId, footerConfig }: Props) {
+export function SitePageBuilder({ pages: initialPages, initialPageId, footerJson }: Props) {
   return (
     <EventProvider value={dummyEvent}>
       <Editor resolver={resolver}>
-        <SiteEditorLayout initialPages={initialPages} initialPageId={initialPageId} footerConfig={footerConfig} />
+        <SiteEditorLayout initialPages={initialPages} initialPageId={initialPageId} footerJson={footerJson} />
       </Editor>
     </EventProvider>
   );
@@ -137,7 +138,65 @@ const EMPTY_CANVAS = JSON.stringify({
   },
 });
 
-function SiteEditorLayout({ initialPages, initialPageId, footerConfig }: { initialPages: SitePage[]; initialPageId: string; footerConfig?: FooterConfig | null }) {
+// --- Footer injection/extraction helpers ---
+
+function findFooterNodeId(canvasObj: Record<string, unknown>): string | null {
+  for (const [id, node] of Object.entries(canvasObj)) {
+    const n = node as Record<string, unknown>;
+    const type = n.type as Record<string, string> | undefined;
+    if (type?.resolvedName === "CraftFooter") return id;
+  }
+  return null;
+}
+
+function collectSubtree(canvas: Record<string, unknown>, nodeId: string, result: Record<string, unknown>) {
+  const node = canvas[nodeId] as Record<string, unknown> | undefined;
+  if (!node) return;
+  result[nodeId] = node;
+  const children = (node.nodes as string[]) || [];
+  for (const childId of children) collectSubtree(canvas, childId, result);
+}
+
+function removeFooterSubtree(canvas: Record<string, unknown>, footerId: string) {
+  const root = canvas.ROOT as Record<string, unknown>;
+  const rootNodes = (root.nodes as string[]) || [];
+  root.nodes = rootNodes.filter((id) => id !== footerId);
+  const toDelete: string[] = [];
+  const collect = (id: string) => {
+    toDelete.push(id);
+    const node = canvas[id] as Record<string, unknown> | undefined;
+    if (!node) return;
+    for (const childId of (node.nodes as string[]) || []) collect(childId);
+  };
+  collect(footerId);
+  for (const id of toDelete) delete canvas[id];
+}
+
+function injectFooter(canvasJson: string, footerNodes: Record<string, unknown>): string {
+  const canvas = JSON.parse(canvasJson);
+  const existingFooterId = findFooterNodeId(canvas);
+  if (existingFooterId) removeFooterSubtree(canvas, existingFooterId);
+  for (const [id, node] of Object.entries(footerNodes)) canvas[id] = node;
+  const root = canvas.ROOT as Record<string, unknown>;
+  const rootNodes = (root.nodes as string[]) || [];
+  rootNodes.push("footer-root");
+  root.nodes = rootNodes;
+  return JSON.stringify(canvas);
+}
+
+function extractFooter(canvasJson: string): { pageJson: string; footerJson: Record<string, unknown> | null } {
+  const canvas = JSON.parse(canvasJson);
+  const footerId = findFooterNodeId(canvas);
+  if (!footerId) return { pageJson: canvasJson, footerJson: null };
+  const footerNodes: Record<string, unknown> = {};
+  collectSubtree(canvas, footerId, footerNodes);
+  removeFooterSubtree(canvas, footerId);
+  return { pageJson: JSON.stringify(canvas), footerJson: footerNodes };
+}
+
+// --- Editor Layout ---
+
+function SiteEditorLayout({ initialPages, initialPageId, footerJson }: { initialPages: SitePage[]; initialPageId: string; footerJson?: Record<string, unknown> | null }) {
   const { query, actions } = useEditor();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -154,35 +213,40 @@ function SiteEditorLayout({ initialPages, initialPageId, footerConfig }: { initi
     activePageIdRef.current = activePageId;
   }, [activePageId]);
 
+  const footerJsonRef = useRef(footerJson ?? buildDefaultFooterJson());
+
   const activePage = pages.find((p) => p.id === activePageId) ?? pages[0];
 
-  // Get initial content for the first page (use empty canvas if no saved content,
-  // to avoid falling back to the event-specific default template)
-  const initialContent = activePage?.page_content
+  // Get initial content for the first page, with footer injected
+  const rawContent = activePage?.page_content
     ? JSON.stringify(activePage.page_content)
     : EMPTY_CANVAS;
+  const initialContent = injectFooter(rawContent, footerJsonRef.current as Record<string, unknown>);
 
   const switchPage = useCallback((newPageId: string | null) => {
-    // For site pages, we always use page IDs (never null)
     if (!newPageId || newPageId === activePageIdRef.current) return;
 
-    // Serialize current canvas and store it
+    // Extract footer from current canvas before storing page content
     const currentJson = query.serialize();
-    pageContentsRef.current[activePageIdRef.current] = currentJson;
+    const { pageJson, footerJson: currentFooter } = extractFooter(currentJson);
+    pageContentsRef.current[activePageIdRef.current] = pageJson;
+
+    // Update footer ref with latest footer state
+    if (currentFooter) footerJsonRef.current = currentFooter;
 
     // Load new page content
     const stored = pageContentsRef.current[newPageId];
+    let newPageJson: string;
     if (stored) {
-      actions.deserialize(stored);
+      newPageJson = stored;
     } else {
-      // First time visiting this page — load from DB data
       const page = pages.find((p) => p.id === newPageId);
-      if (page?.page_content) {
-        actions.deserialize(JSON.stringify(page.page_content));
-      } else {
-        actions.deserialize(EMPTY_CANVAS);
-      }
+      newPageJson = page?.page_content ? JSON.stringify(page.page_content) : EMPTY_CANVAS;
     }
+
+    // Inject footer and deserialize
+    const withFooter = injectFooter(newPageJson, footerJsonRef.current as Record<string, unknown>);
+    actions.deserialize(withFooter);
 
     setActivePageId(newPageId);
   }, [query, actions, pages]);
@@ -191,14 +255,16 @@ function SiteEditorLayout({ initialPages, initialPageId, footerConfig }: { initi
     setSaving(true);
     setSaved(false);
 
-    // Serialize current canvas
+    // Serialize current canvas and extract footer
     const currentJson = query.serialize();
-    pageContentsRef.current[activePageId] = currentJson;
+    const { pageJson, footerJson: extractedFooter } = extractFooter(currentJson);
+    pageContentsRef.current[activePageId] = pageJson;
+    if (extractedFooter) footerJsonRef.current = extractedFooter;
 
     const supabase = createClient();
     const promises: PromiseLike<unknown>[] = [];
 
-    // Save all pages that have been edited (stored in ref)
+    // Save all pages that have been edited — WITHOUT footer
     for (const page of pages) {
       const content = pageContentsRef.current[page.id];
       if (content) {
@@ -210,6 +276,19 @@ function SiteEditorLayout({ initialPages, initialPageId, footerConfig }: { initi
             .then()
         );
       }
+    }
+
+    // Save footer to site_settings
+    if (extractedFooter) {
+      promises.push(
+        supabase
+          .from("site_settings")
+          .upsert(
+            { key: "footer_content", value: extractedFooter },
+            { onConflict: "key" }
+          )
+          .then()
+      );
     }
 
     await Promise.all(promises);
@@ -332,7 +411,6 @@ function SiteEditorLayout({ initialPages, initialPageId, footerConfig }: { initi
             initialContent={initialContent}
             canvasWidth={viewports[activeViewport].width}
             hideHeader
-            footerConfig={footerConfig}
           />
           <RightPanel />
         </div>
