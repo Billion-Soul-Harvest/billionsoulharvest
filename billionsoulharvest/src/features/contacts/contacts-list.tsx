@@ -454,6 +454,79 @@ function SearchableFilterDropdown({
   );
 }
 
+function SearchableMultiSelect({
+  options,
+  selected,
+  onToggle,
+  placeholder = "Search...",
+}: {
+  options: string[];
+  selected: Set<string>;
+  onToggle: (item: string) => void;
+  placeholder?: string;
+}) {
+  const [search, setSearch] = useState("");
+  const filtered = search
+    ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  return (
+    <div>
+      {/* Selected badges */}
+      {selected.size > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {[...selected].map((item) => (
+            <span
+              key={item}
+              className="inline-flex items-center gap-1 bg-cyan-50 text-cyan-800 border border-cyan-200 rounded-full px-2.5 py-0.5 text-xs font-medium"
+            >
+              {item}
+              <button
+                type="button"
+                onClick={() => onToggle(item)}
+                className="text-cyan-500 hover:text-cyan-700"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {/* Search input */}
+      <div className="relative mb-2">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Input
+          placeholder={placeholder}
+          value={search}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+          className="pl-8 h-9 text-sm"
+        />
+      </div>
+      {/* Options list */}
+      <div className="max-h-48 overflow-y-auto border rounded-lg">
+        {filtered.length === 0 ? (
+          <p className="text-sm text-gray-400 px-3 py-4 text-center">No matches found</p>
+        ) : (
+          filtered.map((item) => (
+            <label
+              key={item}
+              className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(item)}
+                onChange={() => onToggle(item)}
+                className="rounded"
+              />
+              <span className={selected.has(item) ? "font-medium text-gray-900" : "text-gray-700"}>{item}</span>
+            </label>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ContactsListClient({
   contacts,
   regions,
@@ -494,12 +567,16 @@ export function ContactsListClient({
   const visibleCount = visibleColumns.size + 2; // +2 for checkbox and actions columns
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectAllMode, setSelectAllMode] = useState(false);
-  const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | null>(null);
+  const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | "add_to_list" | "remove_from_list" | "remove_tags" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkTagInput, setBulkTagInput] = useState("");
   const [bulkTagMode, setBulkTagMode] = useState<"add" | "replace">("add");
   const [bulkRegion, setBulkRegion] = useState("");
   const [bulkType, setBulkType] = useState<ContactType | "">("");
+  const [bulkSelectedLists, setBulkSelectedLists] = useState<Set<string>>(new Set());
+  const [bulkSelectedTags, setBulkSelectedTags] = useState<Set<string>>(new Set());
+  const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
+  const actionsDropdownRef = useRef<HTMLDivElement>(null);
 
   const [actionMenu, setActionMenu] = useState<string | null>(null);
   const actionMenuRef = useRef<HTMLDivElement>(null);
@@ -514,6 +591,17 @@ export function ContactsListClient({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [actionMenu]);
+
+  useEffect(() => {
+    if (!actionsDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (actionsDropdownRef.current && !actionsDropdownRef.current.contains(e.target as Node)) {
+        setActionsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [actionsDropdownOpen]);
 
   const allOnPageSelected = contacts.length > 0 && contacts.every((c) => selected.has(c.id));
   const someSelected = selected.size > 0 || selectAllMode;
@@ -622,6 +710,75 @@ export function ContactsListClient({
       await supabase.from("contacts").delete().gte("created_at", "1970-01-01");
     } else {
       await supabase.from("contacts").delete().in("id", [...selected]);
+    }
+  }
+
+  async function bulkAddToList() {
+    const supabase = createClient();
+    const listsToAdd = [...bulkSelectedLists];
+    if (listsToAdd.length === 0) return;
+
+    let allIds: string[];
+    if (selectAllMode) {
+      const { data } = await supabase.from("contacts").select("id");
+      allIds = (data ?? []).map((r) => r.id);
+    } else {
+      allIds = [...selected];
+    }
+
+    for (let i = 0; i < allIds.length; i += 100) {
+      const batch = allIds.slice(i, i + 100);
+      const { data } = await supabase.from("contacts").select("id, email_lists").in("id", batch);
+      for (const contact of data ?? []) {
+        const merged = [...new Set([...(contact.email_lists ?? []), ...listsToAdd])];
+        await supabase.from("contacts").update({ email_lists: merged }).eq("id", contact.id);
+      }
+    }
+  }
+
+  async function bulkRemoveFromList() {
+    const supabase = createClient();
+    const listsToRemove = [...bulkSelectedLists];
+    if (listsToRemove.length === 0) return;
+
+    let allIds: string[];
+    if (selectAllMode) {
+      const { data } = await supabase.from("contacts").select("id");
+      allIds = (data ?? []).map((r) => r.id);
+    } else {
+      allIds = [...selected];
+    }
+
+    for (let i = 0; i < allIds.length; i += 100) {
+      const batch = allIds.slice(i, i + 100);
+      const { data } = await supabase.from("contacts").select("id, email_lists").in("id", batch);
+      for (const contact of data ?? []) {
+        const filtered = (contact.email_lists ?? []).filter((l: string) => !listsToRemove.includes(l));
+        await supabase.from("contacts").update({ email_lists: filtered }).eq("id", contact.id);
+      }
+    }
+  }
+
+  async function bulkRemoveTags() {
+    const supabase = createClient();
+    const tagsToRemove = [...bulkSelectedTags];
+    if (tagsToRemove.length === 0) return;
+
+    let allIds: string[];
+    if (selectAllMode) {
+      const { data } = await supabase.from("contacts").select("id");
+      allIds = (data ?? []).map((r) => r.id);
+    } else {
+      allIds = [...selected];
+    }
+
+    for (let i = 0; i < allIds.length; i += 100) {
+      const batch = allIds.slice(i, i + 100);
+      const { data } = await supabase.from("contacts").select("id, tags").in("id", batch);
+      for (const contact of data ?? []) {
+        const filtered = (contact.tags ?? []).filter((t: string) => !tagsToRemove.includes(t));
+        await supabase.from("contacts").update({ tags: filtered }).eq("id", contact.id);
+      }
     }
   }
 
@@ -766,14 +923,100 @@ export function ContactsListClient({
         />
       </div>
 
-      {/* All contacts header + gear icon */}
+      {/* All contacts header + gear icon / Selected contacts + Actions */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <p className="text-base font-semibold text-gray-900">All contacts</p>
-          <span className="text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2.5 py-0.5">
-            {totalCount.toLocaleString()}
-          </span>
-        </div>
+        {someSelected ? (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <p className="text-base font-semibold text-gray-900">Selected contacts</p>
+              <span className="text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2.5 py-0.5">
+                {effectiveCount.toLocaleString()}
+              </span>
+            </div>
+            <div className="relative" ref={actionsDropdownRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActionsDropdownOpen((prev) => !prev)}
+                className="gap-1"
+              >
+                Actions
+                <ChevronDown className="w-3.5 h-3.5" />
+              </Button>
+              {actionsDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed"
+                    disabled
+                  >
+                    Send email
+                  </button>
+                  <div className="h-px bg-gray-100 mx-2" />
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => { setBulkSelectedLists(new Set()); setBulkDialog("add_to_list"); setActionsDropdownOpen(false); }}
+                  >
+                    Add to list
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => { setBulkSelectedLists(new Set()); setBulkDialog("remove_from_list"); setActionsDropdownOpen(false); }}
+                  >
+                    Remove from list
+                  </button>
+                  <div className="h-px bg-gray-100 mx-2" />
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => { setBulkTagInput(""); setBulkTagMode("add"); setBulkDialog("tags"); setActionsDropdownOpen(false); }}
+                  >
+                    Add tags
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => { setBulkSelectedTags(new Set()); setBulkDialog("remove_tags"); setActionsDropdownOpen(false); }}
+                  >
+                    Remove tags
+                  </button>
+                  <div className="h-px bg-gray-100 mx-2" />
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => { exportSelectedCSV(); setActionsDropdownOpen(false); }}
+                  >
+                    Export selection
+                  </button>
+                  <div className="h-px bg-gray-100 mx-2" />
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    onClick={() => { setBulkDialog("delete"); setActionsDropdownOpen(false); }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Clear selection
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <p className="text-base font-semibold text-gray-900">All contacts</p>
+            <span className="text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2.5 py-0.5">
+              {totalCount.toLocaleString()}
+            </span>
+          </div>
+        )}
         <button
           onClick={() => setSettingsOpen(true)}
           className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
@@ -1129,49 +1372,6 @@ export function ContactsListClient({
         )}
       </div>
 
-      {/* Bulk Action Bar */}
-      {someSelected && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white rounded-xl shadow-2xl px-6 py-3 flex items-center gap-3">
-          <span className="text-sm font-medium">{effectiveCount.toLocaleString()} selected</span>
-          <div className="w-px h-5 bg-gray-600" />
-          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={exportSelectedCSV}>
-            Export
-          </Button>
-          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={() => { setBulkTagInput(""); setBulkTagMode("add"); setBulkDialog("tags"); }}>
-            Tags
-          </Button>
-          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={() => { setBulkRegion(""); setBulkDialog("region"); }}>
-            Region
-          </Button>
-          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={() => { setBulkType(""); setBulkDialog("type"); }}>
-            Type
-          </Button>
-          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-700" onClick={async () => {
-            const res = await fetch("/api/campaigns", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: `Email to ${effectiveCount.toLocaleString()} contacts`,
-                segment_filter: selectAllMode ? { all: true } : { contact_ids: [...selected] },
-              }),
-            });
-            if (res.ok) {
-              const campaign = await res.json();
-              router.push(`/admin/campaigns/${campaign.id}`);
-            }
-          }}>
-            Send Email
-          </Button>
-          <Button variant="ghost" size="sm" className="text-red-400 hover:bg-gray-700 hover:text-red-300" onClick={() => setBulkDialog("delete")}>
-            Delete
-          </Button>
-          <div className="w-px h-5 bg-gray-600" />
-          <Button variant="ghost" size="sm" className="text-gray-400 hover:bg-gray-700 hover:text-white" onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}>
-            Clear
-          </Button>
-        </div>
-      )}
-
       {/* Assign Tags Dialog */}
       <Dialog open={bulkDialog === "tags"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
         <DialogContent className="sm:max-w-md">
@@ -1266,6 +1466,93 @@ export function ContactsListClient({
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
             <Button variant="destructive" onClick={() => executeBulk(bulkDelete)} disabled={bulkLoading}>
               {bulkLoading ? "Deleting..." : `Delete ${selected.size} contacts`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to List Dialog */}
+      <Dialog open={bulkDialog === "add_to_list"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add {effectiveCount.toLocaleString()} contacts to list</DialogTitle>
+            <DialogDescription>Search and select lists to add contacts to.</DialogDescription>
+          </DialogHeader>
+          <SearchableMultiSelect
+            options={listNames}
+            selected={bulkSelectedLists}
+            onToggle={(name) => {
+              setBulkSelectedLists((prev) => {
+                const next = new Set(prev);
+                if (next.has(name)) next.delete(name);
+                else next.add(name);
+                return next;
+              });
+            }}
+            placeholder="Search lists..."
+          />
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={() => executeBulk(bulkAddToList)} disabled={bulkLoading || bulkSelectedLists.size === 0}>
+              {bulkLoading ? "Adding..." : `Add to ${bulkSelectedLists.size || ""} list${bulkSelectedLists.size !== 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove from List Dialog */}
+      <Dialog open={bulkDialog === "remove_from_list"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove {effectiveCount.toLocaleString()} contacts from list</DialogTitle>
+            <DialogDescription>Search and select lists to remove contacts from.</DialogDescription>
+          </DialogHeader>
+          <SearchableMultiSelect
+            options={listNames}
+            selected={bulkSelectedLists}
+            onToggle={(name) => {
+              setBulkSelectedLists((prev) => {
+                const next = new Set(prev);
+                if (next.has(name)) next.delete(name);
+                else next.add(name);
+                return next;
+              });
+            }}
+            placeholder="Search lists..."
+          />
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={() => executeBulk(bulkRemoveFromList)} disabled={bulkLoading || bulkSelectedLists.size === 0}>
+              {bulkLoading ? "Removing..." : `Remove from ${bulkSelectedLists.size || ""} list${bulkSelectedLists.size !== 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Tags Dialog */}
+      <Dialog open={bulkDialog === "remove_tags"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove tags from {effectiveCount.toLocaleString()} contacts</DialogTitle>
+            <DialogDescription>Search and select tags to remove.</DialogDescription>
+          </DialogHeader>
+          <SearchableMultiSelect
+            options={allTags}
+            selected={bulkSelectedTags}
+            onToggle={(tag) => {
+              setBulkSelectedTags((prev) => {
+                const next = new Set(prev);
+                if (next.has(tag)) next.delete(tag);
+                else next.add(tag);
+                return next;
+              });
+            }}
+            placeholder="Search tags..."
+          />
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={() => executeBulk(bulkRemoveTags)} disabled={bulkLoading || bulkSelectedTags.size === 0}>
+              {bulkLoading ? "Removing..." : `Remove ${bulkSelectedTags.size || ""} tag${bulkSelectedTags.size !== 1 ? "s" : ""}`}
             </Button>
           </DialogFooter>
         </DialogContent>
