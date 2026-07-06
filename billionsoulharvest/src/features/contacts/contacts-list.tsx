@@ -88,6 +88,8 @@ interface Props {
   positionFilter: string;
   languageFilter: string;
   listFilter: string;
+  tagFilter: string;
+  tagMode: string;
   languages: string[];
   listNames: string[];
   allTags: string[];
@@ -454,6 +456,154 @@ function SearchableFilterDropdown({
   );
 }
 
+function TagFilterDropdown({
+  allTags,
+  selectedTags,
+  mode,
+  onChangeSelection,
+  onChangeMode,
+}: {
+  allTags: string[];
+  selectedTags: string[];
+  mode: "and" | "or";
+  onChangeSelection: (tags: string[]) => void;
+  onChangeMode: (mode: "and" | "or") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const filtered = query
+    ? allTags.filter((t) => t.toLowerCase().includes(query.toLowerCase()))
+    : allTags;
+
+  const hasSelection = selectedTags.length > 0;
+  const label = hasSelection
+    ? selectedTags.length === 1
+      ? selectedTags[0]
+      : `${selectedTags.length} tags`
+    : "Tags";
+
+  function toggle(tag: string) {
+    if (selectedTags.includes(tag)) {
+      onChangeSelection(selectedTags.filter((t) => t !== tag));
+    } else {
+      onChangeSelection([...selectedTags, tag]);
+    }
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[120px] ${
+          open
+            ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
+            : hasSelection
+              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+              : "border-gray-200 text-gray-600 hover:border-gray-300"
+        }`}
+      >
+        {label}
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-50 min-w-[280px] w-max">
+          {/* AND/OR toggle */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b">
+            <span className="text-xs text-gray-500">Match:</span>
+            <button
+              type="button"
+              onClick={() => onChangeMode("and")}
+              className={`px-2 py-0.5 text-xs rounded-full font-medium transition-colors ${
+                mode === "and" ? "bg-cyan-100 text-cyan-700" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              All tags
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeMode("or")}
+              className={`px-2 py-0.5 text-xs rounded-full font-medium transition-colors ${
+                mode === "or" ? "bg-cyan-100 text-cyan-700" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              Any tag
+            </button>
+            {hasSelection && (
+              <button
+                type="button"
+                onClick={() => onChangeSelection([])}
+                className="ml-auto text-xs text-gray-400 hover:text-gray-600"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {/* Search */}
+          <div className="p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search tags..."
+                className="w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                autoFocus
+              />
+            </div>
+          </div>
+          {/* Tag list */}
+          <div className="max-h-64 overflow-y-auto py-1">
+            {filtered.map((tag) => {
+              const isSelected = selectedTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggle(tag)}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
+                    isSelected
+                      ? "bg-cyan-50 text-cyan-700 font-medium"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                    isSelected ? "bg-cyan-600 border-cyan-600" : "border-gray-300"
+                  }`}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="truncate">{tag}</span>
+                </button>
+              );
+            })}
+            {filtered.length === 0 && (
+              <p className="px-4 py-3 text-sm text-gray-400">No tags found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SearchableMultiSelect({
   options,
   selected,
@@ -541,6 +691,8 @@ export function ContactsListClient({
   positionFilter,
   languageFilter,
   listFilter,
+  tagFilter,
+  tagMode,
   languages,
   listNames,
   allTags,
@@ -806,9 +958,9 @@ export function ContactsListClient({
   const navigate = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams();
-      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, list: listFilter, sort, dir, ...updates };
+      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, list: listFilter, tag: tagFilter, tagMode, sort, dir, ...updates };
       for (const [k, v] of Object.entries(merged)) {
-        if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc") && !(k === "searchField" && v === "name_email")) {
+        if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc") && !(k === "searchField" && v === "name_email") && !(k === "tagMode" && v === "and")) {
           params.set(k, v);
         }
       }
@@ -817,7 +969,7 @@ export function ContactsListClient({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, sort, dir, startTransition]
+    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, tagFilter, tagMode, sort, dir, startTransition]
   );
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -920,6 +1072,14 @@ export function ContactsListClient({
             ...listNames.map((name) => ({ value: name, label: name })),
           ]}
           onChange={(v) => navigate({ list: v, page: "1" })}
+        />
+
+        <TagFilterDropdown
+          allTags={allTags}
+          selectedTags={tagFilter ? tagFilter.split(",").filter(Boolean) : []}
+          mode={tagMode as "and" | "or"}
+          onChangeSelection={(tags) => navigate({ tag: tags.join(","), page: "1" })}
+          onChangeMode={(mode) => navigate({ tagMode: mode, page: "1" })}
         />
       </div>
 

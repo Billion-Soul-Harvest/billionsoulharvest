@@ -18,6 +18,8 @@ interface Props {
     position?: string;
     language?: string;
     list?: string;
+    tag?: string;
+    tagMode?: string;
     sort?: string;
     dir?: string;
   }>;
@@ -38,6 +40,8 @@ export default async function ContactsPage({ searchParams }: Props) {
   const positionFilter = params.position ?? "all";
   const languageFilter = params.language ?? "all";
   const listFilter = params.list ?? "all";
+  const tagFilter = params.tag ?? "";
+  const tagMode = params.tagMode === "or" ? "or" : "and";
 
   const SORTABLE_COLUMNS = ["first_name", "email", "contact_type", "church_name", "created_at", "updated_at"] as const;
   type SortColumn = (typeof SORTABLE_COLUMNS)[number];
@@ -104,6 +108,17 @@ export default async function ContactsPage({ searchParams }: Props) {
     query = query.contains("email_lists", [listFilter]);
   }
 
+  if (tagFilter) {
+    const selectedTags = tagFilter.split(",").map((t) => t.trim()).filter(Boolean);
+    if (selectedTags.length > 0) {
+      if (tagMode === "or") {
+        query = query.overlaps("tags", selectedTags);
+      } else {
+        query = query.contains("tags", selectedTags);
+      }
+    }
+  }
+
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -159,6 +174,8 @@ export default async function ContactsPage({ searchParams }: Props) {
         positionFilter={positionFilter}
         languageFilter={languageFilter}
         listFilter={listFilter}
+        tagFilter={tagFilter}
+        tagMode={tagMode}
         languages={languages}
         listNames={listNames}
         allTags={allTags}
