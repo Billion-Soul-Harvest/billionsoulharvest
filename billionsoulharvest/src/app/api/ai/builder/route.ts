@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Detect if this is a full-page generation request (needs full canvas JSON)
     const lastUserMsg = messages.filter((m) => m.role === "user").pop();
     const lastUserText = (lastUserMsg?.content || "").toLowerCase();
-    const isFullPageRequest = /\b(generate|redesign|create\s+page|build\s+page|new\s+page|full\s+page|start\s+over|from\s+scratch)\b/.test(lastUserText);
+    const isFullPageRequest = /\b(generate\s+(a\s+)?(full|new|landing|entire|whole)?\s*page|redesign|create\s+page|build\s+page|new\s+page|full\s+page|start\s+over|from\s+scratch)\b/.test(lastUserText);
 
     // Build augmented messages with canvas context and attachments
     const augmentedMessages: AIMessage[] = messages.map((msg, idx) => {

@@ -171,6 +171,9 @@ export function useAIChat(eventData: EventData) {
 
           if (!contResponse.ok || !contResponse.body) break;
 
+          const contPayloadSize = JSON.stringify(continuationBody).length;
+          console.log(`[AI] Continuation ${i + 1} payload: ${Math.round(contPayloadSize / 1024)}KB`);
+
           const contContent = await streamResponse(contResponse, assistantMsgId, setMessages, fullContent);
           fullContent = contContent;
         }
