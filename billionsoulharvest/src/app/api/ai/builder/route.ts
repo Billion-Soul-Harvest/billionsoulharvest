@@ -4,6 +4,9 @@ import { getProvider, type AIMessage, type ContentBlock } from "@/shared/utils/a
 import { buildSystemPrompt } from "@/shared/utils/ai/system-prompt";
 import type { AIBuilderRequest } from "@/shared/utils/ai/types";
 
+// Allow larger payloads for file attachments and longer execution for AI streaming
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -88,6 +91,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
+    console.error("[AI Builder] Error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

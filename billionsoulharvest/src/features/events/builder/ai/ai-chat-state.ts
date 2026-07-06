@@ -86,7 +86,8 @@ export function useAIChat(eventData: EventData) {
         },
       };
 
-      console.log("[AI] Sending request, selectedNodeId:", selectedNodeId, "history:", historyMessages.length);
+      const payloadSize = JSON.stringify(requestBody).length;
+      console.log("[AI] Sending request, selectedNodeId:", selectedNodeId, "history:", historyMessages.length, "payload:", Math.round(payloadSize / 1024) + "KB");
 
       const abortController = new AbortController();
       abortRef.current = abortController;
