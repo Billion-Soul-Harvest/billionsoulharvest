@@ -77,6 +77,19 @@ export interface Contact {
   source: string | null;
   cc_region: string | null;
   email_lists: string[] | null;
+  anniversary: string | null;
+  zip_code: string | null;
+  address_line_2: string | null;
+  phone_other: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactNote {
+  id: string;
+  contact_id: string;
+  content: string;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -25,35 +25,45 @@ export default async function ContactDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: contact, error } = await supabase
-    .from("contacts")
-    .select("*, region:ministry_regions(id, name, color), position:positions(id, name)")
-    .eq("id", id)
-    .single();
+  const [
+    { data: contact, error },
+    { data: regions },
+    { data: positions },
+    { data: registrations },
+    { data: followUps },
+    { data: notes },
+    { data: audiences },
+  ] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select("*, region:ministry_regions(id, name, color), position:positions(id, name)")
+      .eq("id", id)
+      .single(),
+    supabase.from("ministry_regions").select("id, name, color").order("name"),
+    supabase.from("positions").select("id, name").order("name"),
+    supabase
+      .from("registrations")
+      .select("*, event:events(title, slug, start_date)")
+      .eq("contact_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("follow_ups")
+      .select("*")
+      .eq("contact_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("contact_notes")
+      .select("*")
+      .eq("contact_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("audiences")
+      .select("id, name")
+      .eq("type", "list")
+      .order("name"),
+  ]);
 
   if (error || !contact) notFound();
-
-  const { data: regions } = await supabase
-    .from("ministry_regions")
-    .select("id, name, color")
-    .order("name");
-
-  const { data: positions } = await supabase
-    .from("positions")
-    .select("id, name")
-    .order("name");
-
-  const { data: registrations } = await supabase
-    .from("registrations")
-    .select("*, event:events(title, slug, start_date)")
-    .eq("contact_id", id)
-    .order("created_at", { ascending: false });
-
-  const { data: followUps } = await supabase
-    .from("follow_ups")
-    .select("*")
-    .eq("contact_id", id)
-    .order("created_at", { ascending: false });
 
   return (
     <ContactDetail
@@ -62,6 +72,8 @@ export default async function ContactDetailPage({ params }: Props) {
       positions={positions ?? []}
       registrations={registrations ?? []}
       followUps={followUps ?? []}
+      notes={notes ?? []}
+      audiences={audiences ?? []}
     />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { ContactType } from "@/shared/types/database";
+import { toast } from "sonner";
+import {
+  ChevronDown,
+  ChevronUp,
+  ArrowLeft,
+  X,
+  Plus,
+  Trash2,
+} from "lucide-react";
+
+// --- Types ---
 
 interface ContactData {
   id: string;
@@ -27,6 +39,7 @@ interface ContactData {
   phone_home: string | null;
   phone_mobile: string | null;
   phone_work: string | null;
+  phone_other: string | null;
   contact_type: ContactType;
   tags: string[];
   church_name: string | null;
@@ -35,6 +48,8 @@ interface ContactData {
   state: string | null;
   country: string | null;
   street_address: string | null;
+  address_line_2: string | null;
+  zip_code: string | null;
   region_id: string | null;
   position_id: string | null;
   notes: string | null;
@@ -42,6 +57,7 @@ interface ContactData {
   email_permission: string | null;
   alternative_email: string | null;
   birthday: string | null;
+  anniversary: string | null;
   gender: string | null;
   age_group: string | null;
   language: string | null;
@@ -55,6 +71,7 @@ interface ContactData {
   region: { id: string; name: string; color: string } | null;
   position: { id: string; name: string } | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface Region {
@@ -81,6 +98,19 @@ interface FollowUp {
   priority: string;
   status: string;
   due_date: string | null;
+  created_at: string;
+}
+
+interface Note {
+  id: string;
+  content: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+interface AudienceList {
+  id: string;
+  name: string;
 }
 
 interface Props {
@@ -89,32 +119,217 @@ interface Props {
   positions: PositionOption[];
   registrations: Registration[];
   followUps: FollowUp[];
+  notes: Note[];
+  audiences: AudienceList[];
 }
 
-export function ContactDetail({ contact, regions, positions, registrations, followUps }: Props) {
+// --- Helpers ---
+
+function getInitials(first: string, last: string) {
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+}
+
+function getAvatarColor(name: string) {
+  const colors = [
+    "bg-blue-600", "bg-emerald-600", "bg-purple-600", "bg-amber-600",
+    "bg-rose-600", "bg-cyan-600", "bg-indigo-600", "bg-teal-600",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+// --- Collapsible Section ---
+
+function CollapsibleSection({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full px-6 py-3.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors"
+      >
+        {title}
+        {open ? <ChevronUp className="size-4 text-gray-400" /> : <ChevronDown className="size-4 text-gray-400" />}
+      </button>
+      {open && <div className="px-6 pb-5">{children}</div>}
+    </div>
+  );
+}
+
+// --- Form field helpers ---
+
+function FormField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-gray-500">{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-8 text-sm"
+      />
+    </div>
+  );
+}
+
+function FormSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Select...",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-gray-500">{label}</Label>
+      <Select
+        value={value || undefined}
+        onValueChange={(v: string | null) => onChange(v === "__none__" ? "" : (v ?? ""))}
+      >
+        <SelectTrigger className="h-8 text-sm">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">—</SelectItem>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+// --- Main Component ---
+
+export function ContactDetail({
+  contact,
+  regions,
+  positions,
+  registrations,
+  followUps,
+  notes: initialNotes,
+  audiences,
+}: Props) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
+  const supabase = createClient();
+
+  // --- Form state (all editable fields) ---
+  const buildFormState = useCallback(() => ({
     first_name: contact.first_name,
     last_name: contact.last_name,
     email: contact.email ?? "",
     phone: contact.phone ?? "",
-    contact_type: contact.contact_type,
+    contact_type: contact.contact_type as string,
     church_name: contact.church_name ?? "",
     church_role: contact.church_role ?? "",
     city: contact.city ?? "",
     state: contact.state ?? "",
     country: contact.country ?? "",
+    street_address: contact.street_address ?? "",
+    address_line_2: contact.address_line_2 ?? "",
+    zip_code: contact.zip_code ?? "",
     region_id: contact.region_id ?? "",
     position_id: contact.position_id ?? "",
-    notes: contact.notes ?? "",
-    tags: contact.tags.join(", "),
-  });
+    email_status: contact.email_status ?? "",
+    email_permission: contact.email_permission ?? "",
+    alternative_email: contact.alternative_email ?? "",
+    birthday: contact.birthday ?? "",
+    anniversary: contact.anniversary ?? "",
+    gender: contact.gender ?? "",
+    age_group: contact.age_group ?? "",
+    language: contact.language ?? "",
+    job_title: contact.job_title ?? "",
+    referred_by: contact.referred_by ?? "",
+    interests: contact.interests ?? "",
+    expectations: contact.expectations ?? "",
+    cc_region: contact.cc_region ?? "",
+    phone_home: contact.phone_home ?? "",
+    phone_mobile: contact.phone_mobile ?? "",
+    phone_work: contact.phone_work ?? "",
+    phone_other: contact.phone_other ?? "",
+  }), [contact]);
 
+  const [form, setForm] = useState(buildFormState);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Dirty detection
+  const initialForm = useMemo(buildFormState, [buildFormState]);
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(initialForm),
+    [form, initialForm]
+  );
+
+  const updateField = (field: string, value: string) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  // --- Tags state (saves immediately) ---
+  const [tags, setTags] = useState<string[]>(contact.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
+
+  // --- Lists state (saves immediately) ---
+  const [lists, setLists] = useState<string[]>(contact.email_lists ?? []);
+  const [showListDropdown, setShowListDropdown] = useState(false);
+
+  // --- Notes state ---
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [newNote, setNewNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+
+  // --- Save contact fields ---
   async function handleSave() {
     setSaving(true);
-    const supabase = createClient();
+    setSaveError(null);
     const { error } = await supabase
       .from("contacts")
       .update({
@@ -122,329 +337,514 @@ export function ContactDetail({ contact, regions, positions, registrations, foll
         last_name: form.last_name,
         email: form.email || null,
         phone: form.phone || null,
-        contact_type: form.contact_type,
+        contact_type: form.contact_type as ContactType,
         church_name: form.church_name || null,
         church_role: form.church_role || null,
         city: form.city || null,
         state: form.state || null,
         country: form.country || null,
+        street_address: form.street_address || null,
+        address_line_2: form.address_line_2 || null,
+        zip_code: form.zip_code || null,
         region_id: form.region_id || null,
         position_id: form.position_id || null,
-        notes: form.notes || null,
-        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        email_status: form.email_status || null,
+        email_permission: form.email_permission || null,
+        alternative_email: form.alternative_email || null,
+        birthday: form.birthday || null,
+        anniversary: form.anniversary || null,
+        gender: form.gender || null,
+        age_group: form.age_group || null,
+        language: form.language || null,
+        job_title: form.job_title || null,
+        referred_by: form.referred_by || null,
+        interests: form.interests || null,
+        expectations: form.expectations || null,
+        cc_region: form.cc_region || null,
+        phone_home: form.phone_home || null,
+        phone_mobile: form.phone_mobile || null,
+        phone_work: form.phone_work || null,
+        phone_other: form.phone_other || null,
       })
       .eq("id", contact.id);
 
     setSaving(false);
-    if (!error) {
-      setEditing(false);
+    if (error) {
+      setSaveError(error.message);
+      toast.error("Failed to save changes");
+    } else {
+      setSaveError(null);
+      toast.success("Changes saved");
       router.refresh();
     }
   }
 
-  const priorityColors: Record<string, string> = {
-    urgent: "bg-red-100 text-red-700",
-    high: "bg-orange-100 text-orange-700",
-    medium: "bg-yellow-100 text-yellow-700",
-    low: "bg-gray-100 text-gray-600",
-  };
+  // --- Tag operations (immediate save) ---
+  async function addTag(tag: string) {
+    const trimmed = tag.trim();
+    if (!trimmed || tags.includes(trimmed)) return;
+    const newTags = [...tags, trimmed];
+    setTags(newTags);
+    setTagInput("");
+    await supabase.from("contacts").update({ tags: newTags }).eq("id", contact.id);
+  }
+
+  async function removeTag(tag: string) {
+    const newTags = tags.filter((t) => t !== tag);
+    setTags(newTags);
+    await supabase.from("contacts").update({ tags: newTags }).eq("id", contact.id);
+  }
+
+  // --- List operations (immediate save) ---
+  async function addList(name: string) {
+    if (lists.includes(name)) return;
+    const newLists = [...lists, name];
+    setLists(newLists);
+    setShowListDropdown(false);
+    await supabase.from("contacts").update({ email_lists: newLists }).eq("id", contact.id);
+  }
+
+  async function removeList(name: string) {
+    const newLists = lists.filter((l) => l !== name);
+    setLists(newLists);
+    await supabase.from("contacts").update({ email_lists: newLists }).eq("id", contact.id);
+  }
+
+  // --- Note operations ---
+  async function createNote() {
+    if (!newNote.trim()) return;
+    setSavingNote(true);
+    const { data, error } = await supabase
+      .from("contact_notes")
+      .insert({ contact_id: contact.id, content: newNote.trim() })
+      .select()
+      .single();
+
+    setSavingNote(false);
+    if (!error && data) {
+      setNotes([data, ...notes]);
+      setNewNote("");
+    }
+  }
+
+  async function deleteNote(noteId: string) {
+    setNotes(notes.filter((n) => n.id !== noteId));
+    await supabase.from("contact_notes").delete().eq("id", noteId);
+  }
+
+  // --- Activity timeline ---
+  const activityItems = useMemo(() => {
+    const items: { id: string; type: "registration" | "followup"; date: string; title: string; subtitle: string; status: string }[] = [];
+    registrations.forEach((r) => {
+      items.push({
+        id: r.id,
+        type: "registration",
+        date: r.created_at,
+        title: r.event?.title ?? "Unknown event",
+        subtitle: r.event?.start_date ? formatDate(r.event.start_date + "T00:00:00") : "",
+        status: r.status,
+      });
+    });
+    followUps.forEach((fu) => {
+      items.push({
+        id: fu.id,
+        type: "followup",
+        date: fu.created_at,
+        title: fu.title,
+        subtitle: fu.due_date ? `Due ${formatDate(fu.due_date + "T00:00:00")}` : "",
+        status: fu.status,
+      });
+    });
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return items;
+  }, [registrations, followUps]);
+
+  const emailStatusLabel = form.email_status === "subscribed" || form.email_permission === "explicit"
+    ? "Email subscribed"
+    : form.email_status || "No status";
+
+  const emailStatusColor = form.email_status === "subscribed" || form.email_permission === "explicit"
+    ? "bg-green-100 text-green-700"
+    : "bg-gray-100 text-gray-600";
+
+  const availableLists = audiences.filter((a) => !lists.includes(a.name));
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/admin/contacts" className="text-gray-400 hover:text-gray-600">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {contact.first_name} {contact.last_name}
-          </h1>
-          <p className="text-sm text-gray-500">{contact.email}</p>
-        </div>
-        <Button
-          variant={editing ? "default" : "outline"}
-          onClick={() => editing ? handleSave() : setEditing(true)}
-          disabled={saving}
+      {/* --- Header --- */}
+      <div className="flex items-center gap-4 mb-6">
+        <Link
+          href="/admin/contacts"
+          className="text-gray-400 hover:text-gray-600 transition-colors"
         >
-          {saving ? "Saving..." : editing ? "Save Changes" : "Edit"}
-        </Button>
-        {editing && (
-          <Button variant="ghost" onClick={() => setEditing(false)}>
-            Cancel
+          <ArrowLeft className="size-5" />
+        </Link>
+
+        <div
+          className={`size-12 rounded-full flex items-center justify-center text-white font-semibold text-lg shrink-0 ${getAvatarColor(contact.first_name + contact.last_name)}`}
+        >
+          {getInitials(contact.first_name, contact.last_name)}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-gray-900 truncate">
+              {contact.first_name} {contact.last_name}
+            </h1>
+            <Badge variant="secondary" className={emailStatusColor}>
+              {emailStatusLabel}
+            </Badge>
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Added on {formatDate(contact.created_at)}
+            {contact.updated_at !== contact.created_at && (
+              <> &middot; Last edit {formatDate(contact.updated_at)}</>
+            )}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {saveError && <span className="text-xs text-red-600">{saveError}</span>}
+          <Button
+            onClick={handleSave}
+            disabled={!isDirty || saving}
+            size="sm"
+          >
+            {saving ? "Saving..." : "Save changes"}
           </Button>
-        )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Contact Info */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Contact Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="First Name" value={form.first_name} editing={editing}
-                onChange={(v) => setForm({ ...form, first_name: v })} />
-              <Field label="Last Name" value={form.last_name} editing={editing}
-                onChange={(v) => setForm({ ...form, last_name: v })} />
-              <Field label="Email" value={form.email} editing={editing}
-                onChange={(v) => setForm({ ...form, email: v })} />
-              <Field label="Phone" value={form.phone} editing={editing}
-                onChange={(v) => setForm({ ...form, phone: v })} />
-              <div className="space-y-1.5">
-                <Label className="text-xs text-gray-500">Type</Label>
-                {editing ? (
-                  <Select value={form.contact_type} onValueChange={(v: string | null) => {
-                    if (v) setForm({ ...form, contact_type: v as ContactType });
-                  }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["pastor", "leader", "donor", "attendee", "subscriber", "other"].map((t) => (
-                        <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="text-sm text-gray-900 capitalize">{contact.contact_type}</p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-gray-500">Region</Label>
-                {editing ? (
-                  <Select value={form.region_id} onValueChange={(v: string | null) => {
-                    if (v) setForm({ ...form, region_id: v === "none" ? "" : v });
-                  }}>
-                    <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No region</SelectItem>
-                      {regions.map((r) => (
-                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="text-sm text-gray-900">{contact.region?.name ?? "—"}</p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-gray-500">Position</Label>
-                {editing ? (
-                  <Select value={form.position_id} onValueChange={(v: string | null) => {
-                    if (v) setForm({ ...form, position_id: v === "none" ? "" : v });
-                  }}>
-                    <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No position</SelectItem>
-                      {positions.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="text-sm text-gray-900">{contact.position?.name ?? "—"}</p>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* --- Tabs --- */}
+      <Tabs defaultValue={0}>
+        <TabsList variant="line" className="mb-5 border-b pb-0">
+          <TabsTrigger value={0}>Details</TabsTrigger>
+          <TabsTrigger value={1}>Activity</TabsTrigger>
+          <TabsTrigger value={2}>Notes</TabsTrigger>
+        </TabsList>
 
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Personal</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ReadOnlyField label="Gender" value={contact.gender} />
-              <ReadOnlyField label="Age Group" value={contact.age_group} />
-              <ReadOnlyField label="Birthday" value={contact.birthday ? new Date(contact.birthday + "T00:00:00").toLocaleDateString() : null} />
-              <ReadOnlyField label="Language" value={contact.language} />
-              <ReadOnlyField label="Job Title" value={contact.job_title} />
-              <ReadOnlyField label="Referred By" value={contact.referred_by} />
-              <ReadOnlyField label="Source" value={contact.source} />
-            </div>
-          </div>
+        {/* ====== DETAILS TAB ====== */}
+        <TabsContent value={0}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+            {/* --- Left Column: Collapsible Sections --- */}
+            <div className="bg-white rounded-xl border divide-y">
+              {/* Basic details */}
+              <CollapsibleSection title="Basic details">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                  <FormField label="First name" value={form.first_name} onChange={(v) => updateField("first_name", v)} />
+                  <FormField label="Last name" value={form.last_name} onChange={(v) => updateField("last_name", v)} />
+                  <FormField label="Job title" value={form.job_title} onChange={(v) => updateField("job_title", v)} />
+                  <FormField label="Company" value={form.church_name} onChange={(v) => updateField("church_name", v)} />
+                  <FormField label="Birthday" value={form.birthday} onChange={(v) => updateField("birthday", v)} type="date" />
+                  <FormField label="Anniversary" value={form.anniversary} onChange={(v) => updateField("anniversary", v)} type="date" />
+                </div>
+              </CollapsibleSection>
 
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Church & Location</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Church" value={form.church_name} editing={editing}
-                onChange={(v) => setForm({ ...form, church_name: v })} />
-              <Field label="Role" value={form.church_role} editing={editing}
-                onChange={(v) => setForm({ ...form, church_role: v })} />
-              <Field label="City" value={form.city} editing={editing}
-                onChange={(v) => setForm({ ...form, city: v })} />
-              <Field label="State" value={form.state} editing={editing}
-                onChange={(v) => setForm({ ...form, state: v })} />
-              <Field label="Country" value={form.country} editing={editing}
-                onChange={(v) => setForm({ ...form, country: v })} />
-              <ReadOnlyField label="Street Address" value={contact.street_address} />
-              <ReadOnlyField label="CC Region" value={contact.cc_region} />
-            </div>
-          </div>
+              {/* Campaign channels */}
+              <CollapsibleSection title="Campaign channels">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                  <FormField label="Email" value={form.email} onChange={(v) => updateField("email", v)} type="email" />
+                  <FormSelect
+                    label="Email status"
+                    value={form.email_status}
+                    onChange={(v) => updateField("email_status", v)}
+                    options={[
+                      { value: "subscribed", label: "Subscribed" },
+                      { value: "unsubscribed", label: "Unsubscribed" },
+                      { value: "bounced", label: "Bounced" },
+                      { value: "pending", label: "Pending" },
+                    ]}
+                    placeholder="Select status"
+                  />
+                </div>
+              </CollapsibleSection>
 
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Contact Preferences</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ReadOnlyField label="Phone (Home)" value={contact.phone_home} />
-              <ReadOnlyField label="Phone (Mobile)" value={contact.phone_mobile} />
-              <ReadOnlyField label="Phone (Work)" value={contact.phone_work} />
-              <ReadOnlyField label="Alternative Email" value={contact.alternative_email} />
-              <ReadOnlyField label="Email Status" value={contact.email_status} />
-              <ReadOnlyField label="Email Permission" value={contact.email_permission} />
+              {/* Custom fields */}
+              <CollapsibleSection title="Custom fields">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                  <FormField label="Age group" value={form.age_group} onChange={(v) => updateField("age_group", v)} />
+                  <FormField label="Alternative email" value={form.alternative_email} onChange={(v) => updateField("alternative_email", v)} type="email" />
+                  <FormField label="Country" value={form.country} onChange={(v) => updateField("country", v)} />
+                  <FormSelect
+                    label="Gender"
+                    value={form.gender}
+                    onChange={(v) => updateField("gender", v)}
+                    options={[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                      { value: "other", label: "Other" },
+                    ]}
+                    placeholder="Select gender"
+                  />
+                  <FormField label="Language" value={form.language} onChange={(v) => updateField("language", v)} />
+                  <FormField label="Ministry / Organization" value={form.church_name} onChange={(v) => updateField("church_name", v)} />
+                  <FormField label="Referred by" value={form.referred_by} onChange={(v) => updateField("referred_by", v)} />
+                  <FormSelect
+                    label="Region"
+                    value={form.region_id}
+                    onChange={(v) => updateField("region_id", v)}
+                    options={regions.map((r) => ({ value: r.id, label: r.name }))}
+                    placeholder="Select region"
+                  />
+                  <FormField label="Role" value={form.church_role} onChange={(v) => updateField("church_role", v)} />
+                  <FormField label="Expectations" value={form.expectations} onChange={(v) => updateField("expectations", v)} />
+                  <FormField label="Interests" value={form.interests} onChange={(v) => updateField("interests", v)} />
+                  <FormSelect
+                    label="Contact type"
+                    value={form.contact_type}
+                    onChange={(v) => updateField("contact_type", v)}
+                    options={[
+                      { value: "pastor", label: "Pastor" },
+                      { value: "leader", label: "Leader" },
+                      { value: "donor", label: "Donor" },
+                      { value: "attendee", label: "Attendee" },
+                      { value: "subscriber", label: "Subscriber" },
+                      { value: "other", label: "Other" },
+                    ]}
+                    placeholder="Select type"
+                  />
+                </div>
+              </CollapsibleSection>
+
+              {/* Street addresses */}
+              <CollapsibleSection title="Street addresses">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                  <div className="sm:col-span-2">
+                    <FormField label="Street address" value={form.street_address} onChange={(v) => updateField("street_address", v)} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <FormField label="Address line 2" value={form.address_line_2} onChange={(v) => updateField("address_line_2", v)} />
+                  </div>
+                  <FormField label="State / Province" value={form.state} onChange={(v) => updateField("state", v)} />
+                  <FormField label="City / Town" value={form.city} onChange={(v) => updateField("city", v)} />
+                  <FormField label="ZIP / Postal code" value={form.zip_code} onChange={(v) => updateField("zip_code", v)} />
+                  <FormField label="Country" value={form.country} onChange={(v) => updateField("country", v)} />
+                </div>
+              </CollapsibleSection>
+
+              {/* Phone numbers */}
+              <CollapsibleSection title="Phone numbers">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                  <FormField label="Home" value={form.phone_home} onChange={(v) => updateField("phone_home", v)} type="tel" />
+                  <FormField label="Work" value={form.phone_work} onChange={(v) => updateField("phone_work", v)} type="tel" />
+                  <FormField label="Mobile" value={form.phone_mobile} onChange={(v) => updateField("phone_mobile", v)} type="tel" />
+                  <FormField label="Other" value={form.phone_other} onChange={(v) => updateField("phone_other", v)} type="tel" />
+                </div>
+              </CollapsibleSection>
             </div>
-            {contact.email_lists && contact.email_lists.length > 0 && (
-              <div className="mt-4 space-y-1.5">
-                <Label className="text-xs text-gray-500">Email Lists</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {contact.email_lists.map((list) => (
-                    <Badge key={list} variant="secondary" className="bg-gray-100">{list}</Badge>
+
+            {/* --- Right Sidebar --- */}
+            <div className="space-y-5 min-w-0">
+              {/* Insights (30 days) */}
+              <div className="bg-white rounded-xl border p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Insights (30 days)</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Emails sent", value: "—" },
+                    { label: "Open rate", value: "—" },
+                    { label: "Click rate", value: "—" },
+                    { label: "Bounced", value: "—" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="bg-gray-50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold text-gray-900">{stat.value}</p>
+                      <p className="text-xs text-gray-500">{stat.label}</p>
+                    </div>
                   ))}
                 </div>
               </div>
+
+              {/* List membership */}
+              <div className="bg-white rounded-xl border p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">List membership</h3>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {lists.length > 0 ? lists.map((list) => (
+                    <Badge key={list} variant="secondary" className="bg-blue-50 text-blue-700 gap-1 pr-1 max-w-full">
+                      <span className="truncate">{list}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeList(list)}
+                        className="hover:bg-blue-200 rounded p-0.5 transition-colors"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  )) : (
+                    <span className="text-sm text-gray-400">No lists</span>
+                  )}
+                </div>
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs gap-1"
+                    onClick={() => setShowListDropdown(!showListDropdown)}
+                  >
+                    <Plus className="size-3" /> Add to list
+                  </Button>
+                  {showListDropdown && availableLists.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-56 bg-white border rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
+                      {availableLists.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => addList(a.name)}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors"
+                        >
+                          {a.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div className="bg-white rounded-xl border p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Tags</h3>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {tags.length > 0 ? tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="bg-gray-100 gap-1 pr-1 max-w-full">
+                      <span className="truncate">{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:bg-gray-300 rounded p-0.5 transition-colors"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  )) : (
+                    <span className="text-sm text-gray-400">No tags</span>
+                  )}
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    addTag(tagInput);
+                  }}
+                  className="flex gap-1.5"
+                >
+                  <Input
+                    value={tagInput}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                    placeholder="Add tag..."
+                    className="h-8 text-sm flex-1"
+                  />
+                  <Button type="submit" variant="outline" size="sm" disabled={!tagInput.trim()}>
+                    <Plus className="size-3" />
+                  </Button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ====== ACTIVITY TAB ====== */}
+        <TabsContent value={1}>
+          <div className="bg-white rounded-xl border">
+            {activityItems.length > 0 ? (
+              <div className="divide-y">
+                {activityItems.map((item) => (
+                  <div key={item.id} className="px-6 py-4 flex items-start gap-4">
+                    <div
+                      className={`mt-0.5 size-2 rounded-full shrink-0 ${
+                        item.type === "registration" ? "bg-blue-500" : "bg-amber-500"
+                      }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge
+                          variant="secondary"
+                          className={
+                            item.status === "confirmed" || item.status === "completed"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-600"
+                          }
+                        >
+                          {item.status}
+                        </Badge>
+                        <span className="text-xs text-gray-400 capitalize">{item.type === "registration" ? "Registration" : "Follow-up"}</span>
+                        {item.subtitle && (
+                          <span className="text-xs text-gray-400">&middot; {item.subtitle}</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">
+                      {formatDate(item.date)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-6 py-12 text-center text-sm text-gray-400">
+                No recent activity
+              </div>
             )}
           </div>
+        </TabsContent>
 
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Interests & Expectations</h3>
-            <div className="space-y-4">
-              <ReadOnlyField label="Passionate About" value={contact.interests} />
-              <ReadOnlyField label="Primary Expectation" value={contact.expectations} />
+        {/* ====== NOTES TAB ====== */}
+        <TabsContent value={2}>
+          <div className="space-y-5">
+            {/* Create note */}
+            <div className="bg-white rounded-xl border p-5">
+              <Textarea
+                value={newNote}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewNote(e.target.value)}
+                placeholder="Add a note..."
+                className="min-h-[100px] mb-3"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setNewNote("")}
+                  disabled={!newNote.trim()}
+                >
+                  Discard
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={createNote}
+                  disabled={!newNote.trim() || savingNote}
+                >
+                  {savingNote ? "Saving..." : "Save note"}
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Notes & Tags</h3>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-gray-500">Tags (comma separated)</Label>
-                {editing ? (
-                  <Input value={form.tags} onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setForm({ ...form, tags: e.target.value })} />
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {contact.tags.length > 0 ? contact.tags.map((t) => (
-                      <Badge key={t} variant="secondary" className="bg-gray-100">{t}</Badge>
-                    )) : <span className="text-sm text-gray-400">No tags</span>}
+            {/* Past notes */}
+            {notes.length > 0 ? (
+              <div className="bg-white rounded-xl border divide-y">
+                {notes.map((note) => (
+                  <div key={note.id} className="px-6 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap flex-1">
+                        {note.content}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => deleteNote(note.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors shrink-0 mt-0.5"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {formatDateTime(note.created_at)}
+                    </p>
                   </div>
-                )}
+                ))}
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-gray-500">Notes</Label>
-                {editing ? (
-                  <Textarea value={form.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setForm({ ...form, notes: e.target.value })} className="min-h-[80px]" />
-                ) : (
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {contact.notes || "No notes"}
-                  </p>
-                )}
+            ) : (
+              <div className="bg-white rounded-xl border px-6 py-12 text-center text-sm text-gray-400">
+                No notes yet
               </div>
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Registrations */}
-          <div className="bg-white rounded-xl border">
-            <div className="px-5 py-4 border-b">
-              <h3 className="font-semibold text-gray-900 text-sm">Event Registrations</h3>
-            </div>
-            <div className="divide-y">
-              {registrations.length > 0 ? registrations.map((r) => (
-                <div key={r.id} className="px-5 py-3">
-                  <p className="text-sm font-medium text-gray-900">{r.event?.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className={
-                      r.status === "confirmed" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                    }>{r.status}</Badge>
-                    {r.event?.start_date && (
-                      <span className="text-xs text-gray-400">
-                        {new Date(r.event.start_date + "T00:00:00").toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )) : (
-                <div className="px-5 py-6 text-center text-sm text-gray-400">
-                  No registrations
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Follow-ups */}
-          <div className="bg-white rounded-xl border">
-            <div className="px-5 py-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-sm">Follow-ups</h3>
-              <Link href={`/follow-ups?contact=${contact.id}`} className="text-xs text-cyan-600 hover:text-cyan-700">
-                Add
-              </Link>
-            </div>
-            <div className="divide-y">
-              {followUps.length > 0 ? followUps.map((fu) => (
-                <div key={fu.id} className="px-5 py-3">
-                  <p className="text-sm font-medium text-gray-900">{fu.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className={priorityColors[fu.priority] ?? ""}>
-                      {fu.priority}
-                    </Badge>
-                    <span className="text-xs text-gray-400 capitalize">{fu.status}</span>
-                  </div>
-                </div>
-              )) : (
-                <div className="px-5 py-6 text-center text-sm text-gray-400">
-                  No follow-ups
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Meta */}
-          <div className="bg-white rounded-xl border p-5">
-            <h3 className="font-semibold text-gray-900 text-sm mb-3">Details</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Created</span>
-                <span className="text-gray-700">{new Date(contact.created_at).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">ID</span>
-                <span className="text-gray-400 text-xs font-mono">{contact.id.slice(0, 8)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  editing,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  editing: boolean;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-gray-500">{label}</Label>
-      {editing ? (
-        <Input value={value} onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)} />
-      ) : (
-        <p className="text-sm text-gray-900">{value || "—"}</p>
-      )}
-    </div>
-  );
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-gray-500">{label}</Label>
-      <p className="text-sm text-gray-900">{value || "—"}</p>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
