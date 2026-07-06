@@ -36,6 +36,7 @@ interface ContactData {
   country: string | null;
   street_address: string | null;
   region_id: string | null;
+  position_id: string | null;
   notes: string | null;
   email_status: string | null;
   email_permission: string | null;
@@ -52,6 +53,7 @@ interface ContactData {
   cc_region: string | null;
   email_lists: string[] | null;
   region: { id: string; name: string; color: string } | null;
+  position: { id: string; name: string } | null;
   created_at: string;
 }
 
@@ -59,6 +61,11 @@ interface Region {
   id: string;
   name: string;
   color: string;
+}
+
+interface PositionOption {
+  id: string;
+  name: string;
 }
 
 interface Registration {
@@ -79,11 +86,12 @@ interface FollowUp {
 interface Props {
   contact: ContactData;
   regions: Region[];
+  positions: PositionOption[];
   registrations: Registration[];
   followUps: FollowUp[];
 }
 
-export function ContactDetail({ contact, regions, registrations, followUps }: Props) {
+export function ContactDetail({ contact, regions, positions, registrations, followUps }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -99,6 +107,7 @@ export function ContactDetail({ contact, regions, registrations, followUps }: Pr
     state: contact.state ?? "",
     country: contact.country ?? "",
     region_id: contact.region_id ?? "",
+    position_id: contact.position_id ?? "",
     notes: contact.notes ?? "",
     tags: contact.tags.join(", "),
   });
@@ -120,6 +129,7 @@ export function ContactDetail({ contact, regions, registrations, followUps }: Pr
         state: form.state || null,
         country: form.country || null,
         region_id: form.region_id || null,
+        position_id: form.position_id || null,
         notes: form.notes || null,
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       })
@@ -215,6 +225,24 @@ export function ContactDetail({ contact, regions, registrations, followUps }: Pr
                   </Select>
                 ) : (
                   <p className="text-sm text-gray-900">{contact.region?.name ?? "—"}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-gray-500">Position</Label>
+                {editing ? (
+                  <Select value={form.position_id} onValueChange={(v: string | null) => {
+                    if (v) setForm({ ...form, position_id: v === "none" ? "" : v });
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No position</SelectItem>
+                      {positions.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-gray-900">{contact.position?.name ?? "—"}</p>
                 )}
               </div>
             </div>

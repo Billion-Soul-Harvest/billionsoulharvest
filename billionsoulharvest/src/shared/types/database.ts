@@ -25,6 +25,14 @@ export type FollowUpPriority = "low" | "medium" | "high" | "urgent";
 export type FollowUpStatus = "pending" | "in_progress" | "completed" | "cancelled";
 export type AdminRole = "super_admin" | "admin" | "editor";
 
+export interface Position {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MinistryRegion {
   id: string;
   name: string;
@@ -48,6 +56,7 @@ export interface Contact {
   state: string | null;
   country: string | null;
   region_id: string | null;
+  position_id: string | null;
   notes: string | null;
   constant_contact_id: string | null;
   phone_home: string | null;

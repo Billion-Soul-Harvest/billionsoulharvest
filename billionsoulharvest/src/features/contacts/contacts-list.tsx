@@ -40,6 +40,7 @@ interface ContactRow {
   language: string | null;
   gender: string | null;
   region: { id: string; name: string; color: string } | null;
+  position: { id: string; name: string } | null;
   created_at: string;
 }
 
@@ -49,15 +50,22 @@ interface Region {
   color: string;
 }
 
+interface PositionOption {
+  id: string;
+  name: string;
+}
+
 interface Props {
   contacts: ContactRow[];
   regions: Region[];
+  positions: PositionOption[];
   totalCount: number;
   page: number;
   pageSize: number;
   search: string;
   typeFilter: string;
   regionFilter: string;
+  positionFilter: string;
   languageFilter: string;
   languages: string[];
   sort: string;
@@ -87,12 +95,14 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100];
 export function ContactsListClient({
   contacts,
   regions,
+  positions,
   totalCount,
   page,
   pageSize,
   search,
   typeFilter,
   regionFilter,
+  positionFilter,
   languageFilter,
   languages,
   sort,
@@ -206,7 +216,7 @@ export function ContactsListClient({
   const navigate = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams();
-      const merged = { page: String(page), pageSize: String(pageSize), search, type: typeFilter, region: regionFilter, language: languageFilter, sort, dir, ...updates };
+      const merged = { page: String(page), pageSize: String(pageSize), search, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, sort, dir, ...updates };
       for (const [k, v] of Object.entries(merged)) {
         if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc")) {
           params.set(k, v);
@@ -217,7 +227,7 @@ export function ContactsListClient({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, page, pageSize, search, typeFilter, regionFilter, sort, dir, startTransition]
+    [router, pathname, page, pageSize, search, typeFilter, regionFilter, positionFilter, sort, dir, startTransition]
   );
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -316,6 +326,17 @@ export function ContactsListClient({
             ))}
           </SelectContent>
         </Select>
+        <Select value={positionFilter} onValueChange={(v: string | null) => { if (v) navigate({ position: v, page: "1" }); }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Positions" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Positions</SelectItem>
+            {positions.map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={languageFilter} onValueChange={(v: string | null) => { if (v) navigate({ language: v, page: "1" }); }}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Languages" />
@@ -359,6 +380,7 @@ export function ContactsListClient({
                 <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Church", "church_name")}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Language</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Region</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Position</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Tags</th>
                 <th className="px-4 py-3 w-24"><span className="sr-only">Actions</span></th>
               </tr>
@@ -404,6 +426,9 @@ export function ContactsListClient({
                       ) : (
                         null
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {c.position?.name}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -461,7 +486,7 @@ export function ContactsListClient({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={11} className="px-4 py-12 text-center text-gray-400">
                     No contacts found
                   </td>
                 </tr>

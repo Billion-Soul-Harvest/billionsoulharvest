@@ -27,7 +27,7 @@ export default async function ContactDetailPage({ params }: Props) {
 
   const { data: contact, error } = await supabase
     .from("contacts")
-    .select("*, region:ministry_regions(id, name, color)")
+    .select("*, region:ministry_regions(id, name, color), position:positions(id, name)")
     .eq("id", id)
     .single();
 
@@ -36,6 +36,11 @@ export default async function ContactDetailPage({ params }: Props) {
   const { data: regions } = await supabase
     .from("ministry_regions")
     .select("id, name, color")
+    .order("name");
+
+  const { data: positions } = await supabase
+    .from("positions")
+    .select("id, name")
     .order("name");
 
   const { data: registrations } = await supabase
@@ -54,6 +59,7 @@ export default async function ContactDetailPage({ params }: Props) {
     <ContactDetail
       contact={contact}
       regions={regions ?? []}
+      positions={positions ?? []}
       registrations={registrations ?? []}
       followUps={followUps ?? []}
     />

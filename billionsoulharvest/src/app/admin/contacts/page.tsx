@@ -13,6 +13,7 @@ interface Props {
     search?: string;
     type?: string;
     region?: string;
+    position?: string;
     language?: string;
     sort?: string;
     dir?: string;
@@ -28,6 +29,7 @@ export default async function ContactsPage({ searchParams }: Props) {
   const search = params.search ?? "";
   const typeFilter = params.type ?? "all";
   const regionFilter = params.region ?? "all";
+  const positionFilter = params.position ?? "all";
   const languageFilter = params.language ?? "all";
 
   const SORTABLE_COLUMNS = ["first_name", "email", "contact_type", "church_name", "created_at"] as const;
@@ -40,7 +42,7 @@ export default async function ContactsPage({ searchParams }: Props) {
 
   let query = supabase
     .from("contacts")
-    .select("*, region:ministry_regions(id, name, color)", { count: "exact" });
+    .select("*, region:ministry_regions(id, name, color), position:positions(id, name)", { count: "exact" });
 
   if (search) {
     query = query.or(
@@ -54,6 +56,10 @@ export default async function ContactsPage({ searchParams }: Props) {
 
   if (regionFilter !== "all") {
     query = query.eq("region_id", regionFilter);
+  }
+
+  if (positionFilter !== "all") {
+    query = query.eq("position_id", positionFilter);
   }
 
   if (languageFilter !== "all") {
@@ -72,6 +78,11 @@ export default async function ContactsPage({ searchParams }: Props) {
     .select("id, name, color")
     .order("name");
 
+  const { data: positions } = await supabase
+    .from("positions")
+    .select("id, name")
+    .order("name");
+
   const { data: languageRows } = await supabase
     .from("contacts")
     .select("language")
@@ -86,12 +97,14 @@ export default async function ContactsPage({ searchParams }: Props) {
       <ContactsListClient
         contacts={contacts ?? []}
         regions={regions ?? []}
+        positions={positions ?? []}
         totalCount={count ?? 0}
         page={page}
         pageSize={pageSize}
         search={search}
         typeFilter={typeFilter}
         regionFilter={regionFilter}
+        positionFilter={positionFilter}
         languageFilter={languageFilter}
         languages={languages}
         sort={sort}
