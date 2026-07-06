@@ -1,4 +1,5 @@
 import { createClient } from "@/shared/utils/supabase/server";
+import { sanitizeSearch } from "@/shared/utils/sanitize-search";
 import { ContactsListClient } from "@/features/contacts/contacts-list";
 import type { Metadata } from "next";
 
@@ -16,6 +17,7 @@ interface Props {
     region?: string;
     position?: string;
     language?: string;
+    list?: string;
     sort?: string;
     dir?: string;
   }>;
@@ -35,8 +37,9 @@ export default async function ContactsPage({ searchParams }: Props) {
   const regionFilter = params.region ?? "all";
   const positionFilter = params.position ?? "all";
   const languageFilter = params.language ?? "all";
+  const listFilter = params.list ?? "all";
 
-  const SORTABLE_COLUMNS = ["first_name", "email", "contact_type", "church_name", "created_at"] as const;
+  const SORTABLE_COLUMNS = ["first_name", "email", "contact_type", "church_name", "created_at", "updated_at"] as const;
   type SortColumn = (typeof SORTABLE_COLUMNS)[number];
   const sortParam = params.sort as string | undefined;
   const sort: SortColumn = SORTABLE_COLUMNS.includes(sortParam as SortColumn) ? (sortParam as SortColumn) : "created_at";
@@ -49,7 +52,7 @@ export default async function ContactsPage({ searchParams }: Props) {
     .select("*, region:ministry_regions(id, name, color), position:positions(id, name)", { count: "exact" });
 
   if (search) {
-    const s = search;
+    const s = sanitizeSearch(search);
     switch (searchField) {
       case "email":
         query = query.ilike("email", `%${s}%`);
@@ -95,6 +98,12 @@ export default async function ContactsPage({ searchParams }: Props) {
     query = query.eq("language", languageFilter);
   }
 
+  if (listFilter === "__none__") {
+    query = query.or("email_lists.is.null,email_lists.eq.{}");
+  } else if (listFilter !== "all") {
+    query = query.contains("email_lists", [listFilter]);
+  }
+
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -121,6 +130,19 @@ export default async function ContactsPage({ searchParams }: Props) {
 
   const languages = [...new Set((languageRows ?? []).map((r) => r.language as string))];
 
+  const { data: audienceLists } = await supabase
+    .from("audiences")
+    .select("name")
+    .eq("type", "list")
+    .order("name");
+  const listNames = (audienceLists ?? []).map((a) => a.name);
+
+  const { data: tagRows } = await supabase
+    .from("contacts")
+    .select("tags")
+    .not("tags", "eq", "{}");
+  const allTags = [...new Set((tagRows ?? []).flatMap((r) => (r.tags as string[]) ?? []))].sort();
+
   return (
     <div>
       <ContactsListClient
@@ -136,7 +158,10 @@ export default async function ContactsPage({ searchParams }: Props) {
         regionFilter={regionFilter}
         positionFilter={positionFilter}
         languageFilter={languageFilter}
+        listFilter={listFilter}
         languages={languages}
+        listNames={listNames}
+        allTags={allTags}
         sort={sort}
         dir={dir}
       />

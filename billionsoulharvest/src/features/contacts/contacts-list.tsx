@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp } from "lucide-react";
+import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp, MoreVertical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { ContactType } from "@/shared/types/database";
+import { CreateContactDialog } from "./create-contact-dialog";
 
 interface ContactRow {
   id: string;
@@ -42,6 +43,24 @@ interface ContactRow {
   region: { id: string; name: string; color: string } | null;
   position: { id: string; name: string } | null;
   created_at: string;
+  job_title: string | null;
+  church_role: string | null;
+  birthday: string | null;
+  age_group: string | null;
+  alternative_email: string | null;
+  referred_by: string | null;
+  interests: string | null;
+  expectations: string | null;
+  source: string | null;
+  email_status: string | null;
+  email_permission: string | null;
+  email_lists: string[] | null;
+  street_address: string | null;
+  state: string | null;
+  phone_home: string | null;
+  phone_mobile: string | null;
+  phone_work: string | null;
+  updated_at: string;
 }
 
 interface Region {
@@ -68,7 +87,10 @@ interface Props {
   regionFilter: string;
   positionFilter: string;
   languageFilter: string;
+  listFilter: string;
   languages: string[];
+  listNames: string[];
+  allTags: string[];
   sort: string;
   dir: string;
 }
@@ -96,6 +118,8 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100];
 type ColumnKey =
   | "contact"
   | "email"
+  | "first_name"
+  | "last_name"
   | "phone"
   | "type"
   | "church"
@@ -106,7 +130,25 @@ type ColumnKey =
   | "city"
   | "country"
   | "gender"
-  | "created_at";
+  | "created_at"
+  | "job_title"
+  | "church_role"
+  | "birthday"
+  | "age_group"
+  | "alternative_email"
+  | "referred_by"
+  | "interests"
+  | "expectations"
+  | "source"
+  | "email_status"
+  | "email_permission"
+  | "email_lists"
+  | "street_address"
+  | "state"
+  | "phone_home"
+  | "phone_mobile"
+  | "phone_work"
+  | "updated_at";
 
 interface ColumnDef {
   key: ColumnKey;
@@ -116,26 +158,46 @@ interface ColumnDef {
 }
 
 const ALL_COLUMNS: ColumnDef[] = [
-  { key: "contact", label: "Contact", group: "default", sortable: "first_name" },
+  { key: "contact", label: "Contact", group: "default" },
   { key: "email", label: "Email address", group: "default", sortable: "email" },
-  { key: "phone", label: "Phone", group: "default" },
+  { key: "first_name", label: "First name", group: "default", sortable: "first_name" },
+  { key: "last_name", label: "Last name", group: "default" },
   { key: "type", label: "Type", group: "default", sortable: "contact_type" },
-  { key: "church", label: "Church", group: "default", sortable: "church_name" },
+  { key: "created_at", label: "Date added", group: "default", sortable: "created_at" },
+  { key: "tags", label: "Tags", group: "default" },
+  { key: "phone", label: "Phone", group: "Basic details" },
+  { key: "church", label: "Church", group: "Basic details", sortable: "church_name" },
   { key: "language", label: "Language", group: "Basic details" },
   { key: "region", label: "Region", group: "Basic details" },
   { key: "position", label: "Position", group: "Basic details" },
-  { key: "tags", label: "Tags", group: "Basic details" },
-  { key: "city", label: "City", group: "Location" },
-  { key: "country", label: "Country", group: "Location" },
   { key: "gender", label: "Gender", group: "Basic details" },
-  { key: "created_at", label: "Date added", group: "System", sortable: "created_at" },
+  { key: "job_title", label: "Job title", group: "Basic details" },
+  { key: "church_role", label: "Church role", group: "Basic details" },
+  { key: "birthday", label: "Birthday", group: "Basic details" },
+  { key: "age_group", label: "Age group", group: "Basic details" },
+  { key: "alternative_email", label: "Alt. email", group: "Basic details" },
+  { key: "referred_by", label: "Referred by", group: "Basic details" },
+  { key: "interests", label: "Interests", group: "Basic details" },
+  { key: "expectations", label: "Expectations", group: "Basic details" },
+  { key: "source", label: "Source", group: "default" },
+  { key: "email_status", label: "Email status", group: "default" },
+  { key: "email_permission", label: "Email permission", group: "Campaign channels" },
+  { key: "email_lists", label: "Lists", group: "default" },
+  { key: "city", label: "City", group: "Physical addresses" },
+  { key: "country", label: "Country", group: "Physical addresses" },
+  { key: "street_address", label: "Street address", group: "Physical addresses" },
+  { key: "state", label: "State", group: "Physical addresses" },
+  { key: "phone_home", label: "Phone (home)", group: "Phone numbers" },
+  { key: "phone_mobile", label: "Phone (mobile)", group: "Phone numbers" },
+  { key: "phone_work", label: "Phone (work)", group: "Phone numbers" },
+  { key: "updated_at", label: "Date edited", group: "System", sortable: "updated_at" },
 ];
 
 const DEFAULT_VISIBLE: ColumnKey[] = [
-  "contact", "email", "phone", "type", "church", "language", "region", "position", "tags",
+  "contact", "email", "first_name", "last_name", "email_status", "source", "created_at", "email_lists",
 ];
 
-const COLUMN_GROUPS = ["default", "Basic details", "Location", "System"] as const;
+const COLUMN_GROUPS = ["default", "Basic details", "Campaign channels", "Physical addresses", "Phone numbers", "System"] as const;
 
 function TableSettingsDrawer({
   visible,
@@ -292,6 +354,106 @@ function FilterDropdown({
   );
 }
 
+function SearchableFilterDropdown({
+  value,
+  label,
+  options,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const activeLabel = value === "all" ? label : options.find((o) => o.value === value)?.label ?? label;
+  const filtered = query
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[120px] ${
+          open
+            ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
+            : value !== "all"
+              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+              : "border-gray-200 text-gray-600 hover:border-gray-300"
+        }`}
+      >
+        {activeLabel}
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-50 min-w-[240px] w-max">
+          <div className="p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search lists"
+                className="w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="max-h-64 overflow-y-auto py-1">
+            {filtered.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value === value ? "all" : opt.value);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
+                  opt.value === value
+                    ? "bg-cyan-50 text-cyan-700 font-medium"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                  opt.value === value ? "bg-cyan-600 border-cyan-600" : "border-gray-300"
+                }`}>
+                  {opt.value === value && (
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </span>
+                <span className="truncate">{opt.label}</span>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="px-4 py-3 text-sm text-gray-400">No lists found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ContactsListClient({
   contacts,
   regions,
@@ -305,7 +467,10 @@ export function ContactsListClient({
   regionFilter,
   positionFilter,
   languageFilter,
+  listFilter,
   languages,
+  listNames,
+  allTags,
   sort,
   dir,
 }: Props) {
@@ -334,6 +499,20 @@ export function ContactsListClient({
   const [bulkTagMode, setBulkTagMode] = useState<"add" | "replace">("add");
   const [bulkRegion, setBulkRegion] = useState("");
   const [bulkType, setBulkType] = useState<ContactType | "">("");
+
+  const [actionMenu, setActionMenu] = useState<string | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!actionMenu) return;
+    function handleClick(e: MouseEvent) {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
+        setActionMenu(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [actionMenu]);
 
   const allOnPageSelected = contacts.length > 0 && contacts.every((c) => selected.has(c.id));
   const someSelected = selected.size > 0;
@@ -431,7 +610,7 @@ export function ContactsListClient({
   const navigate = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams();
-      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, sort, dir, ...updates };
+      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, list: listFilter, sort, dir, ...updates };
       for (const [k, v] of Object.entries(merged)) {
         if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc") && !(k === "searchField" && v === "name_email")) {
           params.set(k, v);
@@ -442,7 +621,7 @@ export function ContactsListClient({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, sort, dir, startTransition]
+    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, sort, dir, startTransition]
   );
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -495,9 +674,16 @@ export function ContactsListClient({
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-        <Button variant="outline" onClick={exportCSV}>
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <CreateContactDialog
+            listNames={listNames}
+            allTags={allTags}
+            onSuccess={() => router.refresh()}
+          />
+          <Button variant="outline" onClick={exportCSV}>
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Filters — Constant Contact style */}
@@ -530,42 +716,14 @@ export function ContactsListClient({
           </div>
         </form>
 
-        {/* Filter dropdowns */}
-        <FilterDropdown
-          value={typeFilter}
-          label="All Types"
+        <SearchableFilterDropdown
+          value={listFilter}
+          label="Lists"
           options={[
-            { value: "all", label: "All Types" },
-            ...Object.entries(contactTypeLabels).map(([val, label]) => ({ value: val, label })),
+            { value: "__none__", label: "Not in any list" },
+            ...listNames.map((name) => ({ value: name, label: name })),
           ]}
-          onChange={(v) => navigate({ type: v, page: "1" })}
-        />
-        <FilterDropdown
-          value={regionFilter}
-          label="All Regions"
-          options={[
-            { value: "all", label: "All Regions" },
-            ...regions.map((r) => ({ value: r.id, label: r.name })),
-          ]}
-          onChange={(v) => navigate({ region: v, page: "1" })}
-        />
-        <FilterDropdown
-          value={positionFilter}
-          label="All Positions"
-          options={[
-            { value: "all", label: "All Positions" },
-            ...positions.map((p) => ({ value: p.id, label: p.name })),
-          ]}
-          onChange={(v) => navigate({ position: v, page: "1" })}
-        />
-        <FilterDropdown
-          value={languageFilter}
-          label="All Languages"
-          options={[
-            { value: "all", label: "All Languages" },
-            ...languages.map((l) => ({ value: l, label: l })),
-          ]}
-          onChange={(v) => navigate({ language: v, page: "1" })}
+          onChange={(v) => navigate({ list: v, page: "1" })}
         />
       </div>
 
@@ -605,20 +763,40 @@ export function ContactsListClient({
                     className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                   />
                 </th>
-                {isCol("contact") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Contact", "first_name")}</th>}
+                {isCol("contact") && <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>}
                 {isCol("email") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Email address", "email")}</th>}
-                {isCol("phone") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>}
+                {isCol("first_name") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("First name", "first_name")}</th>}
+                {isCol("last_name") && <th className="text-left px-4 py-3 font-medium text-gray-600">Last name</th>}
                 {isCol("type") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Type", "contact_type")}</th>}
+                {isCol("created_at") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Date added", "created_at")}</th>}
+                {isCol("tags") && <th className="text-left px-4 py-3 font-medium text-gray-600">Tags</th>}
+                {isCol("phone") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>}
                 {isCol("church") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Church", "church_name")}</th>}
                 {isCol("language") && <th className="text-left px-4 py-3 font-medium text-gray-600">Language</th>}
                 {isCol("region") && <th className="text-left px-4 py-3 font-medium text-gray-600">Region</th>}
                 {isCol("position") && <th className="text-left px-4 py-3 font-medium text-gray-600">Position</th>}
-                {isCol("tags") && <th className="text-left px-4 py-3 font-medium text-gray-600">Tags</th>}
+                {isCol("gender") && <th className="text-left px-4 py-3 font-medium text-gray-600">Gender</th>}
+                {isCol("job_title") && <th className="text-left px-4 py-3 font-medium text-gray-600">Job title</th>}
+                {isCol("church_role") && <th className="text-left px-4 py-3 font-medium text-gray-600">Church role</th>}
+                {isCol("birthday") && <th className="text-left px-4 py-3 font-medium text-gray-600">Birthday</th>}
+                {isCol("age_group") && <th className="text-left px-4 py-3 font-medium text-gray-600">Age group</th>}
+                {isCol("alternative_email") && <th className="text-left px-4 py-3 font-medium text-gray-600">Alt. email</th>}
+                {isCol("referred_by") && <th className="text-left px-4 py-3 font-medium text-gray-600">Referred by</th>}
+                {isCol("interests") && <th className="text-left px-4 py-3 font-medium text-gray-600">Interests</th>}
+                {isCol("expectations") && <th className="text-left px-4 py-3 font-medium text-gray-600">Expectations</th>}
+                {isCol("source") && <th className="text-left px-4 py-3 font-medium text-gray-600">Source</th>}
+                {isCol("email_status") && <th className="text-left px-4 py-3 font-medium text-gray-600">Email status</th>}
+                {isCol("email_permission") && <th className="text-left px-4 py-3 font-medium text-gray-600">Email permission</th>}
+                {isCol("email_lists") && <th className="text-left px-4 py-3 font-medium text-gray-600">Lists</th>}
                 {isCol("city") && <th className="text-left px-4 py-3 font-medium text-gray-600">City</th>}
                 {isCol("country") && <th className="text-left px-4 py-3 font-medium text-gray-600">Country</th>}
-                {isCol("gender") && <th className="text-left px-4 py-3 font-medium text-gray-600">Gender</th>}
-                {isCol("created_at") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Date added", "created_at")}</th>}
-                <th className="px-4 py-3 w-24"><span className="sr-only">Actions</span></th>
+                {isCol("street_address") && <th className="text-left px-4 py-3 font-medium text-gray-600">Street address</th>}
+                {isCol("state") && <th className="text-left px-4 py-3 font-medium text-gray-600">State</th>}
+                {isCol("phone_home") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone (home)</th>}
+                {isCol("phone_mobile") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone (mobile)</th>}
+                {isCol("phone_work") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone (work)</th>}
+                {isCol("updated_at") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Date edited", "updated_at")}</th>}
+                <th className="px-4 py-3 w-24 sticky right-0 bg-gray-50"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -644,7 +822,8 @@ export function ContactsListClient({
                       </td>
                     )}
                     {isCol("email") && <td className="px-4 py-3 text-gray-600">{c.email}</td>}
-                    {isCol("phone") && <td className="px-4 py-3 text-gray-600">{c.phone}</td>}
+                    {isCol("first_name") && <td className="px-4 py-3 text-gray-600">{c.first_name}</td>}
+                    {isCol("last_name") && <td className="px-4 py-3 text-gray-600">{c.last_name}</td>}
                     {isCol("type") && (
                       <td className="px-4 py-3">
                         <Badge variant="secondary" className={contactTypeColors[c.contact_type]}>
@@ -652,22 +831,11 @@ export function ContactsListClient({
                         </Badge>
                       </td>
                     )}
-                    {isCol("church") && <td className="px-4 py-3 text-gray-600">{c.church_name}</td>}
-                    {isCol("language") && <td className="px-4 py-3 text-gray-600">{c.language}</td>}
-                    {isCol("region") && (
-                      <td className="px-4 py-3">
-                        {c.region ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full"
-                              style={{ backgroundColor: c.region.color }}
-                            />
-                            <span className="text-gray-700">{c.region.name}</span>
-                          </span>
-                        ) : null}
+                    {isCol("created_at") && (
+                      <td className="px-4 py-3 text-gray-600">
+                        {new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </td>
                     )}
-                    {isCol("position") && <td className="px-4 py-3 text-gray-600">{c.position?.name}</td>}
                     {isCol("tags") && (
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
@@ -695,38 +863,100 @@ export function ContactsListClient({
                         </div>
                       </td>
                     )}
-                    {isCol("city") && <td className="px-4 py-3 text-gray-600">{c.city}</td>}
-                    {isCol("country") && <td className="px-4 py-3 text-gray-600">{c.country}</td>}
-                    {isCol("gender") && <td className="px-4 py-3 text-gray-600 capitalize">{c.gender}</td>}
-                    {isCol("created_at") && (
-                      <td className="px-4 py-3 text-gray-600">
-                        {new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {isCol("phone") && <td className="px-4 py-3 text-gray-600">{c.phone}</td>}
+                    {isCol("church") && <td className="px-4 py-3 text-gray-600">{c.church_name}</td>}
+                    {isCol("language") && <td className="px-4 py-3 text-gray-600">{c.language}</td>}
+                    {isCol("region") && (
+                      <td className="px-4 py-3">
+                        {c.region ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full"
+                              style={{ backgroundColor: c.region.color }}
+                            />
+                            <span className="text-gray-700">{c.region.name}</span>
+                          </span>
+                        ) : null}
                       </td>
                     )}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                        <Link
-                          href={`/admin/contacts/${c.id}`}
-                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
-                          title="View"
+                    {isCol("position") && <td className="px-4 py-3 text-gray-600">{c.position?.name}</td>}
+                    {isCol("gender") && <td className="px-4 py-3 text-gray-600 capitalize">{c.gender}</td>}
+                    {isCol("job_title") && <td className="px-4 py-3 text-gray-600">{c.job_title ?? "—"}</td>}
+                    {isCol("church_role") && <td className="px-4 py-3 text-gray-600">{c.church_role ?? "—"}</td>}
+                    {isCol("birthday") && (
+                      <td className="px-4 py-3 text-gray-600">
+                        {c.birthday ? new Date(c.birthday).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                      </td>
+                    )}
+                    {isCol("age_group") && <td className="px-4 py-3 text-gray-600">{c.age_group ?? "—"}</td>}
+                    {isCol("alternative_email") && <td className="px-4 py-3 text-gray-600">{c.alternative_email ?? "—"}</td>}
+                    {isCol("referred_by") && <td className="px-4 py-3 text-gray-600">{c.referred_by ?? "—"}</td>}
+                    {isCol("interests") && <td className="px-4 py-3 text-gray-600">{c.interests ?? "—"}</td>}
+                    {isCol("expectations") && <td className="px-4 py-3 text-gray-600">{c.expectations ?? "—"}</td>}
+                    {isCol("source") && <td className="px-4 py-3 text-gray-600">{c.source ?? "—"}</td>}
+                    {isCol("email_status") && <td className="px-4 py-3 text-gray-600">{c.email_status ?? "—"}</td>}
+                    {isCol("email_permission") && <td className="px-4 py-3 text-gray-600">{c.email_permission ?? "—"}</td>}
+                    {isCol("email_lists") && (
+                      <td className="px-4 py-3">
+                        {c.email_lists && c.email_lists.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {c.email_lists.map((list) => (
+                              <span key={list} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">{list}</span>
+                            ))}
+                          </div>
+                        ) : "—"}
+                      </td>
+                    )}
+                    {isCol("city") && <td className="px-4 py-3 text-gray-600">{c.city}</td>}
+                    {isCol("country") && <td className="px-4 py-3 text-gray-600">{c.country}</td>}
+                    {isCol("street_address") && <td className="px-4 py-3 text-gray-600">{c.street_address ?? "—"}</td>}
+                    {isCol("state") && <td className="px-4 py-3 text-gray-600">{c.state ?? "—"}</td>}
+                    {isCol("phone_home") && <td className="px-4 py-3 text-gray-600">{c.phone_home ?? "—"}</td>}
+                    {isCol("phone_mobile") && <td className="px-4 py-3 text-gray-600">{c.phone_mobile ?? "—"}</td>}
+                    {isCol("phone_work") && <td className="px-4 py-3 text-gray-600">{c.phone_work ?? "—"}</td>}
+                    {isCol("updated_at") && (
+                      <td className="px-4 py-3 text-gray-600">
+                        {new Date(c.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </td>
+                    )}
+                    <td className="px-4 py-3 sticky right-0 bg-white group-hover/row:bg-gray-50">
+                      <div className="relative" ref={actionMenu === c.id ? actionMenuRef : undefined}>
+                        <button
+                          type="button"
+                          onClick={() => setActionMenu(actionMenu === c.id ? null : c.id)}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
                         >
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                        <Link
-                          href={`/admin/contacts/${c.id}?edit=true`}
-                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Link>
-                        {c.email && (
-                          <a
-                            href={`mailto:${c.email}`}
-                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
-                            title="Email"
-                          >
-                            <Mail className="w-4 h-4" />
-                          </a>
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {actionMenu === c.id && (
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border py-1 z-50">
+                            <Link
+                              href={`/admin/contacts/${c.id}`}
+                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              onClick={() => setActionMenu(null)}
+                            >
+                              <Eye className="w-4 h-4" />
+                              View
+                            </Link>
+                            <Link
+                              href={`/admin/contacts/${c.id}?edit=true`}
+                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              onClick={() => setActionMenu(null)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                              Edit
+                            </Link>
+                            {c.email && (
+                              <a
+                                href={`mailto:${c.email}`}
+                                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                onClick={() => setActionMenu(null)}
+                              >
+                                <Mail className="w-4 h-4" />
+                                Email
+                              </a>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
