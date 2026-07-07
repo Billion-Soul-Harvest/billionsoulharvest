@@ -336,6 +336,23 @@ Use these concrete patterns when building pages. Each describes the node structu
   - CraftSpacer (height 32)
   - CraftButton (primary CTA: bgColor #00687a, textColor #ffffff, borderRadius 8, width 300)
 
+**Resource Grid (4-column):** For tools, resources, or links with header row containing title + "VIEW ALL" action:
+- CraftContainer (section wrapper, width 1200, backgroundColor #f2f4f6, padding 64)
+  - CraftRow (gap 0, justifyContent "space-between", alignItems "flex-end")
+    - CraftColumn (width "auto", gap 4)
+      - CraftText (section heading, 32px, semibold, color #191c1e, UPPERCASE, textAlign "left")
+      - CraftText (subtitle, 16px, color #45464d, textAlign "left")
+    - CraftColumn (width "auto", alignItems "flex-end")
+      - CraftButton (link-style: "VIEW ALL →", bgColor transparent, textColor #00687a, fontSize 14, paddingX 0, paddingY 0)
+  - CraftSpacer (height 32)
+  - CraftRow (gap 24, justifyContent "center")
+    - CraftColumn (width "25%", backgroundColor #ffffff, padding 24, gap 8, borderWidth 1, borderColor #e2e8f0, borderRadius 8)
+      - CraftImage (width 100%, height 160, objectFit "cover", borderRadius 8)
+      - CraftText (title, 18px, bold, color #191c1e)
+      - CraftText (description, 14px, color #45464d)
+      - CraftButton (link-style: "EXPLORE NOW", bgColor transparent, textColor #00687a, fontSize 12, paddingX 0, paddingY 4)
+    (repeat for each resource card)
+
 **Icon Cards (3-column):** For values/features with circular icon placeholders:
 - CraftContainer (section wrapper, width 1200, padding 48-64, alignItems "center")
   - CraftText (section heading, centered, 32px, UPPERCASE)
@@ -346,6 +363,21 @@ Use these concrete patterns when building pages. Each describes the node structu
       - CraftIcon (icon: meaningful name, size 28, color "#00687a", backgroundColor "#00687a1a", backgroundSize 56, borderRadius 9999). IMPORTANT: Never use emojis — always use CraftIcon. Choose meaningful icon names: "megaphone" for outreach/evangelism, "book-open" for learning/discipleship, "users" for community/multiply, "globe" for missions, "heart" for values/love, "shield" for integrity, "eye-off" for humility/hidden, "church" for worship, "cross" for faith, "sprout" for growth, "flame" for passion, "hand-heart" for service, "crown" for kingdom, "send" for sending/commissioning, "target" for vision/goals, "compass" for guidance, "flag" for nations.
       - CraftText (card title, 20px, bold, centered, color #00687a on light bg or #ffffff on dark bg)
       - CraftText (card description, 14-16px, centered, color #45464d on light bg or #7c839b on dark bg)
+
+### Recommended Page Flow
+
+When generating a full page, follow this section order for maximum visual impact (adapt based on content):
+
+1. **Hero** — Full-bleed background image, left-aligned headline + subtitle + dual CTAs. Dark (#131b2e) with image overlay.
+2. **Initiative/Feature Cards** — 3-column bento cards on light background (#f7f9fb). UPPERCASE heading with cyan divider.
+3. **Impact/Highlight** — Dark (#131b2e) side-by-side image + text with action buttons.
+4. **Resource Grid** — 4-column cards on light (#f2f4f6) with "VIEW ALL" header row.
+5. **Stats Counter** — White background, large centered cyan stat number + description.
+6. **Testimonials/Voices** — Light (#f7f9fb), video card + stacked quote cards side-by-side.
+7. **Newsletter/CTA** — Dark (#131b2e) with background image, centered heading + CTA button.
+8. **Footer** — Already handled by CraftFooter component.
+
+Background rhythm: dark → light → dark → light → white → light → dark → footer. Never put two dark or two light sections adjacent.
 
 **General rules:**
 - CRITICAL: Every section CraftContainer must have width 1200. Never use narrow containers (400-600px) as page sections — they leave half the page empty.
