@@ -5,6 +5,7 @@ import CountryMap from "@/features/dashboard/country-map";
 import ContactTypeChart from "@/features/dashboard/contact-type-chart";
 import RegistrationsTimelineChart from "@/features/dashboard/registrations-timeline-chart";
 import RegistrationStatusChart from "@/features/dashboard/registration-status-chart";
+import FollowupOverviewChart from "@/features/dashboard/followup-overview-chart";
 import { normalizeCountry } from "@/features/dashboard/country-codes";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [contactsRes, eventsRes, registrationsRes, followUpsRes, countriesRes, contactTypesRes, regTimelineRes, regStatusRes] = await Promise.all([
+  const [contactsRes, eventsRes, registrationsRes, followUpsRes, countriesRes, contactTypesRes, regTimelineRes, regStatusRes, followUpDetailsRes] = await Promise.all([
     supabase.from("contacts").select("*", { count: "exact", head: true }),
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("registrations").select("*", { count: "exact", head: true }),
@@ -23,6 +24,7 @@ export default async function DashboardPage() {
     supabase.from("contacts").select("contact_type"),
     supabase.from("registrations").select("created_at"),
     supabase.from("registrations").select("status"),
+    supabase.from("follow_ups").select("priority, status, due_date"),
   ]);
 
   const countryData = Object.entries(
@@ -65,6 +67,26 @@ export default async function DashboardPage() {
   )
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
+
+  const followUpDetails = followUpDetailsRes.data ?? [];
+  const today = new Date().toISOString().slice(0, 10);
+
+  const followUpPriorityData = Object.entries(
+    followUpDetails.reduce<Record<string, number>>((acc, row) => {
+      const p = (row.priority as string) || "medium";
+      acc[p] = (acc[p] ?? 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+  const followUpOverdueCount = followUpDetails.filter(
+    (r) => ["pending", "in_progress"].includes(r.status as string) && r.due_date && (r.due_date as string) < today
+  ).length;
+
+  const completedCount = followUpDetails.filter((r) => r.status === "completed").length;
+  const followUpCompletionRate = followUpDetails.length > 0
+    ? Math.round((completedCount / followUpDetails.length) * 100)
+    : 0;
 
   const stats = [
     { label: "Total Contacts", value: contactsRes.count ?? 0, href: "/contacts", color: "bg-blue-50 text-blue-700" },
@@ -114,6 +136,12 @@ export default async function DashboardPage() {
         <ContactTypeChart data={contactTypeData} />
         <RegistrationsTimelineChart data={regTimelineData} />
         <RegistrationStatusChart data={regStatusData} />
+        <FollowupOverviewChart
+          priorityData={followUpPriorityData}
+          overdueCount={followUpOverdueCount}
+          completionRate={followUpCompletionRate}
+          totalCount={followUpDetails.length}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
