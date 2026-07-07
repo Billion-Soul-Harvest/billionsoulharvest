@@ -357,19 +357,20 @@ function FilterDropdown({
 }
 
 function SearchableFilterDropdown({
-  value,
+  selectedValues,
   label,
   options,
   onChange,
 }: {
-  value: string;
+  selectedValues: string[];
   label: string;
   options: { value: string; label: string }[];
-  onChange: (value: string) => void;
+  onChange: (values: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const selectedSet = new Set(selectedValues);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -382,10 +383,29 @@ function SearchableFilterDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const activeLabel = value === "all" ? label : options.find((o) => o.value === value)?.label ?? label;
+  const hasSelection = selectedValues.length > 0;
+  const buttonLabel = !hasSelection
+    ? label
+    : selectedValues.length === 1
+      ? (options.find((o) => o.value === selectedValues[0])?.label ?? label)
+      : `${selectedValues.length} lists`;
+
   const filtered = query
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
+
+  function toggleValue(val: string) {
+    // "__none__" is exclusive — selecting it clears others, selecting others clears it
+    if (val === "__none__") {
+      onChange(selectedSet.has("__none__") ? [] : ["__none__"]);
+      return;
+    }
+    const next = new Set(selectedSet);
+    next.delete("__none__");
+    if (next.has(val)) next.delete(val);
+    else next.add(val);
+    onChange(next.size > 0 ? [...next] : []);
+  }
 
   return (
     <div ref={ref} className="relative">
@@ -395,12 +415,12 @@ function SearchableFilterDropdown({
         className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[120px] ${
           open
             ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
-            : value !== "all"
+            : hasSelection
               ? "border-cyan-200 bg-cyan-50 text-cyan-700"
               : "border-gray-200 text-gray-600 hover:border-gray-300"
         }`}
       >
-        {activeLabel}
+        {buttonLabel}
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
@@ -418,34 +438,44 @@ function SearchableFilterDropdown({
               />
             </div>
           </div>
-          <div className="max-h-64 overflow-y-auto py-1">
-            {filtered.map((opt) => (
+          {hasSelection && (
+            <div className="px-3 py-1.5 border-b flex justify-end">
               <button
-                key={opt.value}
                 type="button"
-                onClick={() => {
-                  onChange(opt.value === value ? "all" : opt.value);
-                  setOpen(false);
-                  setQuery("");
-                }}
-                className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
-                  opt.value === value
-                    ? "bg-cyan-50 text-cyan-700 font-medium"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
+                onClick={() => { onChange([]); setQuery(""); }}
+                className="text-xs text-gray-500 hover:text-gray-700"
               >
-                <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
-                  opt.value === value ? "bg-cyan-600 border-cyan-600" : "border-gray-300"
-                }`}>
-                  {opt.value === value && (
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </span>
-                <span className="truncate">{opt.label}</span>
+                Clear
               </button>
-            ))}
+            </div>
+          )}
+          <div className="max-h-64 overflow-y-auto py-1">
+            {filtered.map((opt) => {
+              const isChecked = selectedSet.has(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => toggleValue(opt.value)}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
+                    isChecked
+                      ? "bg-cyan-50 text-cyan-700 font-medium"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                    isChecked ? "bg-cyan-600 border-cyan-600" : "border-gray-300"
+                  }`}>
+                    {isChecked && (
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="truncate">{opt.label}</span>
+                </button>
+              );
+            })}
             {filtered.length === 0 && (
               <p className="px-4 py-3 text-sm text-gray-400">No lists found</p>
             )}
@@ -1053,13 +1083,13 @@ export function ContactsListClient({
         </div>
 
         <SearchableFilterDropdown
-          value={listFilter}
+          selectedValues={listFilter ? listFilter.split(",").filter(Boolean) : []}
           label="Lists"
           options={[
             { value: "__none__", label: "Not in any list" },
             ...listNames.map((name) => ({ value: name, label: name })),
           ]}
-          onChange={(v) => navigate({ list: v, page: "1" })}
+          onChange={(values) => navigate({ list: values.join(","), page: "1" })}
         />
 
         <TagFilterDropdown
