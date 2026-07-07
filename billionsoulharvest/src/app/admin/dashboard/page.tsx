@@ -2,6 +2,7 @@ import { createClient } from "@/shared/utils/supabase/server";
 import Link from "next/link";
 import type { Metadata } from "next";
 import CountryMap from "@/features/dashboard/country-map";
+import ContactTypeChart from "@/features/dashboard/contact-type-chart";
 import { normalizeCountry } from "@/features/dashboard/country-codes";
 
 export const metadata: Metadata = {
@@ -11,12 +12,13 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [contactsRes, eventsRes, registrationsRes, followUpsRes, countriesRes] = await Promise.all([
+  const [contactsRes, eventsRes, registrationsRes, followUpsRes, countriesRes, contactTypesRes] = await Promise.all([
     supabase.from("contacts").select("*", { count: "exact", head: true }),
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("registrations").select("*", { count: "exact", head: true }),
     supabase.from("follow_ups").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("contacts").select("country").not("country", "is", null),
+    supabase.from("contacts").select("contact_type"),
   ]);
 
   const countryData = Object.entries(
@@ -28,6 +30,16 @@ export default async function DashboardPage() {
   )
     .map(([country, count]) => ({ country, count }))
     .sort((a, b) => b.count - a.count);
+
+  const contactTypeData = Object.entries(
+    (contactTypesRes.data ?? []).reduce<Record<string, number>>((acc, row) => {
+      const t = (row.contact_type as string) || "other";
+      acc[t] = (acc[t] ?? 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
 
   const stats = [
     { label: "Total Contacts", value: contactsRes.count ?? 0, href: "/contacts", color: "bg-blue-50 text-blue-700" },
@@ -70,6 +82,11 @@ export default async function DashboardPage() {
       {/* Country Map */}
       <div className="mb-8">
         <CountryMap data={countryData} />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <ContactTypeChart data={contactTypeData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
