@@ -389,4 +389,5 @@ Background rhythm: dark → light → dark → light → white → light → dar
 - Section headings should be UPPERCASE, 32px, semibold, often with a short colored divider line below.
 - Category labels and metadata should be 12px, UPPERCASE, bold, color #00687a.
 - Use left-aligned text in hero sections (not centered) for editorial feel.
-- Cards should have 1px borders (#e2e8f0), 24px padding, 12px radius, no heavy shadows.`;
+- Cards should have 1px borders (#e2e8f0), 24px padding, 12px radius, no heavy shadows.
+- **Scroll animations:** CraftContainer supports an "animation" prop with values: "none", "fade-up", "fade-in", "slide-left", "slide-right", "zoom-in". Use "fade-up" for content sections, "fade-in" for hero sections, and "slide-left"/"slide-right" for side-by-side layouts. Don't animate every section — use sparingly (every 2-3 sections).`;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { InlineRegistrationForm } from "@/features/registration/inline-registration-form";
 import { Star } from "lucide-react";
 import { ICON_MAP } from "./icon-map";
+import { ScrollReveal } from "@/shared/components/scroll-reveal";
 
 function hexToRgba(hex: string, alpha: number): string {
   if (hex === "transparent") return `rgba(0,0,0,${alpha})`;
@@ -47,6 +48,18 @@ export function CraftPageRenderer({ content, event, pages = [] }: Props) {
         @media (max-width: 768px) {
           .craft-col { width: 100% !important; flex: none !important; min-width: 0 !important; }
         }
+        .sr-hidden { opacity: 0; }
+        .sr-visible { animation-duration: 0.7s; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); animation-fill-mode: both; }
+        .sr-fade-up { animation-name: srFadeUp; }
+        .sr-fade-in { animation-name: srFadeIn; }
+        .sr-slide-left { animation-name: srSlideLeft; }
+        .sr-slide-right { animation-name: srSlideRight; }
+        .sr-zoom-in { animation-name: srZoomIn; }
+        @keyframes srFadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes srFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes srSlideLeft { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes srSlideRight { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes srZoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
       `}} />
       {rootNode.nodes.map((nodeId) => (
         <RenderNode key={nodeId} nodeId={nodeId} nodes={content} event={event} pages={pages} />
@@ -214,7 +227,8 @@ function RenderNode({
       const containerAlignItems = props.alignItems as string | undefined;
       const containerGap = (props.gap as number) ?? 0;
       const containerPad = (props.padding as number) ?? 20;
-      return (
+      const animation = (props.animation as string) ?? "none";
+      const containerEl = (
         <div
           style={{
             backgroundColor: bgImage ? undefined : bgColor,
@@ -242,6 +256,10 @@ function RenderNode({
           {children}
         </div>
       );
+      if (animation && animation !== "none") {
+        return <ScrollReveal animation={animation}>{containerEl}</ScrollReveal>;
+      }
+      return containerEl;
     }
 
     case "CraftSpacer": {

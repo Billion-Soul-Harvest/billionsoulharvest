@@ -25,6 +25,8 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+type AnimationType = "none" | "fade-up" | "fade-in" | "slide-left" | "slide-right" | "zoom-in";
+
 interface ContainerProps {
   backgroundColor?: string;
   backgroundImage?: string;
@@ -36,6 +38,7 @@ interface ContainerProps {
   minHeight?: number;
   alignItems?: "stretch" | "flex-start" | "center" | "flex-end";
   gap?: number;
+  animation?: AnimationType;
   children?: React.ReactNode;
 }
 
@@ -107,6 +110,7 @@ function ContainerSettings() {
     minHeight,
     alignItems,
     gap,
+    animation,
   } = useNode((node) => ({
     backgroundColor: node.data.props.backgroundColor as string,
     backgroundImage: node.data.props.backgroundImage as string,
@@ -118,10 +122,33 @@ function ContainerSettings() {
     minHeight: node.data.props.minHeight as number,
     alignItems: node.data.props.alignItems as string | undefined,
     gap: node.data.props.gap as number,
+    animation: node.data.props.animation as string,
   }));
 
   return (
     <div className="space-y-3">
+      <div>
+        <Label>Scroll Animation</Label>
+        <Select
+          value={animation ?? "none"}
+          onValueChange={(val) =>
+            setProp((p: ContainerProps) => {
+              p.animation = val as AnimationType;
+            })
+          }
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">None</SelectItem>
+            <SelectItem value="fade-up">Fade Up</SelectItem>
+            <SelectItem value="fade-in">Fade In</SelectItem>
+            <SelectItem value="slide-left">Slide from Left</SelectItem>
+            <SelectItem value="slide-right">Slide from Right</SelectItem>
+            <SelectItem value="zoom-in">Zoom In</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div>
         <Label htmlFor="backgroundColor">Background Color</Label>
         <Input
@@ -290,6 +317,7 @@ CraftContainer.craft = {
     minHeight: 200,
     alignItems: undefined,
     gap: 0,
+    animation: "none",
   },
   related: {
     settings: ContainerSettings,
