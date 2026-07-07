@@ -211,95 +211,149 @@ Format:
 }
 \`\`\``;
 
-const DESIGN_GUIDELINES_SECTION = `## Design Guidelines — Billion Soul Harvest Brand
+const DESIGN_GUIDELINES_SECTION = `## Design Guidelines — Global Harvest Ethos
 
-Follow these brand guidelines when generating or enhancing pages. The aesthetic is "Informed Confidence" — institutional trust with modern precision, combining classical serif typography with a vibrant technical accent.
+The aesthetic is "Informed Confidence" — institutional trust with modern technological precision. Combines Corporate Modern structure with Minimalist clarity. Uses classical serif typography (Source Serif 4) paired with a sharp, vibrant technical accent palette. Users should feel the platform is historically grounded and future-facing.
 
 ### Colors
+
+The palette is anchored by deep, authoritative tones contrasted against high-energy technical accents.
+
 - **Primary (Deep Navy):** #0f172a — foundation for typography, headings, dark section backgrounds, and high-importance elements.
-- **Secondary (Vibrant Cyan):** #06b6d4 — used sparingly for CTAs, interactive cues, highlights, progress indicators, and accent text. This is the brand's "digital spark."
-- **Surface/Background:** #ffffff for content cards, #f1f5f9 for page/section backgrounds. Alternate between dark (#0f172a) and light (#ffffff, #f1f5f9) sections for visual rhythm.
-- **Text on dark backgrounds:** White (#ffffff) for headings, #94a3b8 or #cbd5e1 for secondary/body text.
-- **Text on light backgrounds:** #0f172a for headings, #334155 or #475569 for body text.
-- **Borders:** Subtle 1px borders using #e2e8f0 on light sections. Avoid heavy shadows — use tonal layering instead.
+- **Primary Container:** #131b2e — darker variant for hero overlays, footer backgrounds, and immersive dark sections.
+- **Secondary (Vibrant Cyan):** #00687a — used for CTA buttons, interactive cues, and accent text. Provides the "digital spark."
+- **Secondary Container:** #57dffe — lighter cyan for badges, highlights, and hover accents.
+- **Secondary Fixed:** #acedff — light cyan for button fills and active nav indicators.
+- **Surface/Background:** #f7f9fb for page backgrounds, #ffffff for primary content cards, #f2f4f6 for alternating section backgrounds, #eceef0 for subtle depth.
+- **Text on dark backgrounds:** White (#ffffff) for headings, #7c839b for secondary text on primary-container, #bec6e0 for inverse-primary accents.
+- **Text on light backgrounds:** #191c1e for headings/body, #45464d for secondary text.
+- **Borders:** Subtle 1px borders using #e2e8f0 on light sections. Use tonal layering (color shifts between white and light gray) instead of heavy shadows.
+- **Error:** #ba1a1a for destructive actions, #ffdad6 for error containers.
+- **Accessibility:** Text must maintain minimum 4.5:1 contrast ratio.
 
 ### Typography
-- **Headings:** Use large, bold serif-style text. Display: 48px (bold), Headlines: 32px (semibold), with tight letter spacing for an editorial look.
-- **Body text:** 16px, regular weight, with 24px line height for comfortable reading.
-- **Labels/metadata:** 12px, semibold, with wide letter spacing (0.05em) for a clean utility feel.
-- **Hierarchy:** Create strong contrast between heading sizes and body text. Use lighter text colors (#94a3b8, #cbd5e1) for secondary text on dark backgrounds to establish depth.
+
+- **Display (hero headings):** 48px, bold (700), line-height 56px, letter-spacing -0.02em. Use for hero titles and major section headlines.
+- **Headline (section titles):** 32px, semibold (600), line-height 40px. Use for section headings like "HOW WE MOVE THE MISSION FORWARD". On mobile: 28px, line-height 36px.
+- **Body:** 16px, regular (400), line-height 24px. Use for all paragraph content.
+- **Labels/metadata:** 12px, semibold (600), line-height 16px, letter-spacing 0.05em, UPPERCASE. Use for category labels, data labels, and small UI text.
+- **Hierarchy:** Create strong contrast between heading sizes (48→32→20→16→12). Use lighter text colors (#7c839b, #45464d) for secondary text to establish depth.
 
 ### Spacing & Layout
-- **8px rhythm:** All padding and margins should follow an 8px scale (8, 16, 24, 32, 40, 48, 56, 64).
-- **CRITICAL — Full-width sections:** Every section CraftContainer MUST use width 1200 (the full canvas width). NEVER use 400 or 600 for section containers — that leaves half the page empty. The ROOT container is 1200px wide, and every direct child section container should also be 1200px wide. Use padding (48-64px) inside containers to create breathing room — NOT narrow containers.
-- **Text readability:** CraftText inside full-width containers should use width 700-800 for body paragraphs (for comfortable reading line length). Headings can be wider (up to 900-1000). The container's alignItems "center" will center narrow text blocks within the full-width section.
-- **Section padding:** 48-64px vertical padding on full-width sections. 24px internal padding on cards.
+
+- **8px rhythm:** All padding and margins follow an 8px scale (8, 16, 24, 32, 40, 48, 56, 64).
+- **CRITICAL — Full-width sections:** Every section CraftContainer MUST use width 1200 (the full canvas width). NEVER use 400 or 600 for section containers — that leaves half the page empty. Use padding (48-64px) inside containers to create breathing room — NOT narrow containers.
+- **Text readability:** CraftText inside full-width containers should use width 700-800 for body paragraphs. Headings can be wider (up to 900-1000). The container's alignItems "center" will center narrow text blocks within the full-width section.
+- **Section padding:** 48-64px vertical padding on full-width sections. 24-32px internal padding on cards.
 - **Gutters:** 24px gap between columns. Use CraftRow/CraftColumn for multi-column layouts.
 - **Spacers:** Use CraftSpacer (24-48px) between sections. Don't crowd elements.
+- **Desktop margins:** 64px horizontal padding on hero and wide sections.
 
-### Shapes & Depth
-- **Border radius:** 8px (0.5rem) for standard elements (buttons, inputs). 16px for large containers/cards.
-- **Buttons:** Primary buttons use #0f172a background with white text, 8px radius. Secondary/CTA buttons use #06b6d4 background with white text. Consistent padding (16px vertical, 32px horizontal).
-- **Cards:** Flat with 1px light borders (#e2e8f0), 24px internal padding, no heavy shadows.
+### Elevation & Depth
+
+Hierarchy through low-contrast outlines and tonal layering — NOT aggressive shadows.
+
+- **Surfaces:** Use slight color shifts (white cards on #f2f4f6 backgrounds) to distinguish interactive containers.
+- **Borders:** Subtle 1px borders using #e2e8f0 to define card boundaries.
+- **Hover states:** Cards may gain a soft tinted glow using Secondary Cyan (#00687a) with low opacity (10-15%) and subtle upward translate.
+- **Cards:** Flat with 1px light borders, 24px internal padding, rounded-xl (12px radius). No heavy shadows.
+
+### Shapes
+
+- **Standard elements (buttons, inputs):** 8px radius (0.5rem).
+- **Large containers/cards:** 12-16px radius.
+- **Pill shapes:** 9999px radius for badges, tags, nav buttons.
+- **Buttons:** Primary = #00687a background with white text, 8px radius. Secondary = white/10 background with white text and 1px white/30 border. Consistent padding (16px vertical, 32px horizontal).
 
 ### Responsive Design
+
 - Pages are automatically responsive — font sizes and padding scale down on tablet/phone.
 - CraftRow columns auto-stack to 100% width on phone viewports.
 - Use CraftRow + CraftColumn for multi-column layouts (they auto-stack on mobile).
 - CraftText width should be 700-800px for body text readability — NOT 1200px (too wide to read) and NOT 400px (wastes space). The parent container centers it.
 - Prefer percentage-based column widths via CraftColumn.
+- Mobile: 20px margins, headline scales to 28px.
+- Tablet: 32px margins.
 
 ### Common Section Patterns
 
 Use these concrete patterns when building pages. Each describes the node structure.
 
-**Text + Image (side-by-side):** For "About" or intro sections, use a 2-column layout — NOT text stacked above an image. Structure:
-- CraftContainer (section wrapper, width 1200, backgroundColor #ffffff or #f1f5f9, padding 48-64)
-  - CraftRow (gap 32, alignItems "center")
-    - CraftColumn (width "55%", gap 16) → CraftText heading (32px, bold, color #0f172a) + CraftText body (16px, color #334155)
-    - CraftColumn (width "45%", alignItems "center") → CraftImage (borderRadius 12, objectFit "cover", width 400+, height 300+)
+**Hero Section:** Full-bleed background image with gradient overlay, left-aligned text:
+- CraftContainer (ROOT or section: width 1200, backgroundColor #131b2e, backgroundImage with Unsplash URL, padding 64, alignItems "flex-start", minHeight 600)
+  - CraftText (display heading, 48px, bold, color #ffffff, width 700, textAlign "left")
+  - CraftSpacer (height 16)
+  - CraftText (subtitle, 18-20px, color rgba(255,255,255,0.9), width 600, textAlign "left")
+  - CraftSpacer (height 32)
+  - CraftRow (gap 16, justifyContent "flex-start")
+    - CraftButton (primary: bgColor #00687a, textColor #ffffff, borderRadius 8, fontSize 18, paddingX 32, paddingY 16)
+    - CraftButton (secondary: bgColor transparent, textColor #ffffff, borderRadius 8 — ghost/outline style)
 
-**Icon Cards (3-column):** For "Evangelize/Disciple/Multiply" or "Values" sections. Each card gets a circular icon placeholder above the heading:
-- CraftContainer (section wrapper, width 1200, padding 48-64)
-  - CraftText (section heading, centered, 32px)
+**Bento Card Grid (3-column):** For initiatives, resources, or features. Cards with image, title, subtitle label, description, and action link:
+- CraftContainer (section wrapper, width 1200, backgroundColor #f7f9fb, padding 64, alignItems "center")
+  - CraftText (section heading, 32px, semibold, centered, color #191c1e, textAlign "center", width 800)
+  - CraftDivider (width 100px, color #00687a, thickness 4)
+  - CraftSpacer (height 32)
+  - CraftRow (gap 24, justifyContent "center")
+    - CraftColumn (width "33.333%", backgroundColor #ffffff, padding 0, gap 0, alignItems "stretch")
+      - CraftImage (full-width card image, height 250, objectFit "cover", borderRadius 12)
+      - CraftContainer (padding 24, gap 8, backgroundColor #ffffff, borderRadius 0, width 100%)
+        - CraftText (card title, 24px, bold, color #191c1e)
+        - CraftText (category label, 12px, bold, color #00687a, UPPERCASE)
+        - CraftText (description, 16px, color #45464d)
+        - CraftButton (link-style: text "LEARN MORE →", bgColor transparent, textColor #00687a, fontSize 14, paddingX 0, paddingY 8)
+
+**Impact Report / Text + Image (side-by-side):** For content-heavy sections with visual:
+- CraftContainer (section wrapper, width 1200, backgroundColor #131b2e, padding 64)
+  - CraftRow (gap 48, alignItems "center")
+    - CraftColumn (width "50%", alignItems "center") → CraftImage (borderRadius 12, objectFit "cover", width 500, height 350)
+    - CraftColumn (width "50%", gap 16)
+      - CraftText (heading, 36-40px, bold, color #ffffff, textAlign "left")
+      - CraftText (body, 18px, color #7c839b, textAlign "left", width 500)
+      - CraftRow (gap 16, justifyContent "flex-start")
+        - CraftButton (primary: bgColor #ffffff, textColor #131b2e, borderRadius 8)
+        - CraftButton (secondary: bgColor transparent, textColor #ffffff, borderRadius 8)
+
+**Stats / Counter Section:** Centered stat with supporting text:
+- CraftContainer (width 1200, backgroundColor #ffffff, padding 64, alignItems "center")
+  - CraftText (section heading, 32px, semibold, centered, color #191c1e, UPPERCASE)
+  - CraftSpacer (height 16)
+  - CraftText (large stat number e.g. "18,500,000+", fontSize 56, bold, color #00687a, textAlign "center")
+  - CraftText (description, 18px, color #45464d, textAlign "center", width 600)
+
+**Testimonials / Voices Section:** Video card + quote cards side-by-side:
+- CraftContainer (width 1200, backgroundColor #f7f9fb, padding 64, alignItems "center")
+  - CraftText (section heading, 32px, semibold, centered, UPPERCASE)
+  - CraftSpacer (height 32)
+  - CraftRow (gap 24, alignItems "stretch")
+    - CraftColumn (width "50%") → CraftImage (video thumbnail, borderRadius 12) + CraftText (title + quote)
+    - CraftColumn (width "50%", gap 16) → Multiple CraftContainer cards (backgroundColor #ffffff, borderRadius 12, padding 24, borderWidth 1, borderColor #e2e8f0) each with CraftText (italic quote) + CraftText (attribution, 12px, bold, color #00687a, UPPERCASE)
+
+**Newsletter / CTA with Background Image:**
+- CraftContainer (width 1200, backgroundColor #131b2e, backgroundImage with Unsplash URL, padding 64, alignItems "center", minHeight 400)
+  - CraftText (heading, 36px, bold, color #ffffff, textAlign "center")
+  - CraftText (subtitle, 18px, color #acedff, textAlign "center", width 600)
+  - CraftSpacer (height 32)
+  - CraftButton (primary CTA: bgColor #00687a, textColor #ffffff, borderRadius 8, width 300)
+
+**Icon Cards (3-column):** For values/features with circular icon placeholders:
+- CraftContainer (section wrapper, width 1200, padding 48-64, alignItems "center")
+  - CraftText (section heading, centered, 32px, UPPERCASE)
+  - CraftDivider (width 100px, color #00687a)
   - CraftSpacer (height 32)
   - CraftRow (gap 24, justifyContent "center")
     - CraftColumn (width "30%", alignItems "center", gap 12, padding 24)
-      - CraftIcon (icon: meaningful name, size 28, color "#06b6d4", backgroundColor "#06b6d41a", backgroundSize 56, borderRadius 9999). IMPORTANT: Never use emojis — always use CraftIcon. Choose meaningful icon names: "megaphone" for outreach/evangelism, "book-open" for learning/discipleship, "users" for community/multiply, "globe" for missions, "heart" for values/love, "shield" for integrity, "eye-off" for humility/hidden, "church" for worship, "cross" for faith, "sprout" for growth, "flame" for passion, "hand-heart" for service, "crown" for kingdom, "send" for sending/commissioning, "target" for vision/goals, "compass" for guidance, "flag" for nations.
-      - CraftText (card title, 20px, bold, centered, color #06b6d4 on light bg or #ffffff on dark bg)
-      - CraftText (card description, 14-16px, centered, color #475569 on light bg or #94a3b8 on dark bg)
-
-**Stats Bar:** Dark background with large cyan stat numbers:
-- CraftContainer (width 1200, backgroundColor #0f172a, padding 48, alignItems "center")
-  - CraftRow (gap 32, justifyContent "center")
-    - CraftColumn (width "22%", alignItems "center", gap 4)
-      - CraftText (stat number e.g. "50+", fontSize 40, bold, color #06b6d4, textAlign "center")
-      - CraftText (label e.g. "NATIONS", fontSize 12, color #94a3b8, textAlign "center")
-    (repeat for each stat)
-
-**CTA Section:** Final call-to-action with dual buttons:
-- CraftContainer (width 1200, backgroundColor #0f172a or #f1f5f9, padding 64, alignItems "center")
-  - CraftText (large heading, 36-40px, centered, color #ffffff or #0f172a)
-  - CraftSpacer (height 16)
-  - CraftText (subtitle, 16px, centered, color #94a3b8 or #475569, width 600)
-  - CraftSpacer (height 32)
-  - CraftRow (gap 16, justifyContent "center")
-    - CraftButton (primary: bgColor #06b6d4, textColor #ffffff, borderRadius 8)
-    - CraftButton (secondary: bgColor transparent or #0f172a, textColor #ffffff or #0f172a, borderRadius 8)
-
-**Hero Section:** Always use a background image with overlay:
-- CraftContainer (ROOT or section: backgroundColor #0f172a, backgroundImage with Unsplash URL, padding 64, alignItems "center", minHeight 500+)
-  - CraftText (display heading, 48px, bold, centered, color #ffffff, width 700)
-  - CraftSpacer (height 16)
-  - CraftText (subtitle, 18px, centered, color #94a3b8, width 600)
-  - CraftSpacer (height 32)
-  - CraftRow (gap 16, justifyContent "center")
-    - CraftButton (primary CTA)
-    - CraftButton (secondary/ghost)
+      - CraftIcon (icon: meaningful name, size 28, color "#00687a", backgroundColor "#00687a1a", backgroundSize 56, borderRadius 9999). IMPORTANT: Never use emojis — always use CraftIcon. Choose meaningful icon names: "megaphone" for outreach/evangelism, "book-open" for learning/discipleship, "users" for community/multiply, "globe" for missions, "heart" for values/love, "shield" for integrity, "eye-off" for humility/hidden, "church" for worship, "cross" for faith, "sprout" for growth, "flame" for passion, "hand-heart" for service, "crown" for kingdom, "send" for sending/commissioning, "target" for vision/goals, "compass" for guidance, "flag" for nations.
+      - CraftText (card title, 20px, bold, centered, color #00687a on light bg or #ffffff on dark bg)
+      - CraftText (card description, 14-16px, centered, color #45464d on light bg or #7c839b on dark bg)
 
 **General rules:**
 - CRITICAL: Every section CraftContainer must have width 1200. Never use narrow containers (400-600px) as page sections — they leave half the page empty.
 - Always prefer side-by-side (CraftRow) over stacked layouts when combining text and images.
-- Every card-based section needs circular icon placeholders (CraftContainer with borderRadius 9999) above card titles.
-- Alternate section backgrounds: dark (#0f172a) → light (#ffffff/#f1f5f9) → dark → light for visual rhythm.
-- Use CraftSpacer between major sections (32-48px).`;
+- Every card-based section needs either images or circular CraftIcon placeholders above card titles.
+- Alternate section backgrounds for visual rhythm: dark (#131b2e) → light (#f7f9fb) → white (#ffffff) → dark.
+- Use CraftSpacer between major sections (32-48px).
+- Section headings should be UPPERCASE, 32px, semibold, often with a short colored divider line below.
+- Category labels and metadata should be 12px, UPPERCASE, bold, color #00687a.
+- Use left-aligned text in hero sections (not centered) for editorial feel.
+- Cards should have 1px borders (#e2e8f0), 24px padding, 12px radius, no heavy shadows.`;
