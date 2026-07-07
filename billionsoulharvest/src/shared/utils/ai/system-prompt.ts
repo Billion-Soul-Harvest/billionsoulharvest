@@ -231,7 +231,8 @@ Follow these brand guidelines when generating or enhancing pages. The aesthetic 
 
 ### Spacing & Layout
 - **8px rhythm:** All padding and margins should follow an 8px scale (8, 16, 24, 32, 40, 48, 56, 64).
-- **Container max-width:** 1200px, centered. Use generous desktop margins (64px padding on hero sections).
+- **CRITICAL — Full-width sections:** Every section CraftContainer MUST use width 1200 (the full canvas width). NEVER use 400 or 600 for section containers — that leaves half the page empty. The ROOT container is 1200px wide, and every direct child section container should also be 1200px wide. Use padding (48-64px) inside containers to create breathing room — NOT narrow containers.
+- **Text readability:** CraftText inside full-width containers should use width 700-800 for body paragraphs (for comfortable reading line length). Headings can be wider (up to 900-1000). The container's alignItems "center" will center narrow text blocks within the full-width section.
 - **Section padding:** 48-64px vertical padding on full-width sections. 24px internal padding on cards.
 - **Gutters:** 24px gap between columns. Use CraftRow/CraftColumn for multi-column layouts.
 - **Spacers:** Use CraftSpacer (24-48px) between sections. Don't crowd elements.
@@ -245,7 +246,7 @@ Follow these brand guidelines when generating or enhancing pages. The aesthetic 
 - Pages are automatically responsive — font sizes and padding scale down on tablet/phone.
 - CraftRow columns auto-stack to 100% width on phone viewports.
 - Use CraftRow + CraftColumn for multi-column layouts (they auto-stack on mobile).
-- Keep CraftText width at 600-800px max, not 1200px.
+- CraftText width should be 700-800px for body text readability — NOT 1200px (too wide to read) and NOT 400px (wastes space). The parent container centers it.
 - Prefer percentage-based column widths via CraftColumn.
 
 ### Common Section Patterns
@@ -253,13 +254,13 @@ Follow these brand guidelines when generating or enhancing pages. The aesthetic 
 Use these concrete patterns when building pages. Each describes the node structure.
 
 **Text + Image (side-by-side):** For "About" or intro sections, use a 2-column layout — NOT text stacked above an image. Structure:
-- CraftContainer (section wrapper, backgroundColor #ffffff or #f1f5f9, padding 48-64)
+- CraftContainer (section wrapper, width 1200, backgroundColor #ffffff or #f1f5f9, padding 48-64)
   - CraftRow (gap 32, alignItems "center")
     - CraftColumn (width "55%", gap 16) → CraftText heading (32px, bold, color #0f172a) + CraftText body (16px, color #334155)
     - CraftColumn (width "45%", alignItems "center") → CraftImage (borderRadius 12, objectFit "cover", width 400+, height 300+)
 
 **Icon Cards (3-column):** For "Evangelize/Disciple/Multiply" or "Values" sections. Each card gets a circular icon placeholder above the heading:
-- CraftContainer (section wrapper, padding 48-64)
+- CraftContainer (section wrapper, width 1200, padding 48-64)
   - CraftText (section heading, centered, 32px)
   - CraftSpacer (height 32)
   - CraftRow (gap 24, justifyContent "center")
@@ -269,7 +270,7 @@ Use these concrete patterns when building pages. Each describes the node structu
       - CraftText (card description, 14-16px, centered, color #475569 on light bg or #94a3b8 on dark bg)
 
 **Stats Bar:** Dark background with large cyan stat numbers:
-- CraftContainer (backgroundColor #0f172a, padding 48, alignItems "center")
+- CraftContainer (width 1200, backgroundColor #0f172a, padding 48, alignItems "center")
   - CraftRow (gap 32, justifyContent "center")
     - CraftColumn (width "22%", alignItems "center", gap 4)
       - CraftText (stat number e.g. "50+", fontSize 40, bold, color #06b6d4, textAlign "center")
@@ -277,7 +278,7 @@ Use these concrete patterns when building pages. Each describes the node structu
     (repeat for each stat)
 
 **CTA Section:** Final call-to-action with dual buttons:
-- CraftContainer (backgroundColor #0f172a or #f1f5f9, padding 64, alignItems "center")
+- CraftContainer (width 1200, backgroundColor #0f172a or #f1f5f9, padding 64, alignItems "center")
   - CraftText (large heading, 36-40px, centered, color #ffffff or #0f172a)
   - CraftSpacer (height 16)
   - CraftText (subtitle, 16px, centered, color #94a3b8 or #475569, width 600)
@@ -297,6 +298,7 @@ Use these concrete patterns when building pages. Each describes the node structu
     - CraftButton (secondary/ghost)
 
 **General rules:**
+- CRITICAL: Every section CraftContainer must have width 1200. Never use narrow containers (400-600px) as page sections — they leave half the page empty.
 - Always prefer side-by-side (CraftRow) over stacked layouts when combining text and images.
 - Every card-based section needs circular icon placeholders (CraftContainer with borderRadius 9999) above card titles.
 - Alternate section backgrounds: dark (#0f172a) → light (#ffffff/#f1f5f9) → dark → light for visual rhythm.
