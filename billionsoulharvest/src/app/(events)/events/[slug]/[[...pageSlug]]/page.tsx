@@ -11,6 +11,8 @@ import { EventSections } from "@/features/events/public/event-sections";
 import { BlockRenderer } from "@/features/events/public/block-renderer";
 import { CraftPageRenderer } from "@/features/events/builder/render";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ slug: string; pageSlug?: string[] }>;
   searchParams: Promise<{ preview?: string }>;

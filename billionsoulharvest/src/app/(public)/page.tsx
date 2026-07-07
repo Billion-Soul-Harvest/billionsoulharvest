@@ -2,6 +2,8 @@ import { createClient } from "@/shared/utils/supabase/server";
 import { CraftPageRenderer } from "@/features/events/builder/render";
 import { AdminEditButton } from "@/shared/components/admin-edit-button";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const supabase = await createClient();
 

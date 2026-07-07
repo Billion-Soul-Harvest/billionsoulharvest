@@ -6,6 +6,8 @@ import { CraftPageRenderer } from "@/features/events/builder/render";
 import Link from "next/link";
 import { AdminEditButton } from "@/shared/components/admin-edit-button";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ slug: string[] }>;
   searchParams: Promise<{ preview?: string }>;
