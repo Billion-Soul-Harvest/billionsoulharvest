@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +35,8 @@ interface Tag {
 type SortCol = "name" | "contact_count" | "created_at";
 type SortDir = "asc" | "desc";
 
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
+
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", {
@@ -36,25 +46,31 @@ function formatDate(dateStr: string) {
   });
 }
 
-export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
-  const [tags, setTags] = useState<Tag[]>(initialTags);
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+interface TagsManagerProps {
+  tags: Tag[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  search: string;
+  sort: SortCol;
+  dir: SortDir;
+}
+
+export function TagsManager({
+  tags,
+  totalCount,
+  page,
+  pageSize,
+  search,
+  sort,
+  dir,
+}: TagsManagerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [searchInput, setSearchInput] = useState(search);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function handleSearchChange(value: string) {
-    setSearchInput(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setSearch(value), 300);
-  }
-
-  useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, []);
-  const [sort, setSort] = useState<{ col: SortCol; dir: SortDir }>({
-    col: "created_at",
-    dir: "desc",
-  });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
@@ -69,6 +85,48 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
   const [renameValue, setRenameValue] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const navigate = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams();
+      const merged = {
+        page: String(page),
+        pageSize: String(pageSize),
+        search,
+        sort,
+        dir,
+        ...updates,
+      };
+      for (const [k, v] of Object.entries(merged)) {
+        if (
+          v &&
+          !(k === "page" && v === "1") &&
+          !(k === "pageSize" && v === "25") &&
+          !(k === "sort" && v === "created_at") &&
+          !(k === "dir" && v === "desc")
+        ) {
+          params.set(k, v);
+        }
+      }
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [page, pageSize, search, sort, dir, pathname, router]
+  );
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      navigate({ search: value, page: "1" });
+    }, 300);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
@@ -77,45 +135,27 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
     return () => document.removeEventListener("click", handleClick);
   }, [menuOpen]);
 
-  // Filter and sort
-  const filtered = tags.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const sorted = [...filtered].sort((a, b) => {
-    const col = sort.col;
-    let cmp = 0;
-    if (col === "name") {
-      cmp = a.name.localeCompare(b.name);
-    } else if (col === "contact_count") {
-      cmp = a.contact_count - b.contact_count;
-    } else {
-      cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    }
-    return sort.dir === "asc" ? cmp : -cmp;
-  });
-
   function toggleSort(col: SortCol) {
-    setSort((prev) =>
-      prev.col === col
-        ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { col, dir: "asc" }
-    );
+    if (sort === col) {
+      navigate({ sort: col, dir: dir === "asc" ? "desc" : "asc", page: "1" });
+    } else {
+      navigate({ sort: col, dir: "asc", page: "1" });
+    }
   }
 
   function sortIndicator(col: SortCol) {
-    if (sort.col !== col) return null;
-    return sort.dir === "asc" ? " \u2191" : " \u2193";
+    if (sort !== col) return null;
+    return dir === "asc" ? " ↑" : " ↓";
   }
 
   const allFilteredSelected =
-    sorted.length > 0 && sorted.every((t) => selected.has(t.id));
+    tags.length > 0 && tags.every((t) => selected.has(t.id));
 
   function toggleSelectAll() {
     if (allFilteredSelected) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(sorted.map((t) => t.id)));
+      setSelected(new Set(tags.map((t) => t.id)));
     }
   }
 
@@ -131,6 +171,10 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
     });
   }
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, totalCount);
+
   // --- Actions ---
 
   async function handleCreate() {
@@ -138,7 +182,7 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
     if (!name) return;
     setSaving(true);
     const supabase = createClient();
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("tags")
       .insert({ name })
       .select("id, name, created_at")
@@ -150,17 +194,11 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
       return;
     }
 
-    const newTag: Tag = {
-      id: data.id,
-      name: data.name,
-      created_at: data.created_at,
-      contact_count: 0,
-    };
-    setTags((prev) => [newTag, ...prev]);
     setNewTagName("");
     setCreateOpen(false);
     setSaving(false);
     toast.success(`Tag "${name}" created`);
+    router.refresh();
   }
 
   async function handleRename() {
@@ -180,12 +218,10 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
       return;
     }
 
-    setTags((prev) =>
-      prev.map((t) => (t.id === renameTag.id ? { ...t, name: newName } : t))
-    );
     setRenameTag(null);
     setSaving(false);
     toast.success(`Tag renamed to "${newName}"`);
+    router.refresh();
   }
 
   async function handleDelete() {
@@ -202,7 +238,6 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
       return;
     }
 
-    setTags((prev) => prev.filter((t) => t.id !== deleteTag.id));
     setSelected((prev) => {
       const next = new Set(prev);
       next.delete(deleteTag.id);
@@ -211,6 +246,7 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
     setDeleteTag(null);
     setSaving(false);
     toast.success(`Tag "${deleteTag.name}" deleted`);
+    router.refresh();
   }
 
   async function handleBulkDelete() {
@@ -230,11 +266,11 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
       return;
     }
 
-    setTags((prev) => prev.filter((t) => !selected.has(t.id)));
     setSelected(new Set());
     setBulkDeleteOpen(false);
     setSaving(false);
     toast.success(`${selectedNames.length} tag(s) deleted`);
+    router.refresh();
   }
 
   return (
@@ -261,7 +297,7 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
             <span className="text-sm font-semibold text-gray-900">
               All tags
             </span>
-            <Badge variant="secondary">{tags.length}</Badge>
+            <Badge variant="secondary">{totalCount}</Badge>
           </div>
           <div className="flex items-center gap-3">
             {selected.size > 0 && (
@@ -290,22 +326,14 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
       </div>
 
       {/* Table */}
-      {sorted.length === 0 && searchInput === search ? (
+      {tags.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
-          {tags.length === 0
-            ? "No tags yet. Create one to get started."
-            : "No tags match your search."}
+          {search
+            ? "No tags match your search."
+            : "No tags yet. Create one to get started."}
         </div>
       ) : (
         <div className="relative bg-white rounded-xl border border-t-0 rounded-t-none overflow-hidden">
-          {searchInput !== search && (
-            <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
-              <svg className="w-6 h-6 text-cyan-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            </div>
-          )}
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b">
@@ -341,7 +369,7 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {sorted.map((tag) => (
+              {tags.map((tag) => (
                 <tr key={tag.id} className="hover:bg-gray-50/50">
                   <td className="px-3 py-3">
                     <input
@@ -400,6 +428,74 @@ export function TagsManager({ tags: initialTags }: { tags: Tag[] }) {
               ))}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {totalCount > 0 && (
+            <div className="flex items-center justify-between border-t px-4 py-3">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-500">
+                  {startIndex}–{endIndex} of {totalCount}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Rows:</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v: string | null) => {
+                      if (v) navigate({ pageSize: v, page: "1" });
+                    }}
+                  >
+                    <SelectTrigger className="w-[70px] h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate({ page: "1" })}
+                  disabled={page <= 1}
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate({ page: String(page - 1) })}
+                  disabled={page <= 1}
+                >
+                  Prev
+                </Button>
+                <span className="px-3 text-sm text-gray-600">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate({ page: String(page + 1) })}
+                  disabled={page >= totalPages}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate({ page: String(totalPages) })}
+                  disabled={page >= totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
