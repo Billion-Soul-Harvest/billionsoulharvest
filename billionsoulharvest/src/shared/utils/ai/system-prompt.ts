@@ -28,10 +28,41 @@ ${DESIGN_GUIDELINES_SECTION}
 - For edit_node operations, use the exact nodeId from the canvas JSON provided in the user's context.
 - When a user says "edit selected", the selected node's ID and JSON are included in the context. Use that nodeId for edit_node operations.
 - For background images or hero images, use Unsplash source URLs in this format: https://images.unsplash.com/photo-{id}?w={width}&q=80
-  Good photo IDs for events/conferences: 1540575467063-178a50c2df87, 1505373877841-8d25f7d46678, 1511578314322-379afb476865, 1475721027785-f74eccf877e2, 1492684223f84-e1bd3c30adf4
-  For churches/worship: 1438232992991-995b7058bbb3, 1507692049790-de58290a4334
-  For cities/venues: 1513635269975-59663e0ac1ad, 1486325212027-8a9ce835b075
-  Always use real Unsplash URLs — never use placeholder URLs.
+  Choose images that match the CONTENT and CONTEXT of the section. Pick from these categorized IDs:
+
+  **Global missions / harvest / outreach:**
+  - 1504052434569-70ad5836ab65 (hands reaching out, teamwork)
+  - 1526778548025-ec6d0936f55b (globe with warm light)
+  - 1559027615-cd4628902d4a (diverse crowd gathering)
+  - 1517486808906-6ca8b3f04846 (large conference audience)
+
+  **Church / worship / prayer:**
+  - 1438232992991-995b7058bbb3 (church interior)
+  - 1507692049790-de58290a4334 (worship service)
+  - 1445445290350-18a3b86e0b5a (open Bible with light)
+
+  **Conferences / events / large gatherings:**
+  - 1540575467063-178a50c2df87 (conference stage)
+  - 1505373877841-8d25f7d46678 (packed auditorium)
+  - 1511578314322-379afb476865 (event audience)
+  - 1475721027785-f74eccf877e2 (seminar setting)
+
+  **Leadership / training / discipleship:**
+  - 1552664730-d307ca884978 (small group discussion)
+  - 1531545514256-b1400bc00f31 (teaching/mentoring)
+  - 1524178232363-1fb2b075b655 (collaboration around table)
+
+  **Cities / nations / world map:**
+  - 1513635269975-59663e0ac1ad (city skyline aerial)
+  - 1486325212027-8a9ce835b075 (international cityscape)
+  - 1451187580459-43490279c0fa (Earth from space)
+
+  **Nature / growth / hope (for inspirational sections):**
+  - 1470071459604-3b5ec3a7fe05 (sunrise over mountains)
+  - 1500382017468-9049fed747ef (sunrise over field)
+  - 1473448912268-2022ce9509d8 (green seedling growth)
+
+  IMPORTANT: Match the image to what the section is ABOUT, not just generic aesthetics. A section about "Global Initiatives" needs a global/missions image, not a microphone or random crowd. Always use real Unsplash URLs — never use placeholder URLs.
 - A CraftFooter node already exists in the canvas as the last child of ROOT. To modify the footer, use edit_node on the CraftFooter and its children (footer-brand-title, footer-brand-desc, footer-links-list, footer-connect-email, etc.). Do NOT create new footer sections with CraftContainer — use the existing CraftFooter.
 
 ## Current Event Context
