@@ -105,7 +105,10 @@ export default async function ContactsPage({ searchParams }: Props) {
   if (listFilter === "__none__") {
     query = query.or("email_lists.is.null,email_lists.eq.{}");
   } else if (listFilter !== "all") {
-    query = query.contains("email_lists", [listFilter]);
+    const selectedLists = listFilter.split(",").map((l) => l.trim()).filter(Boolean);
+    if (selectedLists.length > 0) {
+      query = query.overlaps("email_lists", selectedLists);
+    }
   }
 
   if (tagFilter) {
