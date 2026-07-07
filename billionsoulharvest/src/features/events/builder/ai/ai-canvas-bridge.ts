@@ -42,7 +42,7 @@ export function validateCraftJson(json: Record<string, unknown>): {
 
     const resolvedName = (n.type as Record<string, unknown>).resolvedName as string;
     if (!validResolvedNames.has(resolvedName)) {
-      errors.push(`Node "${nodeId}" has unknown component: ${resolvedName}`);
+      console.warn(`[AI] Node "${nodeId}" has unknown component: ${resolvedName}, removing`);
     }
 
     if (!n.parent) {
@@ -92,6 +92,12 @@ function sanitizeCraftJson(json: Record<string, unknown>): Record<string, unknow
     const node = { ...(rawNode as Record<string, unknown>) };
     const typeDef = node.type as Record<string, unknown> | undefined;
     const resolvedName = typeDef?.resolvedName as string | undefined;
+
+    // Skip nodes with unknown component types (except ROOT)
+    if (nodeId !== "ROOT" && resolvedName && !validResolvedNames.has(resolvedName)) {
+      console.warn(`[AI] Removing node "${nodeId}" with unknown component: ${resolvedName}`);
+      continue;
+    }
 
     // Ensure linkedNodes exists
     if (!node.linkedNodes) {

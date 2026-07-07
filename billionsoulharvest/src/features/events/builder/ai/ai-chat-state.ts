@@ -319,6 +319,16 @@ function parseOperation(content: string): AIOperation | undefined {
   // Look for JSON code block in the response (greedy to capture the last/largest block)
   const jsonBlocks = [...content.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)];
   if (jsonBlocks.length === 0) {
+    // Fallback: try to find an unclosed JSON block (truncated response) and repair it
+    const unclosedMatch = content.match(/```(?:json)?\s*([\s\S]+)$/);
+    if (unclosedMatch) {
+      console.log("[AI] Found unclosed JSON block, attempting repair...");
+      const repaired = repairTruncatedJson(unclosedMatch[1].trim());
+      if (repaired) {
+        const explanation = content.split("```")[0].trim();
+        return tryParseJsonToOperation(repaired, explanation);
+      }
+    }
     console.log("[AI] No JSON code block found in response");
     return undefined;
   }
@@ -329,59 +339,148 @@ function parseOperation(content: string): AIOperation | undefined {
   const sortedBlocks = jsonBlocks.sort((a, b) => b[1].length - a[1].length);
 
   for (const match of sortedBlocks) {
-    try {
-      const parsed = JSON.parse(match[1]);
+    const result = tryParseJsonToOperation(match[1], explanation);
+    if (result) return result;
+  }
 
-      // Format 1: { operation: "...", data: { ... } }
-      if (parsed.operation) {
-        const opType = parsed.operation;
-        switch (opType) {
-          case "generate_full_page":
-            return { type: "generate_full_page", fullPageJson: parsed.data, explanation };
-          case "edit_node":
-            return {
-              type: "edit_node",
-              nodeEdits: Array.isArray(parsed.data) ? parsed.data : parsed.data?.edits,
-              explanation,
-            };
-          case "add_nodes": {
-            const addData = parsed.data || parsed;
-            if (!addData.parentId && !addData.nodes) {
-              console.log("[AI] add_nodes missing data fields:", Object.keys(parsed));
-              break;
-            }
-            return {
-              type: "add_nodes",
-              nodesToAdd: {
-                parentId: addData.parentId || "ROOT",
-                index: addData.index,
-                tree: addData.nodes || addData.tree,
-              },
-              explanation,
-            };
-          }
-          case "suggest_content":
-            return { type: "suggest_content", explanation };
-        }
+  // If no blocks parsed successfully, try merging all blocks (continuation artifact)
+  if (jsonBlocks.length > 1) {
+    console.log("[AI] Trying to merge", jsonBlocks.length, "JSON blocks...");
+    const merged = jsonBlocks.map((m) => m[1].trim()).join("");
+    const result = tryParseJsonToOperation(merged, explanation);
+    if (result) {
+      console.log("[AI] Merged blocks parsed successfully");
+      return result;
+    }
+    // Try repairing merged content
+    const repaired = repairTruncatedJson(merged);
+    if (repaired) {
+      const repairedResult = tryParseJsonToOperation(repaired, explanation);
+      if (repairedResult) {
+        console.log("[AI] Repaired merged blocks parsed successfully");
+        return repairedResult;
       }
-
-      // Format 2: Raw Craft.js JSON with ROOT node (AI returned page JSON directly)
-      if (parsed.ROOT) {
-        console.log("[AI] Detected raw Craft.js JSON (has ROOT node)");
-        return { type: "generate_full_page", fullPageJson: parsed, explanation };
-      }
-
-      // Format 3: Array of edits [{ nodeId, props }]
-      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].nodeId) {
-        console.log("[AI] Detected array of node edits");
-        return { type: "edit_node", nodeEdits: parsed, explanation };
-      }
-
-      console.log("[AI] JSON parsed but unrecognized format:", Object.keys(parsed));
-    } catch (e) {
-      console.log("[AI] Failed to parse JSON block:", e);
     }
   }
 
   return undefined;
+}
+
+function tryParseJsonToOperation(jsonStr: string, explanation: string): AIOperation | undefined {
+  try {
+    const parsed = JSON.parse(jsonStr);
+
+    // Format 1: { operation: "...", data: { ... } }
+    if (parsed.operation) {
+      const opType = parsed.operation;
+      switch (opType) {
+        case "generate_full_page":
+          return { type: "generate_full_page", fullPageJson: parsed.data, explanation };
+        case "edit_node":
+          return {
+            type: "edit_node",
+            nodeEdits: Array.isArray(parsed.data) ? parsed.data : parsed.data?.edits,
+            explanation,
+          };
+        case "add_nodes": {
+          const addData = parsed.data || parsed;
+          if (!addData.parentId && !addData.nodes) {
+            console.log("[AI] add_nodes missing data fields:", Object.keys(parsed));
+            break;
+          }
+          return {
+            type: "add_nodes",
+            nodesToAdd: {
+              parentId: addData.parentId || "ROOT",
+              index: addData.index,
+              tree: addData.nodes || addData.tree,
+            },
+            explanation,
+          };
+        }
+        case "suggest_content":
+          return { type: "suggest_content", explanation };
+      }
+    }
+
+    // Format 2: Raw Craft.js JSON with ROOT node (AI returned page JSON directly)
+    if (parsed.ROOT) {
+      console.log("[AI] Detected raw Craft.js JSON (has ROOT node)");
+      return { type: "generate_full_page", fullPageJson: parsed, explanation };
+    }
+
+    // Format 3: Array of edits [{ nodeId, props }]
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].nodeId) {
+      console.log("[AI] Detected array of node edits");
+      return { type: "edit_node", nodeEdits: parsed, explanation };
+    }
+
+    console.log("[AI] JSON parsed but unrecognized format:", Object.keys(parsed));
+  } catch (e) {
+    console.log("[AI] Failed to parse JSON block:", (e as Error).message?.slice(0, 100));
+  }
+  return undefined;
+}
+
+/**
+ * Attempt to repair truncated JSON by closing open braces/brackets.
+ * Returns the repaired string or null if it can't be fixed.
+ */
+function repairTruncatedJson(json: string): string | null {
+  // Strip trailing commas, partial strings, and whitespace
+  let trimmed = json.replace(/,\s*$/, "");
+
+  // If it's inside a string value, close the string
+  const quoteCount = (trimmed.match(/(?<!\\)"/g) || []).length;
+  if (quoteCount % 2 !== 0) {
+    // Find last unescaped quote and truncate any partial value after it
+    const lastQuoteIdx = trimmed.lastIndexOf('"');
+    const afterQuote = trimmed.slice(lastQuoteIdx + 1);
+    // If there's no colon/comma/brace after the last quote, we're mid-string
+    if (!/[,:}\]]/.test(afterQuote.trim())) {
+      trimmed = trimmed.slice(0, lastQuoteIdx) + '"';
+    }
+  }
+
+  // Strip trailing partial key-value pairs (e.g., `"key":` with no value)
+  trimmed = trimmed.replace(/,?\s*"[^"]*"\s*:\s*$/, "");
+  // Strip trailing comma
+  trimmed = trimmed.replace(/,\s*$/, "");
+
+  // Count open/close braces and brackets
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let prevChar = "";
+
+  for (const ch of trimmed) {
+    if (ch === '"' && prevChar !== "\\") {
+      inString = !inString;
+    } else if (!inString) {
+      if (ch === "{") openBraces++;
+      if (ch === "}") openBraces--;
+      if (ch === "[") openBrackets++;
+      if (ch === "]") openBrackets--;
+    }
+    prevChar = ch;
+  }
+
+  if (openBraces < 0 || openBrackets < 0) return null; // More closes than opens = broken
+  if (openBraces === 0 && openBrackets === 0) {
+    // Already balanced — try parsing directly
+    try { JSON.parse(trimmed); return trimmed; } catch { return null; }
+  }
+
+  // Close remaining brackets and braces
+  let repaired = trimmed;
+  for (let i = 0; i < openBrackets; i++) repaired += "]";
+  for (let i = 0; i < openBraces; i++) repaired += "}";
+
+  try {
+    JSON.parse(repaired);
+    console.log(`[AI] Repaired JSON by closing ${openBraces} braces and ${openBrackets} brackets`);
+    return repaired;
+  } catch {
+    return null;
+  }
 }
