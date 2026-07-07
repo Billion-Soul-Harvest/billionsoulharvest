@@ -1,13 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WysiwygEditor } from "@/shared/components/wysiwyg-editor";
-import { EmailBuilder } from "@/features/emails/builder/email-builder";
+import { EmailBuilder, type EmailBuilderHandle } from "@/features/emails/builder/email-builder";
 import { renderEmailJson } from "@/features/emails/builder/render-to-html";
 import { ArrowLeft, Blocks, FileText } from "lucide-react";
 import type { EmailTemplateWithStats } from "@/shared/types/database";
@@ -17,7 +16,6 @@ interface Props {
 }
 
 export function EmailTemplateEditor({ template: initial }: Props) {
-  const router = useRouter();
   const [name, setName] = useState(initial.name);
   const [subject, setSubject] = useState(initial.subject);
   const [previewText, setPreviewText] = useState(initial.preview_text ?? "");
@@ -25,11 +23,12 @@ export function EmailTemplateEditor({ template: initial }: Props) {
   const [bodyJson, setBodyJson] = useState<string | null>(
     initial.body_json ? JSON.stringify(initial.body_json) : null
   );
-  const [useBlockEditor, setUseBlockEditor] = useState(!!initial.body_json);
+  const [useBlockEditor, setUseBlockEditor] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const builderRef = useRef<EmailBuilderHandle>(null);
 
   // Mark unsaved on any change
   useEffect(() => {
@@ -44,13 +43,15 @@ export function EmailTemplateEditor({ template: initial }: Props) {
   const save = useCallback(async () => {
     setSaving(true);
     try {
-      // If using block editor, render HTML from JSON
       let htmlToSave = bodyHtml;
       let jsonToSave: Record<string, unknown> | null = null;
 
-      if (useBlockEditor && bodyJson) {
-        htmlToSave = renderEmailJson(bodyJson);
-        jsonToSave = JSON.parse(bodyJson);
+      if (useBlockEditor && builderRef.current) {
+        // Always serialize fresh from the canvas
+        const currentJson = builderRef.current.getJson();
+        htmlToSave = renderEmailJson(currentJson);
+        jsonToSave = JSON.parse(currentJson);
+        setBodyJson(currentJson);
       }
 
       await fetch(`/api/email-templates/${initial.id}`, {
@@ -70,7 +71,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [initial.id, name, subject, bodyHtml, bodyJson, previewText, useBlockEditor]);
+  }, [initial.id, name, subject, bodyHtml, previewText, useBlockEditor]);
 
   // Auto-save on blur
   const handleBlur = useCallback(() => {
@@ -80,17 +81,17 @@ export function EmailTemplateEditor({ template: initial }: Props) {
     }
   }, [saved, save]);
 
-  const handleSwitchToBlockEditor = () => {
-    setUseBlockEditor(true);
-    setBodyJson(null); // start fresh
+  // Generate preview HTML — serialize fresh from builder if available
+  const getPreviewHtml = () => {
+    if (useBlockEditor && builderRef.current) {
+      const json = builderRef.current.getJson();
+      return renderEmailJson(json);
+    }
+    if (useBlockEditor && bodyJson) {
+      return renderEmailJson(bodyJson);
+    }
+    return bodyHtml;
   };
-
-  const handleSwitchToClassicEditor = () => {
-    setUseBlockEditor(false);
-  };
-
-  // Generate preview HTML for block editor
-  const previewHtml = useBlockEditor && bodyJson ? renderEmailJson(bodyJson) : bodyHtml;
 
   return (
     <div className={useBlockEditor && !showPreview ? "" : "max-w-3xl"}>
@@ -114,7 +115,14 @@ export function EmailTemplateEditor({ template: initial }: Props) {
             <Button
               variant="outline"
               size="sm"
-              onClick={useBlockEditor ? handleSwitchToClassicEditor : handleSwitchToBlockEditor}
+              onClick={() => {
+                if (useBlockEditor) {
+                  setUseBlockEditor(false);
+                } else {
+                  setUseBlockEditor(true);
+                  if (!bodyJson) setBodyJson(null);
+                }
+              }}
               title={useBlockEditor ? "Switch to classic editor" : "Switch to block editor"}
             >
               {useBlockEditor ? (
@@ -141,10 +149,10 @@ export function EmailTemplateEditor({ template: initial }: Props) {
 
       {showPreview ? (
         <div className="bg-[#f3f3f4] rounded-xl p-6 max-w-3xl">
-          {useBlockEditor && bodyJson ? (
+          {useBlockEditor ? (
             <div
-              className="bg-white max-w-[600px] mx-auto overflow-hidden"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
+              className="max-w-[600px] mx-auto overflow-hidden"
+              dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
             />
           ) : (
             <div className="bg-white max-w-[600px] mx-auto overflow-hidden">
@@ -224,6 +232,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
             </p>
             {useBlockEditor ? (
               <EmailBuilder
+                ref={builderRef}
                 initialJson={bodyJson}
                 onJsonChange={setBodyJson}
               />
