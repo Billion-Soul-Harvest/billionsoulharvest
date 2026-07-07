@@ -174,7 +174,7 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
         setInput("Suggest content ideas for this event page");
         break;
       case "enhance":
-        setInput("Enhance the UI of this page by regenerating it with generate_full_page. CRITICAL: preserve ALL existing headings, section titles, body text, and content EXACTLY as they are — do NOT rename, rephrase, or invent new text. Only restructure the layout: use side-by-side CraftRow layouts for text+image sections, add CraftIcon components above card titles, and improve spacing, typography, colors, and visual hierarchy. Do NOT use edit_node — rebuild the full page.");
+        setInput("Enhance the UI of this page by regenerating it with generate_full_page. CRITICAL: preserve ALL existing headings, section titles, body text, and content EXACTLY as they are — do NOT rename, rephrase, or invent new text. Only restructure the layout: use side-by-side CraftRow layouts for text+image sections, add CraftIcon components above card titles, and improve spacing, typography, colors, and visual hierarchy. Ensure the design is mobile-responsive: use CraftRow with CraftColumn for multi-column sections so they auto-stack on phone, keep text widths under 800px, and use reasonable font sizes (max 48px for hero headings, 24-32px for section titles, 14-16px for body text). Do NOT use edit_node — rebuild the full page.");
         break;
     }
   };

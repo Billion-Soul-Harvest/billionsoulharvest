@@ -2,6 +2,8 @@
 
 import { useNode, UserComponent } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize } from "../responsive-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -31,12 +33,14 @@ export const CraftFooter: UserComponent<FooterProps> = ({
     selected: state.events.selected,
   }));
 
+  const cw = useCanvasWidth();
+
   return (
     <footer
       ref={craftRef(connect)}
       style={{
         backgroundColor,
-        padding: `${padding}px`,
+        padding: `${responsiveSize(padding, cw, 16)}px`,
         width: `${width}px`,
         maxWidth: "100%",
         minHeight: `${minHeight}px`,

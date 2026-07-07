@@ -2,6 +2,8 @@
 
 import { useNode } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize } from "../responsive-utils";
 import { useEventData } from "../event-context";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -18,11 +20,12 @@ interface EventTitleProps {
 export const CraftEventTitle = ({ fontSize = 48, color = "#ffffff", textAlign = "center" }: EventTitleProps) => {
   const { connectors: { connect, drag } } = useNode();
   const event = useEventData();
+  const cw = useCanvasWidth();
 
   return (
     <div
       ref={craftRef(connect, drag)}
-      style={{ fontSize: `${fontSize}px`, color, textAlign, cursor: "grab", maxWidth: "100%", overflowWrap: "break-word" }}
+      style={{ fontSize: `${responsiveSize(fontSize, cw, 16)}px`, color, textAlign, cursor: "grab", maxWidth: "100%", overflowWrap: "break-word" }}
       className="font-[family-name:var(--font-heading)] font-bold"
     >
       {event.title}
@@ -90,6 +93,7 @@ interface EventDatesProps {
 export const CraftEventDates = ({ fontSize = 16, color = "#d1d5db", textAlign = "center" }: EventDatesProps) => {
   const { connectors: { connect, drag } } = useNode();
   const event = useEventData();
+  const cw = useCanvasWidth();
 
   const formatDate = (date: string) =>
     new Date(date + "T00:00:00").toLocaleDateString("en-US", {
@@ -101,7 +105,7 @@ export const CraftEventDates = ({ fontSize = 16, color = "#d1d5db", textAlign = 
   return (
     <div
       ref={craftRef(connect, drag)}
-      style={{ fontSize: `${fontSize}px`, color, textAlign, cursor: "grab", maxWidth: "100%" }}
+      style={{ fontSize: `${responsiveSize(fontSize, cw, 12)}px`, color, textAlign, cursor: "grab", maxWidth: "100%" }}
     >
       {event.start_date ? (
         <>
@@ -159,13 +163,14 @@ interface EventLocationProps {
 export const CraftEventLocation = ({ fontSize = 16, color = "#d1d5db", textAlign = "center" }: EventLocationProps) => {
   const { connectors: { connect, drag } } = useNode();
   const event = useEventData();
+  const cw = useCanvasWidth();
 
   const location = [event.location, event.city, event.country].filter(Boolean).join(", ");
 
   return (
     <div
       ref={craftRef(connect, drag)}
-      style={{ fontSize: `${fontSize}px`, color, textAlign, cursor: "grab", maxWidth: "100%" }}
+      style={{ fontSize: `${responsiveSize(fontSize, cw, 12)}px`, color, textAlign, cursor: "grab", maxWidth: "100%" }}
     >
       {location || "Location TBD"}
     </div>
@@ -220,6 +225,7 @@ interface RegisterButtonProps {
 export const CraftRegisterButton = ({ text = "Register Now", bgColor = "#29BDD6", textColor = "#ffffff", fontSize = 18, paddingX = 32, paddingY = 16, borderRadius = 12 }: RegisterButtonProps) => {
   const { connectors: { connect, drag } } = useNode();
   const event = useEventData();
+  const cw = useCanvasWidth();
 
   return (
     <div
@@ -230,8 +236,8 @@ export const CraftRegisterButton = ({ text = "Register Now", bgColor = "#29BDD6"
         style={{
           backgroundColor: bgColor,
           color: textColor,
-          fontSize: `${fontSize}px`,
-          padding: `${paddingY}px ${paddingX}px`,
+          fontSize: `${responsiveSize(fontSize, cw, 12)}px`,
+          padding: `${responsiveSize(paddingY, cw, 6)}px ${responsiveSize(paddingX, cw, 8)}px`,
           borderRadius: `${borderRadius}px`,
           fontWeight: 600,
           textAlign: "center",

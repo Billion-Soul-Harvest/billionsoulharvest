@@ -2,6 +2,8 @@
 
 import { useNode, UserComponent } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize } from "../responsive-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/shared/components/image-upload";
@@ -57,6 +59,8 @@ export const CraftContainer: UserComponent<ContainerProps> = ({
     selected: state.events.selected,
   }));
 
+  const cw = useCanvasWidth();
+
   return (
     <div
       ref={craftRef(connect, drag)}
@@ -67,12 +71,12 @@ export const CraftContainer: UserComponent<ContainerProps> = ({
           : undefined,
         backgroundSize: backgroundImage ? "cover" : undefined,
         backgroundPosition: backgroundImage ? "center" : undefined,
-        padding: `${padding}px`,
+        padding: `${responsiveSize(padding, cw, 8)}px`,
         borderRadius: `${borderRadius}px`,
         borderColor,
         borderWidth: `${borderWidth}px`,
         borderStyle: borderWidth > 0 ? "solid" : "none",
-        width: `${width}px`,
+        width: `${Math.min(width, cw)}px`,
         maxWidth: "100%",
         minHeight: `${minHeight}px`,
         cursor: "move",

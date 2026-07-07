@@ -2,6 +2,8 @@
 
 import { useNode, UserComponent } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize } from "../responsive-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,14 +42,16 @@ export const CraftRow: UserComponent<RowProps> = ({
     selected: state.events.selected,
   }));
 
+  const cw = useCanvasWidth();
+
   return (
     <div
       ref={craftRef(connect, drag)}
       style={{
         display: "flex",
         flexDirection: "row",
-        gap: `${gap}px`,
-        padding: `${padding}px`,
+        gap: `${responsiveSize(gap, cw, 4)}px`,
+        padding: `${responsiveSize(padding, cw, 0)}px`,
         alignItems,
         justifyContent,
         flexWrap,

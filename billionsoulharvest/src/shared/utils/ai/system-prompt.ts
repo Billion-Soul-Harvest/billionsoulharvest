@@ -241,6 +241,13 @@ Follow these brand guidelines when generating or enhancing pages. The aesthetic 
 - **Buttons:** Primary buttons use #0f172a background with white text, 8px radius. Secondary/CTA buttons use #06b6d4 background with white text. Consistent padding (16px vertical, 32px horizontal).
 - **Cards:** Flat with 1px light borders (#e2e8f0), 24px internal padding, no heavy shadows.
 
+### Responsive Design
+- Pages are automatically responsive — font sizes and padding scale down on tablet/phone.
+- CraftRow columns auto-stack to 100% width on phone viewports.
+- Use CraftRow + CraftColumn for multi-column layouts (they auto-stack on mobile).
+- Keep CraftText width at 600-800px max, not 1200px.
+- Prefer percentage-based column widths via CraftColumn.
+
 ### Common Section Patterns
 
 Use these concrete patterns when building pages. Each describes the node structure.

@@ -1,6 +1,8 @@
 "use client";
 
 import { useNode } from "@craftjs/core";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize } from "../responsive-utils";
 
 interface CraftSpacerProps {
   height?: number;
@@ -11,10 +13,12 @@ export function CraftSpacer({ height = 40 }: CraftSpacerProps) {
     selected: state.events.selected,
   }));
 
+  const cw = useCanvasWidth();
+
   return (
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      style={{ height: `${height}px` }}
+      style={{ height: `${responsiveSize(height, cw, 8)}px` }}
       className={`w-full ${selected ? "outline outline-2 outline-dashed outline-blue-300" : ""}`}
     />
   );

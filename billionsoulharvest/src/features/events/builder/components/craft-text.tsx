@@ -7,6 +7,8 @@ import Link from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
 import { useEffect, useRef, useCallback } from "react";
 import { craftRef } from "../craft-utils";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize } from "../responsive-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +37,8 @@ export const CraftText: UserComponent<TextProps> = ({
   } = useNode((state) => ({
     selected: state.events.selected,
   }));
+
+  const cw = useCanvasWidth();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,12 +96,12 @@ export const CraftText: UserComponent<TextProps> = ({
     <div
       ref={craftRef(connect, drag)}
       style={{
-        fontSize: `${fontSize}px`,
+        fontSize: `${responsiveSize(fontSize, cw, 12)}px`,
         fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
         lineHeight: 1.7,
         textAlign,
         color,
-        width: `${width}px`,
+        width: `${Math.min(width, cw - 32)}px`,
         maxWidth: "100%",
         minHeight: `${height}px`,
         cursor: "move",

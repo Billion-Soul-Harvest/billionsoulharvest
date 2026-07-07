@@ -2,6 +2,8 @@
 
 import { useNode } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize } from "../responsive-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -31,18 +33,20 @@ export function CraftButton({
     connectors: { connect, drag },
   } = useNode();
 
+  const cw = useCanvasWidth();
+
   return (
     <div
       ref={craftRef(connect, drag)}
       style={{
-        width,
+        width: Math.min(width, cw),
         backgroundColor: bgColor,
         color: textColor,
-        fontSize,
-        paddingLeft: paddingX,
-        paddingRight: paddingX,
-        paddingTop: paddingY,
-        paddingBottom: paddingY,
+        fontSize: responsiveSize(fontSize, cw, 12),
+        paddingLeft: responsiveSize(paddingX, cw, 8),
+        paddingRight: responsiveSize(paddingX, cw, 8),
+        paddingTop: responsiveSize(paddingY, cw, 6),
+        paddingBottom: responsiveSize(paddingY, cw, 6),
         borderRadius,
         textAlign: "center",
         cursor: "pointer",

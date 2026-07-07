@@ -43,6 +43,11 @@ export function CraftPageRenderer({ content, event, pages = [] }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "0 16px", boxSizing: "border-box" as const }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 768px) {
+          .craft-col { width: 100% !important; flex: none !important; min-width: 0 !important; }
+        }
+      `}} />
       {rootNode.nodes.map((nodeId) => (
         <RenderNode key={nodeId} nodeId={nodeId} nodes={content} event={event} pages={pages} />
       ))}
@@ -71,11 +76,12 @@ function RenderNode({
   ));
 
   switch (resolvedName) {
-    case "CraftText":
+    case "CraftText": {
+      const fs = (props.fontSize as number) ?? 16;
       return (
         <div
           style={{
-            fontSize: `${props.fontSize ?? 16}px`,
+            fontSize: `clamp(${Math.max(12, Math.round(fs * 0.5))}px, ${(fs / 12).toFixed(1)}vw, ${fs}px)`,
             fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
             lineHeight: 1.7,
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "left",
@@ -87,6 +93,7 @@ function RenderNode({
           dangerouslySetInnerHTML={{ __html: (props.text as string) ?? "" }}
         />
       );
+    }
 
     case "CraftImage": {
       const imgW = (props.width as number) ?? 400;
@@ -110,6 +117,9 @@ function RenderNode({
 
     case "CraftButton": {
       const link = (props.link as string) ?? "#";
+      const btnFs = (props.fontSize as number) ?? 16;
+      const btnPx = (props.paddingX as number) ?? 32;
+      const btnPy = (props.paddingY as number) ?? 16;
       return (
         <a
           href={link}
@@ -120,11 +130,11 @@ function RenderNode({
             backgroundColor: (props.bgColor as string) ?? "#29BDD6",
             color: (props.textColor as string) ?? "#ffffff",
             fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
-            fontSize: (props.fontSize as number) ?? 16,
-            paddingLeft: (props.paddingX as number) ?? 32,
-            paddingRight: (props.paddingX as number) ?? 32,
-            paddingTop: (props.paddingY as number) ?? 16,
-            paddingBottom: (props.paddingY as number) ?? 16,
+            fontSize: `clamp(${Math.max(12, Math.round(btnFs * 0.5))}px, ${(btnFs / 12).toFixed(1)}vw, ${btnFs}px)`,
+            paddingLeft: `clamp(8px, 2vw, ${btnPx}px)`,
+            paddingRight: `clamp(8px, 2vw, ${btnPx}px)`,
+            paddingTop: `clamp(6px, 1.5vw, ${btnPy}px)`,
+            paddingBottom: `clamp(6px, 1.5vw, ${btnPy}px)`,
             borderRadius: (props.borderRadius as number) ?? 12,
             textAlign: "center",
             fontWeight: 500,
@@ -151,14 +161,16 @@ function RenderNode({
       ) : null;
     }
 
-    case "CraftRow":
+    case "CraftRow": {
+      const rowGap = (props.gap as number) ?? 16;
+      const rowPad = (props.padding as number) ?? 0;
       return (
         <div
           style={{
             display: "flex",
             flexDirection: "row",
-            gap: `${props.gap ?? 16}px`,
-            padding: `${props.padding ?? 0}px`,
+            gap: `clamp(4px, 2vw, ${rowGap}px)`,
+            padding: rowPad > 0 ? `clamp(0px, 2vw, ${rowPad}px)` : "0px",
             alignItems: (props.alignItems as React.CSSProperties["alignItems"]) ?? "stretch",
             justifyContent: (props.justifyContent as React.CSSProperties["justifyContent"]) ?? "flex-start",
             flexWrap: (props.flexWrap as React.CSSProperties["flexWrap"]) ?? "wrap",
@@ -170,12 +182,14 @@ function RenderNode({
           {children}
         </div>
       );
+    }
 
     case "CraftColumn": {
       const colWidth = (props.width as string) ?? "50%";
       const colMinWidth = (props.minWidth as number) ?? 0;
       return (
         <div
+          className="craft-col"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -199,6 +213,7 @@ function RenderNode({
       const bgColor = (props.backgroundColor as string) ?? "transparent";
       const containerAlignItems = props.alignItems as string | undefined;
       const containerGap = (props.gap as number) ?? 0;
+      const containerPad = (props.padding as number) ?? 20;
       return (
         <div
           style={{
@@ -208,7 +223,7 @@ function RenderNode({
               : undefined,
             backgroundSize: bgImage ? "cover" : undefined,
             backgroundPosition: bgImage ? "center" : undefined,
-            padding: `${props.padding ?? 20}px`,
+            padding: `clamp(12px, 3vw, ${containerPad}px)`,
             borderRadius: `${props.borderRadius ?? 0}px`,
             borderColor: (props.borderColor as string) ?? "transparent",
             borderWidth: `${props.borderWidth ?? 0}px`,
@@ -229,10 +244,12 @@ function RenderNode({
       );
     }
 
-    case "CraftSpacer":
+    case "CraftSpacer": {
+      const spacerH = (props.height as number) ?? 40;
       return (
-        <div style={{ height: `${props.height ?? 40}px`, width: "100%" }} />
+        <div style={{ height: `clamp(8px, 3vw, ${spacerH}px)`, width: "100%" }} />
       );
+    }
 
     case "CraftHeader":
       // Skip — the site-level EventSiteHeader already renders navigation
@@ -247,7 +264,7 @@ function RenderNode({
         <footer
           style={{
             backgroundColor: footerBg,
-            padding: `${footerPad}px`,
+            padding: `clamp(16px, 3vw, ${footerPad}px)`,
             width: "100%",
             maxWidth: "100%",
             borderTop: footerBorderWidth > 0 ? `${footerBorderWidth}px solid ${footerBorderColor}` : "none",
@@ -282,11 +299,12 @@ function RenderNode({
         </div>
       );
 
-    case "CraftEventTitle":
+    case "CraftEventTitle": {
+      const titleFs = (props.fontSize as number) ?? 48;
       return (
         <div
           style={{
-            fontSize: `${props.fontSize ?? 48}px`,
+            fontSize: `clamp(${Math.max(16, Math.round(titleFs * 0.5))}px, ${(titleFs / 12).toFixed(1)}vw, ${titleFs}px)`,
             color: (props.color as string) ?? "#ffffff",
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "center",
             maxWidth: "100%",
@@ -297,8 +315,10 @@ function RenderNode({
           {event.title}
         </div>
       );
+    }
 
     case "CraftEventDates": {
+      const datesFs = (props.fontSize as number) ?? 16;
       const formatDate = (date: string) =>
         new Date(date + "T00:00:00").toLocaleDateString("en-US", {
           month: "long",
@@ -309,7 +329,7 @@ function RenderNode({
       return (
         <div
           style={{
-            fontSize: `${props.fontSize ?? 16}px`,
+            fontSize: `clamp(${Math.max(12, Math.round(datesFs * 0.5))}px, ${(datesFs / 12).toFixed(1)}vw, ${datesFs}px)`,
             fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
             lineHeight: 1.5,
             color: (props.color as string) ?? "#d1d5db",
@@ -330,11 +350,12 @@ function RenderNode({
     }
 
     case "CraftEventLocation": {
+      const locationFs = (props.fontSize as number) ?? 16;
       const location = [event.location, event.city, event.country].filter(Boolean).join(", ");
       return (
         <div
           style={{
-            fontSize: `${props.fontSize ?? 16}px`,
+            fontSize: `clamp(${Math.max(12, Math.round(locationFs * 0.5))}px, ${(locationFs / 12).toFixed(1)}vw, ${locationFs}px)`,
             fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
             lineHeight: 1.5,
             color: (props.color as string) ?? "#d1d5db",
@@ -347,7 +368,10 @@ function RenderNode({
       );
     }
 
-    case "CraftRegisterButton":
+    case "CraftRegisterButton": {
+      const regFs = (props.fontSize as number) ?? 18;
+      const regPx = (props.paddingX as number) ?? 32;
+      const regPy = (props.paddingY as number) ?? 16;
       return event.status === "registration_open" ? (
         <Link
           href={`/register/${event.slug}`}
@@ -356,8 +380,8 @@ function RenderNode({
             backgroundColor: (props.bgColor as string) ?? "#29BDD6",
             color: (props.textColor as string) ?? "#ffffff",
             fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
-            fontSize: `${props.fontSize ?? 18}px`,
-            padding: `${props.paddingY ?? 16}px ${props.paddingX ?? 32}px`,
+            fontSize: `clamp(${Math.max(12, Math.round(regFs * 0.5))}px, ${(regFs / 12).toFixed(1)}vw, ${regFs}px)`,
+            padding: `clamp(6px, 1.5vw, ${regPy}px) clamp(8px, 2vw, ${regPx}px)`,
             borderRadius: `${props.borderRadius ?? 12}px`,
             fontWeight: 600,
             textAlign: "center",
@@ -367,6 +391,7 @@ function RenderNode({
           {(props.text as string) ?? "Register Now"}
         </Link>
       ) : null;
+    }
 
     case "CraftEmbed": {
       const embedUrl = (props.url as string) ?? "";

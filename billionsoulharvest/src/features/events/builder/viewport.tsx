@@ -9,6 +9,7 @@ import { useEventData } from "./event-context";
 import { usePageContext } from "./page-context";
 import { AIAssistantDialog } from "./ai/ai-assistant-dialog";
 import { useBuilderKeyboardShortcuts } from "./use-keyboard-shortcuts";
+import { CanvasWidthProvider } from "./canvas-width-context";
 
 interface Props {
   initialContent?: string | null;
@@ -120,24 +121,26 @@ export function Viewport({ initialContent, canvasWidth, hideHeader }: Props) {
           {/* Persistent header — always visible across all pages (event builder only) */}
           {!hideHeader && <PersistentHeader canvasWidth={canvasWidth} />}
 
-          <Frame json={initialContent ?? undefined}>
-            <Element
-              is={CraftContainer}
-              canvas
-              backgroundColor="#0f2744"
-              padding={40}
-              width={canvasWidth}
-              minHeight={800}
-              borderRadius={0}
-              borderColor="transparent"
-              borderWidth={0}
-              backgroundImage=""
-              alignItems="center"
-              gap={0}
-            >
-              {!initialContent && defaultContentChildren}
-            </Element>
-          </Frame>
+          <CanvasWidthProvider value={canvasWidth}>
+            <Frame json={initialContent ?? undefined}>
+              <Element
+                is={CraftContainer}
+                canvas
+                backgroundColor="#0f2744"
+                padding={40}
+                width={canvasWidth}
+                minHeight={800}
+                borderRadius={0}
+                borderColor="transparent"
+                borderWidth={0}
+                backgroundImage=""
+                alignItems="center"
+                gap={0}
+              >
+                {!initialContent && defaultContentChildren}
+              </Element>
+            </Frame>
+          </CanvasWidthProvider>
         </div>
       </div>
 

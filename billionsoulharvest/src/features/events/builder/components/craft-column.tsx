@@ -2,6 +2,8 @@
 
 import { useNode, UserComponent } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
+import { useCanvasWidth } from "../canvas-width-context";
+import { responsiveSize, isPhone } from "../responsive-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -41,16 +43,19 @@ export const CraftColumn: UserComponent<ColumnProps> = ({
     selected: state.events.selected,
   }));
 
+  const cw = useCanvasWidth();
+  const phoneMode = isPhone(cw);
+
   return (
     <div
       ref={craftRef(connect, drag)}
       style={{
         display: "flex",
         flexDirection: "column",
-        width,
-        flex: width === "auto" ? "1 1 0%" : undefined,
-        minWidth: minWidth > 0 ? `${minWidth}px` : 0,
-        padding: `${padding}px`,
+        width: phoneMode ? "100%" : width,
+        flex: !phoneMode && width === "auto" ? "1 1 0%" : undefined,
+        minWidth: !phoneMode && minWidth > 0 ? `${minWidth}px` : 0,
+        padding: `${responsiveSize(padding, cw, 4)}px`,
         backgroundColor,
         alignItems,
         justifyContent,
