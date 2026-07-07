@@ -17,6 +17,7 @@ export type AIOperationType =
   | "generate_full_page"
   | "edit_node"
   | "add_nodes"
+  | "remove_nodes"
   | "suggest_content";
 
 export interface AIOperation {
@@ -28,6 +29,7 @@ export interface AIOperation {
     index?: number;
     tree: Record<string, unknown>;
   };
+  nodesToRemove?: string[];
   explanation: string;
 }
 

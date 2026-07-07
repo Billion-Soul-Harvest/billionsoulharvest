@@ -7,6 +7,7 @@ import {
   applyFullPageGeneration,
   applyNodeEdits,
   applyAddNodes,
+  applyRemoveNodes,
   getCanvasSnapshot,
 } from "./ai-canvas-bridge";
 
@@ -259,6 +260,12 @@ export function useAIChat(eventData: EventData) {
             nodes: operation.nodesToAdd.tree as Record<string, unknown>,
           });
 
+        case "remove_nodes":
+          if (!operation.nodesToRemove || operation.nodesToRemove.length === 0) {
+            return { success: false, error: "No node IDs to remove" };
+          }
+          return applyRemoveNodes(actions, query, operation.nodesToRemove);
+
         case "suggest_content":
           return { success: true };
 
@@ -405,6 +412,19 @@ function tryParseJsonToOperation(jsonStr: string, explanation: string): AIOperat
               index: addData.index,
               tree: addData.nodes || addData.tree,
             },
+            explanation,
+          };
+        }
+        case "remove_nodes": {
+          const removeData = parsed.data;
+          const ids = Array.isArray(removeData) ? removeData : removeData?.nodeIds;
+          if (!Array.isArray(ids)) {
+            console.log("[AI] remove_nodes missing nodeIds array");
+            break;
+          }
+          return {
+            type: "remove_nodes",
+            nodesToRemove: ids,
             explanation,
           };
         }

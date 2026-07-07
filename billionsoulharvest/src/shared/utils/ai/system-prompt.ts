@@ -167,7 +167,7 @@ Format:
 
 \`\`\`json
 {
-  "operation": "generate_full_page" | "edit_node" | "add_nodes" | "suggest_content",
+  "operation": "generate_full_page" | "edit_node" | "add_nodes" | "remove_nodes" | "suggest_content",
   "data": { ... }
 }
 \`\`\`
@@ -210,6 +210,16 @@ Format:
   }
 }
 \`\`\`
+
+**remove_nodes** - Remove nodes from the canvas:
+\`\`\`json
+{
+  "operation": "remove_nodes",
+  "data": ["node-id-1", "node-id-2"]
+}
+\`\`\`
+
+Removing a node also removes all its children automatically. To remove duplicate/redundant nodes, identify the exact node IDs from the canvas JSON and list them. Do NOT use edit_node to try to remove nodes — use remove_nodes instead.
 
 **suggest_content** - Text-only suggestions (no JSON changes):
 \`\`\`json

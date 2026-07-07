@@ -336,6 +336,50 @@ export function applyAddNodes(
   }
 }
 
+export function applyRemoveNodes(
+  actions: CraftActions,
+  query: CraftQuery,
+  nodeIds: string[]
+): { success: boolean; error?: string } {
+  try {
+    const currentJson = JSON.parse(query.serialize()) as Record<string, unknown>;
+    const removeSet = new Set(nodeIds);
+
+    // Recursively collect all descendants of removed nodes
+    function collectDescendants(nodeId: string) {
+      const node = currentJson[nodeId] as Record<string, unknown> | undefined;
+      if (!node) return;
+      const children = (node.nodes as string[]) || [];
+      for (const childId of children) {
+        removeSet.add(childId);
+        collectDescendants(childId);
+      }
+    }
+    for (const id of nodeIds) collectDescendants(id);
+
+    // Remove nodes from the JSON
+    for (const id of removeSet) {
+      delete currentJson[id];
+    }
+
+    // Clean up parent references — remove deleted IDs from all nodes' children arrays
+    for (const [, rawNode] of Object.entries(currentJson)) {
+      const node = rawNode as Record<string, unknown>;
+      if (Array.isArray(node.nodes)) {
+        node.nodes = (node.nodes as string[]).filter((id) => !removeSet.has(id));
+      }
+    }
+
+    actions.deserialize(JSON.stringify(currentJson));
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to remove nodes",
+    };
+  }
+}
+
 export function getCanvasSnapshot(query: CraftQuery): string {
   return query.serialize();
 }
