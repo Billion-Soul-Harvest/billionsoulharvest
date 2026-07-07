@@ -5,7 +5,7 @@ import { z } from "zod";
 import QRCode from "qrcode";
 import { render } from "@react-email/components";
 import { RegistrationConfirmationEmail } from "@/features/email/templates/registration-confirmation";
-import { getSmtpTransport, getFromAddress } from "@/shared/utils/smtp";
+import { sendEmail, getFromAddress } from "@/shared/utils/send-email";
 import type { RegistrationConfig } from "@/shared/types/database";
 
 function getSupabase() {
@@ -179,35 +179,32 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email
     try {
-      if (process.env.SMTP_HOST) {
-        const transport = await getSmtpTransport();
-        const siteUrl =
-          process.env.NEXT_PUBLIC_SITE_URL || "https://billionsoulharvest.org";
-        const checkInUrl = `${siteUrl}/check-in/${registration.id}`;
-        const qrCodeUrl = await QRCode.toDataURL(checkInUrl, {
-          width: 200,
-          margin: 2,
-          color: { dark: "#1a3a2a" },
-        });
+      const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL || "https://billionsoulharvest.org";
+      const checkInUrl = `${siteUrl}/check-in/${registration.id}`;
+      const qrCodeUrl = await QRCode.toDataURL(checkInUrl, {
+        width: 200,
+        margin: 2,
+        color: { dark: "#1a3a2a" },
+      });
 
-        const html = await render(
-          RegistrationConfirmationEmail({
-            firstName: data.firstName as string,
-            eventTitle: event.title,
-            eventDate: event.start_date,
-            eventLocation: event.location || event.city || "TBD",
-            qrCodeUrl,
-            registrationId: registration.id,
-          })
-        );
+      const html = await render(
+        RegistrationConfirmationEmail({
+          firstName: data.firstName as string,
+          eventTitle: event.title,
+          eventDate: event.start_date,
+          eventLocation: event.location || event.city || "TBD",
+          qrCodeUrl,
+          registrationId: registration.id,
+        })
+      );
 
-        await transport.sendMail({
-          from: getFromAddress(),
-          to: data.email as string,
-          subject: `Registration Confirmed — ${event.title}`,
-          html,
-        });
-      }
+      await sendEmail({
+        from: getFromAddress(),
+        to: data.email as string,
+        subject: `Registration Confirmed — ${event.title}`,
+        html,
+      });
     } catch (emailError) {
       // Don't fail registration if email fails
       console.error("Email send error:", emailError);

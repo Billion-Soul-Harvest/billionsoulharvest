@@ -3,7 +3,7 @@ import { render } from "@react-email/components";
 import { buildSegmentQuery } from "@/shared/utils/segment-query";
 import { buildUnsubscribeUrl } from "@/shared/utils/unsubscribe-token";
 import { CampaignWrapperEmail } from "@/features/email/templates/campaign-wrapper";
-import { getSmtpTransport, getFromAddress } from "@/shared/utils/smtp";
+import { sendEmails, getFromAddress } from "@/shared/utils/send-email";
 
 export function getServiceSupabase() {
   return createClient(
@@ -17,8 +17,6 @@ export async function processCampaignSend(
   campaign: Record<string, unknown>,
   campaignId: string
 ) {
-  const transport = await getSmtpTransport();
-
   try {
     // Query contacts matching segment_filter
     const filter = (campaign.segment_filter || {}) as Record<string, unknown>;
@@ -48,8 +46,8 @@ export async function processCampaignSend(
       .update({ total_recipients: contacts.length })
       .eq("id", campaignId);
 
-    // Chunk into batches of 100
-    const BATCH_SIZE = 100;
+    // Chunk into batches of 50 (Edge Function limit)
+    const BATCH_SIZE = 50;
     let sentCount = 0;
     let failedCount = 0;
 
@@ -57,7 +55,7 @@ export async function processCampaignSend(
       const batch = contacts.slice(i, i + BATCH_SIZE);
 
       try {
-        const emails = await Promise.all(
+        const emailPayloads = await Promise.all(
           batch.map(async (contact) => {
             const unsubscribeUrl = buildUnsubscribeUrl(contact.id);
 
@@ -92,28 +90,29 @@ export async function processCampaignSend(
           })
         );
 
-        // Send individually
-        for (let j = 0; j < emails.length; j++) {
-          const contact = batch[j];
-          try {
-            const info = await transport.sendMail(emails[j]);
+        const results = await sendEmails(emailPayloads);
 
+        // Update campaign_sends based on results
+        for (let j = 0; j < results.length; j++) {
+          const contact = batch[j];
+          const result = results[j];
+
+          if (result.success) {
             await supabase
               .from("campaign_sends")
               .update({
-                resend_id: info.messageId,
+                resend_id: result.messageId,
                 status: "sent",
               })
               .eq("campaign_id", campaignId)
               .eq("contact_id", contact.id);
             sentCount++;
-          } catch (sendError) {
-            console.error("Individual send error:", sendError);
+          } else {
             await supabase
               .from("campaign_sends")
               .update({
                 status: "failed",
-                error_message: sendError instanceof Error ? sendError.message : "Send failed",
+                error_message: result.error || "Send failed",
               })
               .eq("campaign_id", campaignId)
               .eq("contact_id", contact.id);
