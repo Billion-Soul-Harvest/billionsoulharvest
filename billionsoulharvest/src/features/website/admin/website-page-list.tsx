@@ -148,18 +148,28 @@ export function WebsitePageList({ initialPages }: Props) {
                 )}
                 <span className="text-xs text-gray-400">/{page.slug}</span>
               </div>
-              <div className="flex items-center gap-3 mt-1">
+              <div className="flex items-center gap-4 mt-1.5">
                 <button
                   onClick={() => handleTogglePublished(page.id, page.published)}
-                  className={`text-xs font-medium ${page.published ? "text-green-600" : "text-gray-400"}`}
+                  className="flex items-center gap-1.5 group"
                 >
-                  {page.published ? "Published" : "Draft"}
+                  <span className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full transition-colors ${page.published ? "bg-green-500" : "bg-gray-300"}`}>
+                    <span className={`inline-block h-3 w-3 rounded-full bg-white shadow transform transition-transform mt-0.5 ${page.published ? "translate-x-3.5 ml-0" : "translate-x-0.5"}`} />
+                  </span>
+                  <span className={`text-xs font-medium ${page.published ? "text-green-600" : "text-gray-400"}`}>
+                    {page.published ? "Published" : "Draft"}
+                  </span>
                 </button>
                 <button
                   onClick={() => handleToggleNav(page.id, page.show_in_nav)}
-                  className={`text-xs ${page.show_in_nav ? "text-blue-600" : "text-gray-400"}`}
+                  className="flex items-center gap-1.5 group"
                 >
-                  {page.show_in_nav ? "In Nav" : "Hidden from Nav"}
+                  <span className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full transition-colors ${page.show_in_nav ? "bg-blue-500" : "bg-gray-300"}`}>
+                    <span className={`inline-block h-3 w-3 rounded-full bg-white shadow transform transition-transform mt-0.5 ${page.show_in_nav ? "translate-x-3.5 ml-0" : "translate-x-0.5"}`} />
+                  </span>
+                  <span className={`text-xs font-medium ${page.show_in_nav ? "text-blue-600" : "text-gray-400"}`}>
+                    {page.show_in_nav ? "In Nav" : "Hidden"}
+                  </span>
                 </button>
               </div>
             </div>
