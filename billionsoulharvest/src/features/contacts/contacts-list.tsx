@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -641,16 +642,22 @@ function SearchableMultiSelect({
   selected,
   onToggle,
   placeholder = "Search...",
+  onCreate,
 }: {
   options: string[];
   selected: Set<string>;
   onToggle: (item: string) => void;
   placeholder?: string;
+  onCreate?: (name: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const filtered = search
     ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase()))
     : options;
+
+  const exactMatch = search
+    ? options.some((o) => o.toLowerCase() === search.trim().toLowerCase())
+    : true;
 
   return (
     <div>
@@ -686,7 +693,19 @@ function SearchableMultiSelect({
       </div>
       {/* Options list */}
       <div className="max-h-48 overflow-y-auto border rounded-lg">
-        {filtered.length === 0 ? (
+        {onCreate && search.trim() && !exactMatch && (
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-50 border-b font-medium"
+            onClick={() => {
+              onCreate(search.trim());
+              setSearch("");
+            }}
+          >
+            + Create &ldquo;{search.trim()}&rdquo;
+          </button>
+        )}
+        {filtered.length === 0 && !(onCreate && search.trim() && !exactMatch) ? (
           <p className="text-sm text-gray-400 px-3 py-4 text-center">No matches found</p>
         ) : (
           filtered.map((item) => (
@@ -751,14 +770,17 @@ export function ContactsListClient({
   const visibleCount = visibleColumns.size + 2; // +2 for checkbox and actions columns
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectAllMode, setSelectAllMode] = useState(false);
-  const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | "add_to_list" | "remove_from_list" | "remove_tags" | null>(null);
+  const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | "add_to_list" | "remove_from_list" | "remove_tags" | "create_list" | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkTagInput, setBulkTagInput] = useState("");
   const [bulkTagMode, setBulkTagMode] = useState<"add" | "replace">("add");
   const [bulkRegion, setBulkRegion] = useState("");
   const [bulkType, setBulkType] = useState<ContactType | "">("");
   const [bulkSelectedLists, setBulkSelectedLists] = useState<Set<string>>(new Set());
+  const [localListNames, setLocalListNames] = useState(listNames);
+  useEffect(() => { setLocalListNames(listNames); }, [listNames]);
   const [bulkSelectedTags, setBulkSelectedTags] = useState<Set<string>>(new Set());
+  const [newListName, setNewListName] = useState("");
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
@@ -919,6 +941,35 @@ export function ContactsListClient({
         await supabase.from("contacts").update({ email_lists: merged }).eq("id", contact.id);
       }
     }
+  }
+
+  async function bulkCreateListAndAdd() {
+    const name = newListName.trim();
+    if (!name) return;
+    const supabase = createClient();
+
+    // Create audience record
+    await supabase.from("audiences").insert({ name, type: "list" });
+
+    // Add selected contacts to the new list
+    let allIds: string[];
+    if (selectAllMode) {
+      const { data } = await supabase.from("contacts").select("id");
+      allIds = (data ?? []).map((r) => r.id);
+    } else {
+      allIds = [...selected];
+    }
+
+    for (let i = 0; i < allIds.length; i += 100) {
+      const batch = allIds.slice(i, i + 100);
+      const { data } = await supabase.from("contacts").select("id, email_lists").in("id", batch);
+      for (const contact of data ?? []) {
+        const merged = [...new Set([...(contact.email_lists ?? []), name])];
+        await supabase.from("contacts").update({ email_lists: merged }).eq("id", contact.id);
+      }
+    }
+
+    setLocalListNames((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
   }
 
   async function bulkRemoveFromList() {
@@ -1147,6 +1198,13 @@ export function ContactsListClient({
                     onClick={() => { setBulkSelectedLists(new Set()); setBulkDialog("remove_from_list"); setActionsDropdownOpen(false); }}
                   >
                     Remove from list
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => { setNewListName(""); setBulkDialog("create_list"); setActionsDropdownOpen(false); }}
+                  >
+                    Create new list
                   </button>
                   <div className="h-px bg-gray-100 mx-2" />
                   <button
@@ -1660,7 +1718,7 @@ export function ContactsListClient({
             <DialogDescription>Search and select lists to add contacts to.</DialogDescription>
           </DialogHeader>
           <SearchableMultiSelect
-            options={listNames}
+            options={localListNames}
             selected={bulkSelectedLists}
             onToggle={(name) => {
               setBulkSelectedLists((prev) => {
@@ -1671,6 +1729,10 @@ export function ContactsListClient({
               });
             }}
             placeholder="Search lists..."
+            onCreate={(name) => {
+              setLocalListNames((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
+              setBulkSelectedLists((prev) => new Set([...prev, name]));
+            }}
           />
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
@@ -1705,6 +1767,33 @@ export function ContactsListClient({
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
             <Button onClick={() => executeBulk(bulkRemoveFromList)} disabled={bulkLoading || bulkSelectedLists.size === 0}>
               {bulkLoading ? "Removing..." : `Remove from ${bulkSelectedLists.size || ""} list${bulkSelectedLists.size !== 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create New List Dialog */}
+      <Dialog open={bulkDialog === "create_list"} onOpenChange={(open) => { if (!open) setBulkDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create new list</DialogTitle>
+            <DialogDescription>Create a list and add {effectiveCount.toLocaleString()} selected contact{effectiveCount !== 1 ? "s" : ""} to it.</DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label htmlFor="new-list-name">List name</Label>
+            <Input
+              id="new-list-name"
+              value={newListName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewListName(e.target.value)}
+              placeholder="e.g., Conference 2026 Attendees"
+              className="mt-1"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={() => executeBulk(bulkCreateListAndAdd)} disabled={bulkLoading || !newListName.trim()}>
+              {bulkLoading ? "Creating..." : "Create & add contacts"}
             </Button>
           </DialogFooter>
         </DialogContent>
