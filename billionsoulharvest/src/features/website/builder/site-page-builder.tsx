@@ -12,6 +12,7 @@ import { Viewport } from "@/features/events/builder/viewport";
 import { RightPanel } from "@/features/events/builder/right-panel";
 import { PageContextProvider, type PageInfo } from "@/features/events/builder/page-context";
 import { EventProvider } from "@/features/events/builder/event-context";
+import { useUnsavedChanges } from "@/features/events/builder/use-unsaved-changes";
 import type { Event } from "@/shared/types/database";
 
 import { CraftText } from "@/features/events/builder/components/craft-text";
@@ -216,6 +217,9 @@ function SiteEditorLayout({ initialPages, initialPageId, footerJson }: { initial
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeViewport, setActiveViewport] = useState(0);
+  const { markSaved, setInitialSnapshot, confirmNavigation } = useUnsavedChanges(
+    useCallback(() => query.serialize(), [query])
+  );
 
   // Page management
   const [pages, setPages] = useState(initialPages);
@@ -227,6 +231,11 @@ function SiteEditorLayout({ initialPages, initialPageId, footerJson }: { initial
   useEffect(() => {
     activePageIdRef.current = activePageId;
   }, [activePageId]);
+
+  // Set initial snapshot once canvas is loaded
+  useEffect(() => {
+    setInitialSnapshot();
+  }, [setInitialSnapshot]);
 
   const footerJsonRef = useRef(footerJson ?? buildDefaultFooterJson());
 
@@ -309,8 +318,9 @@ function SiteEditorLayout({ initialPages, initialPageId, footerJson }: { initial
     await Promise.all(promises);
     setSaving(false);
     setSaved(true);
+    markSaved();
     setTimeout(() => setSaved(false), 2000);
-  }, [query, activePageId, pages]);
+  }, [query, activePageId, pages, markSaved]);
 
   const refreshPages = useCallback(async () => {
     const supabase = createClient();
@@ -341,6 +351,9 @@ function SiteEditorLayout({ initialPages, initialPageId, footerJson }: { initial
       <div className="h-14 bg-white border-b flex items-center px-4 gap-3 shrink-0">
         <Link
           href="/admin/website"
+          onClick={(e) => {
+            if (!confirmNavigation()) e.preventDefault();
+          }}
           className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 text-sm transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

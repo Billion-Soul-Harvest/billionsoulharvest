@@ -136,12 +136,17 @@ export function useAIChat(eventData: EventData) {
         let fullContent = await streamResponse(response, assistantMsgId, setMessages);
 
         // Auto-continuation: if response was truncated, request continuation (up to 2 retries)
-        // Detect truncation via sentinel (Anthropic max_tokens) OR unclosed code block (Vercel timeout)
+        // Detect truncation via sentinel (Anthropic max_tokens), unclosed code block (Vercel timeout),
+        // or explanation text with no JSON block (cut off before JSON started)
         const isTruncated = (text: string) => {
           if (text.endsWith("<!--STOP:max_tokens-->")) return true;
           // Unclosed code block = stream died mid-JSON (Vercel timeout)
           const hasOpenBlock = text.includes("```") && text.split("```").length % 2 === 0;
-          return hasOpenBlock;
+          if (hasOpenBlock) return true;
+          // Response has explanation text but no JSON block at all — AI was cut off before producing JSON
+          const hasNoJsonBlock = !text.includes("```");
+          if (hasNoJsonBlock && text.trim().length > 50) return true;
+          return false;
         };
 
         const MAX_CONTINUATIONS = 2;
@@ -159,12 +164,17 @@ export function useAIChat(eventData: EventData) {
             )
           );
 
+          const hasJsonStarted = fullContent.includes("```");
+          const continuationPrompt = hasJsonStarted
+            ? "Continue generating from where you stopped. Output ONLY the remaining JSON, no explanation."
+            : "Now output the JSON code block. Skip the explanation — go straight to the ```json block with the operation.";
+
           const continuationBody: AIBuilderRequest = {
             messages: [
               ...requestBody.messages.slice(0, -1),
               { role: "user" as const, content: userMessage },
               { role: "assistant" as const, content: fullContent },
-              { role: "user" as const, content: "Continue generating from where you stopped. Output ONLY the remaining JSON, no explanation." },
+              { role: "user" as const, content: continuationPrompt },
             ],
             context: requestBody.context,
           };
@@ -206,7 +216,7 @@ export function useAIChat(eventData: EventData) {
           if (hasOpenBlock) {
             setError("Response was truncated — the JSON block was cut off. Try a simpler request or edit fewer sections at once.");
           } else {
-            setError("AI responded without actionable changes. Try being more specific, e.g. \"Update the heading text to: ...\"");
+            setError("AI responded without a JSON code block. The response may have been too long. Try a simpler request or click Retry.");
           }
         }
       } catch (err) {

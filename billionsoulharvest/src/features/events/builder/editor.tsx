@@ -11,6 +11,7 @@ import { Viewport } from "./viewport";
 import { RightPanel } from "./right-panel";
 import { EventProvider } from "./event-context";
 import { PageContextProvider, type PageInfo } from "./page-context";
+import { useUnsavedChanges } from "./use-unsaved-changes";
 
 import { CraftText } from "./components/craft-text";
 import { CraftImage } from "./components/craft-image";
@@ -103,6 +104,9 @@ function EditorLayout({ event }: { event: Event }) {
   const [status, setStatus] = useState<string>(event.status ?? "draft");
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
+  const { markSaved, setInitialSnapshot, confirmNavigation } = useUnsavedChanges(
+    useCallback(() => query.serialize(), [query])
+  );
 
   // Page management state
   const [activePageId, setActivePageId] = useState<string | null>(null); // null = home
@@ -129,6 +133,11 @@ function EditorLayout({ event }: { event: Event }) {
   useEffect(() => {
     fetchPages();
   }, [fetchPages]);
+
+  // Set initial snapshot once canvas is loaded
+  useEffect(() => {
+    setInitialSnapshot();
+  }, [setInitialSnapshot]);
 
   const switchPage = useCallback((newPageId: string | null) => {
     const currentId = activePageIdRef.current;
@@ -240,8 +249,9 @@ function EditorLayout({ event }: { event: Event }) {
     await Promise.all(promises);
     setSaving(false);
     setSaved(true);
+    markSaved();
     setTimeout(() => setSaved(false), 2000);
-  }, [event.id, query, activePageId, pages]);
+  }, [event.id, query, activePageId, pages, markSaved]);
 
   return (
     <div className="h-screen flex flex-col">
@@ -249,6 +259,9 @@ function EditorLayout({ event }: { event: Event }) {
       <div className="h-14 bg-white border-b flex items-center px-4 gap-3 shrink-0">
         <Link
           href={`/admin/events/edit/${event.id}`}
+          onClick={(e) => {
+            if (!confirmNavigation()) e.preventDefault();
+          }}
           className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 text-sm transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
