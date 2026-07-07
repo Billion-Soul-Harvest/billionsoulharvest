@@ -199,12 +199,15 @@ export async function POST(request: NextRequest) {
         })
       );
 
-      await sendEmail({
+      const result = await sendEmail({
         from: getFromAddress(),
         to: data.email as string,
         subject: `Registration Confirmed — ${event.title}`,
         html,
       });
+      if (!result.success) {
+        console.error("Email send failed:", result.error);
+      }
     } catch (emailError) {
       // Don't fail registration if email fails
       console.error("Email send error:", emailError);
