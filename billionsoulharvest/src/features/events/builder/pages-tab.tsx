@@ -117,6 +117,22 @@ export function PagesTab() {
     );
   };
 
+  const handleTogglePublished = async (id: string, published: boolean) => {
+    const supabase = createClient();
+    await supabase.from("site_pages").update({ published: !published }).eq("id", id);
+    setPages((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, published: !published } : p))
+    );
+  };
+
+  const handleToggleNav = async (id: string, showInNav: boolean) => {
+    const supabase = createClient();
+    await supabase.from("site_pages").update({ show_in_nav: !showInNav }).eq("id", id);
+    setPages((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, show_in_nav: !showInNav } : p))
+    );
+  };
+
   const handleAnchorChange = async (id: string, anchor: string) => {
     const supabase = createClient();
     const value = anchor.trim() || null;
@@ -228,6 +244,32 @@ export function PagesTab() {
                     </span>
                     {isAnchorItem && (
                       <span className="text-[10px] text-gray-400 block">#{page.nav_anchor}</span>
+                    )}
+                    {isSiteBuilder && !isAnchorItem && (
+                      <div className="flex items-center gap-3 mt-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleTogglePublished(page.id, page.published); }}
+                          className="flex items-center gap-1"
+                        >
+                          <span className={`relative inline-flex h-3 w-5.5 shrink-0 rounded-full transition-colors ${page.published ? "bg-green-500" : "bg-gray-300"}`} style={{ width: 22 }}>
+                            <span className={`inline-block h-2 w-2 rounded-full bg-white shadow transform transition-transform mt-0.5 ${page.published ? "translate-x-3 ml-0" : "translate-x-0.5"}`} />
+                          </span>
+                          <span className={`text-[10px] ${page.published ? "text-green-600" : "text-gray-400"}`}>
+                            {page.published ? "Live" : "Draft"}
+                          </span>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleToggleNav(page.id, page.show_in_nav ?? true); }}
+                          className="flex items-center gap-1"
+                        >
+                          <span className={`relative inline-flex h-3 shrink-0 rounded-full transition-colors ${page.show_in_nav ? "bg-blue-500" : "bg-gray-300"}`} style={{ width: 22 }}>
+                            <span className={`inline-block h-2 w-2 rounded-full bg-white shadow transform transition-transform mt-0.5 ${page.show_in_nav ? "translate-x-3 ml-0" : "translate-x-0.5"}`} />
+                          </span>
+                          <span className={`text-[10px] ${page.show_in_nav ? "text-blue-600" : "text-gray-400"}`}>
+                            {page.show_in_nav ? "Nav" : "Hidden"}
+                          </span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

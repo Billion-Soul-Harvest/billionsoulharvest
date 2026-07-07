@@ -340,6 +340,7 @@ function SiteEditorLayout({ initialPages, initialPageId, footerJson }: { initial
     slug: p.slug,
     sort_order: p.sort_order,
     published: p.published,
+    show_in_nav: p.show_in_nav,
     page_content: p.page_content,
     parent_id: p.parent_id,
     nav_anchor: p.nav_anchor,
