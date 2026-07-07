@@ -1,6 +1,7 @@
 import { createClient } from "@/shared/utils/supabase/server";
 import Link from "next/link";
 import type { Metadata } from "next";
+import CountryMap from "@/features/dashboard/country-map";
 
 export const metadata: Metadata = {
   title: "Dashboard — BSH Admin",
@@ -9,12 +10,23 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [contactsRes, eventsRes, registrationsRes, followUpsRes] = await Promise.all([
+  const [contactsRes, eventsRes, registrationsRes, followUpsRes, countriesRes] = await Promise.all([
     supabase.from("contacts").select("*", { count: "exact", head: true }),
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("registrations").select("*", { count: "exact", head: true }),
     supabase.from("follow_ups").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("contacts").select("country").not("country", "is", null),
   ]);
+
+  const countryData = Object.entries(
+    (countriesRes.data ?? []).reduce<Record<string, number>>((acc, row) => {
+      const c = row.country as string;
+      acc[c] = (acc[c] ?? 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([country, count]) => ({ country, count }))
+    .sort((a, b) => b.count - a.count);
 
   const stats = [
     { label: "Total Contacts", value: contactsRes.count ?? 0, href: "/contacts", color: "bg-blue-50 text-blue-700" },
@@ -52,6 +64,11 @@ export default async function DashboardPage() {
             <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
           </Link>
         ))}
+      </div>
+
+      {/* Country Map */}
+      <div className="mb-8">
+        <CountryMap data={countryData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
