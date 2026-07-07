@@ -2,6 +2,7 @@ import { createClient } from "@/shared/utils/supabase/server";
 import Link from "next/link";
 import type { Metadata } from "next";
 import CountryMap from "@/features/dashboard/country-map";
+import { normalizeCountry } from "@/features/dashboard/country-codes";
 
 export const metadata: Metadata = {
   title: "Dashboard — BSH Admin",
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
 
   const countryData = Object.entries(
     (countriesRes.data ?? []).reduce<Record<string, number>>((acc, row) => {
-      const c = row.country as string;
+      const c = normalizeCountry(row.country as string);
       acc[c] = (acc[c] ?? 0) + 1;
       return acc;
     }, {})
