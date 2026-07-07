@@ -28,11 +28,11 @@ function lerp(a: number, b: number, t: number) {
 }
 
 function countToColor(count: number, max: number): string {
-  if (max === 0) return "#dbeafe";
+  if (max === 0) return "#cffafe";
   const t = Math.min(count / max, 1);
-  const r = Math.round(lerp(219, 30, t));
-  const g = Math.round(lerp(234, 64, t));
-  const b = Math.round(lerp(254, 175, t));
+  const r = Math.round(lerp(207, 21, t));
+  const g = Math.round(lerp(250, 94, t));
+  const b = Math.round(lerp(254, 117, t));
   return `rgb(${r},${g},${b})`;
 }
 
@@ -137,7 +137,7 @@ export default function CountryMap({ data }: Props) {
                             style={{
                               fontSize: 3,
                               fontWeight: 600,
-                              fill: "#1e3a5f",
+                              fill: "#155e75",
                               pointerEvents: "none",
                               userSelect: "none",
                             }}
@@ -195,7 +195,7 @@ export default function CountryMap({ data }: Props) {
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 rounded-full"
+                    className="h-full bg-cyan-600 rounded-full"
                     style={{
                       width: `${max > 0 ? (d.count / max) * 100 : 0}%`,
                     }}
@@ -241,7 +241,7 @@ export default function CountryMap({ data }: Props) {
                   </div>
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-blue-500 rounded-full"
+                      className="h-full bg-cyan-600 rounded-full"
                       style={{
                         width: `${max > 0 ? (d.count / max) * 100 : 0}%`,
                       }}

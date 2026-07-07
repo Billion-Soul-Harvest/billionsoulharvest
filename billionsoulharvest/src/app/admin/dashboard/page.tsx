@@ -89,10 +89,26 @@ export default async function DashboardPage() {
     : 0;
 
   const stats = [
-    { label: "Total Contacts", value: contactsRes.count ?? 0, href: "/contacts", color: "bg-blue-50 text-blue-700" },
-    { label: "Events", value: eventsRes.count ?? 0, href: "/events", color: "bg-purple-50 text-purple-700" },
-    { label: "Registrations", value: registrationsRes.count ?? 0, href: "/registrations", color: "bg-green-50 text-green-700" },
-    { label: "Pending Follow-ups", value: followUpsRes.count ?? 0, href: "/follow-ups", color: "bg-amber-50 text-amber-700" },
+    {
+      label: "Total Contacts", value: contactsRes.count ?? 0, href: "/contacts",
+      iconBg: "bg-cyan-100", iconColor: "text-cyan-600",
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    },
+    {
+      label: "Events", value: eventsRes.count ?? 0, href: "/events",
+      iconBg: "bg-purple-100", iconColor: "text-purple-600",
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+    },
+    {
+      label: "Registrations", value: registrationsRes.count ?? 0, href: "/registrations",
+      iconBg: "bg-green-100", iconColor: "text-green-600",
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
+    },
+    {
+      label: "Pending Follow-ups", value: followUpsRes.count ?? 0, href: "/follow-ups",
+      iconBg: "bg-amber-100", iconColor: "text-amber-600",
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    },
   ];
 
   const { data: recentRegs } = await supabase
@@ -120,7 +136,12 @@ export default async function DashboardPage() {
             href={stat.href}
             className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow"
           >
-            <p className="text-sm text-gray-500">{stat.label}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">{stat.label}</p>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${stat.iconBg} ${stat.iconColor}`}>
+                {stat.icon}
+              </div>
+            </div>
             <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
           </Link>
         ))}
