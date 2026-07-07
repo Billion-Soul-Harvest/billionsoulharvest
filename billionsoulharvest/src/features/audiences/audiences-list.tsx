@@ -325,9 +325,27 @@ export function AudiencesClient({
 
       {/* Stats Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="New Subscribers (30d)" value={stats.newLast30Days} />
-        <StatCard label="Subscribed" value={stats.subscribed} />
-        <StatCard label="Unsubscribed" value={stats.unsubscribed} />
+        <StatCard
+          label="New Subscribers (30d)"
+          value={stats.newLast30Days}
+          iconBg="bg-cyan-100"
+          iconColor="text-cyan-600"
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>}
+        />
+        <StatCard
+          label="Subscribed"
+          value={stats.subscribed}
+          iconBg="bg-green-100"
+          iconColor="text-green-600"
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+        />
+        <StatCard
+          label="Unsubscribed"
+          value={stats.unsubscribed}
+          iconBg="bg-red-100"
+          iconColor="text-red-600"
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>}
+        />
       </div>
 
       {/* Filter Bar — matches CC layout */}
@@ -840,10 +858,15 @@ function SearchInput({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, icon, iconBg, iconColor }: { label: string; value: number; icon: React.ReactNode; iconBg: string; iconColor: string }) {
   return (
     <div className="bg-white rounded-xl border p-4">
-      <p className="text-sm text-gray-500">{label}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">{label}</p>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBg} ${iconColor}`}>
+          {icon}
+        </div>
+      </div>
       <p className="text-2xl font-bold text-gray-900 mt-1">{value.toLocaleString()}</p>
     </div>
   );
