@@ -184,7 +184,7 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-800 flex flex-col transition-transform lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-auto",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-br from-cyan-800 via-cyan-700 to-cyan-600 flex flex-col transition-transform lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-auto",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
