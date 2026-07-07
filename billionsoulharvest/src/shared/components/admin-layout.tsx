@@ -184,26 +184,26 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r flex flex-col transition-transform lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-auto",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-800 flex flex-col transition-transform lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-auto",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b">
+        <div className="h-16 flex items-center px-6 border-b border-white/20">
           <Link href="/admin/dashboard" className="flex items-center">
             <Image
               src="/bsh-logo.png"
               alt="Billion Soul Harvest"
               width={180}
               height={60}
-              className="h-10 w-auto"
+              className="h-10 w-auto brightness-0 invert"
               priority
             />
           </Link>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto [&_*]:transition-colors">
           {navItems.map((entry) => {
             if (isNavGroup(entry)) {
               const isGroupActive = entry.children.some(
@@ -222,17 +222,17 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                       isGroupActive
-                        ? "text-cyan-700"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        ? "text-white"
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
                     )}
                   >
-                    <span className={isGroupActive ? "text-cyan-600" : "text-gray-400"}>
+                    <span className={isGroupActive ? "text-white" : "text-white/50"}>
                       {entry.icon}
                     </span>
                     <span className="flex-1 text-left">{entry.label}</span>
                     <svg
                       className={cn(
-                        "w-4 h-4 text-gray-400 transition-transform",
+                        "w-4 h-4 text-white/40 transition-transform",
                         openGroups[entry.label] && "rotate-90"
                       )}
                       fill="none"
@@ -256,11 +256,11 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                               isActive
-                                ? "bg-cyan-50 text-cyan-700"
-                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                ? "bg-white/20 text-white"
+                                : "text-white/70 hover:bg-white/10 hover:text-white"
                             )}
                           >
-                            <span className={isActive ? "text-cyan-600" : "text-gray-400"}>
+                            <span className={isActive ? "text-white" : "text-white/50"}>
                               {child.icon}
                             </span>
                             {child.label}
@@ -285,11 +285,11 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-cyan-50 text-cyan-700"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-white/20 text-white"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
                 )}
               >
-                <span className={isActive ? "text-cyan-600" : "text-gray-400"}>
+                <span className={isActive ? "text-white" : "text-white/50"}>
                   {entry.icon}
                 </span>
                 {entry.label}
@@ -299,12 +299,12 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
         </nav>
 
         {/* View Site + User */}
-        <div className="border-t px-4 py-3 space-y-2">
+        <div className="border-t border-white/20 px-4 py-3 space-y-2">
           <a
             href="https://www.billionsoulharvest.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            className="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -312,11 +312,11 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
             View Site
           </a>
           {userEmail && (
-            <p className="text-xs text-gray-400 truncate">{userEmail}</p>
+            <p className="text-xs text-white/40 truncate">{userEmail}</p>
           )}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-xs text-red-500 hover:text-red-700 transition-colors"
+            className="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
