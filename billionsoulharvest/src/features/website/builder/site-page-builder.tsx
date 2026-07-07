@@ -155,6 +155,8 @@ function collectSubtree(canvas: Record<string, unknown>, nodeId: string, result:
   result[nodeId] = node;
   const children = (node.nodes as string[]) || [];
   for (const childId of children) collectSubtree(canvas, childId, result);
+  const linked = (node.linkedNodes as Record<string, string>) || {};
+  for (const linkedId of Object.values(linked)) collectSubtree(canvas, linkedId, result);
 }
 
 function removeFooterSubtree(canvas: Record<string, unknown>, footerId: string) {
@@ -167,19 +169,32 @@ function removeFooterSubtree(canvas: Record<string, unknown>, footerId: string) 
     const node = canvas[id] as Record<string, unknown> | undefined;
     if (!node) return;
     for (const childId of (node.nodes as string[]) || []) collect(childId);
+    const linked = (node.linkedNodes as Record<string, string>) || {};
+    for (const linkedId of Object.values(linked)) collect(linkedId);
   };
   collect(footerId);
   for (const id of toDelete) delete canvas[id];
+}
+
+function findFooterRootInNodes(footerNodes: Record<string, unknown>): string | null {
+  for (const [id, node] of Object.entries(footerNodes)) {
+    const n = node as Record<string, unknown>;
+    const type = n.type as Record<string, string> | undefined;
+    if (type?.resolvedName === "CraftFooter") return id;
+  }
+  return null;
 }
 
 function injectFooter(canvasJson: string, footerNodes: Record<string, unknown>): string {
   const canvas = JSON.parse(canvasJson);
   const existingFooterId = findFooterNodeId(canvas);
   if (existingFooterId) removeFooterSubtree(canvas, existingFooterId);
+  const footerRootId = findFooterRootInNodes(footerNodes);
+  if (!footerRootId) return canvasJson; // No footer to inject
   for (const [id, node] of Object.entries(footerNodes)) canvas[id] = node;
   const root = canvas.ROOT as Record<string, unknown>;
   const rootNodes = (root.nodes as string[]) || [];
-  rootNodes.push("footer-root");
+  rootNodes.push(footerRootId);
   root.nodes = rootNodes;
   return JSON.stringify(canvas);
 }
