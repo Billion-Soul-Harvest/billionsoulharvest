@@ -116,6 +116,38 @@ export function useBuilderKeyboardShortcuts() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Delete/Backspace — no modifier required
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (isEditableTarget(e.target)) return;
+
+        let selectedId: string | undefined;
+        try {
+          selectedId = query.getEvent("selected").last();
+        } catch {
+          return;
+        }
+        if (!selectedId) return;
+
+        try {
+          const node = query.node(selectedId).get();
+          if (!node.data.parent) return; // Don't delete ROOT
+          const resolvedName = (node.data.type as { resolvedName?: string })?.resolvedName;
+          if (resolvedName === "CraftFooter") return; // Don't delete footer
+        } catch {
+          return;
+        }
+
+        e.preventDefault();
+        pushUndo();
+        try {
+          actions.delete(selectedId);
+          toast("Element deleted", { duration: 1500 });
+        } catch (err) {
+          console.error("[builder-shortcuts] delete failed:", err);
+        }
+        return;
+      }
+
       if (!(e.metaKey || e.ctrlKey)) return;
       if (isEditableTarget(e.target)) return;
 
