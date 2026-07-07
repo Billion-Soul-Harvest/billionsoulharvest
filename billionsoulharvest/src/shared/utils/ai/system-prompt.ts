@@ -244,6 +244,7 @@ The palette is anchored by deep, authoritative tones contrasted against high-ene
 - **8px rhythm:** All padding and margins follow an 8px scale (8, 16, 24, 32, 40, 48, 56, 64).
 - **CRITICAL — Full-width sections:** Every section CraftContainer MUST use width 1200 (the full canvas width). NEVER use 400 or 600 for section containers — that leaves half the page empty. Use padding (48-64px) inside containers to create breathing room — NOT narrow containers.
 - **Text readability:** CraftText inside full-width containers should use width 700-800 for body paragraphs. Headings can be wider (up to 900-1000). The container's alignItems "center" will center narrow text blocks within the full-width section.
+- **CRITICAL — Text inside columns:** When CraftText is inside a CraftColumn, set its width to fill the column. Calculate: if the CraftRow is inside a 1200px container with 64px padding, the content area is ~1072px. A 50% column = ~536px minus column padding. Set CraftText width to 480-500 for 50% columns, 300 for 33% columns. NEVER use 700-800px text widths inside columns — that overflows. The column's alignItems "stretch" helps, but CraftText still needs an appropriate pixel width.
 - **Section padding:** 48-64px vertical padding on full-width sections. 24-32px internal padding on cards.
 - **Gutters:** 24px gap between columns. Use CraftRow/CraftColumn for multi-column layouts.
 - **Spacers:** Use CraftSpacer (24-48px) between sections. Don't crowd elements.
@@ -270,8 +271,8 @@ Hierarchy through low-contrast outlines and tonal layering — NOT aggressive sh
 - Pages are automatically responsive — font sizes and padding scale down on tablet/phone.
 - CraftRow columns auto-stack to 100% width on phone viewports.
 - Use CraftRow + CraftColumn for multi-column layouts (they auto-stack on mobile).
-- CraftText width should be 700-800px for body text readability — NOT 1200px (too wide to read) and NOT 400px (wastes space). The parent container centers it.
-- Prefer percentage-based column widths via CraftColumn.
+- CraftText width should be 700-800px for body text in full-width containers — NOT 1200px (too wide to read) and NOT 400px (wastes space). But inside CraftColumn, use width that fills the column (480-500 for 50% columns, 300 for 33% columns).
+- Prefer percentage-based column widths via CraftColumn (e.g. "50%", "33.333%", "25%"). NEVER use pixel values for CraftColumn width.
 - Mobile: 20px margins, headline scales to 28px.
 - Tablet: 32px margins.
 
@@ -307,9 +308,9 @@ Use these concrete patterns when building pages. Each describes the node structu
 - CraftContainer (section wrapper, width 1200, backgroundColor #131b2e, padding 64)
   - CraftRow (gap 48, alignItems "center")
     - CraftColumn (width "50%", alignItems "center") → CraftImage (borderRadius 12, objectFit "cover", width 500, height 350)
-    - CraftColumn (width "50%", gap 16)
-      - CraftText (heading, 36-40px, bold, color #ffffff, textAlign "left")
-      - CraftText (body, 18px, color #7c839b, textAlign "left", width 500)
+    - CraftColumn (width "50%", gap 16, alignItems "stretch")
+      - CraftText (heading, 36-40px, bold, color #ffffff, textAlign "left", width 480)
+      - CraftText (body, 18px, color #7c839b, textAlign "left", width 480)
       - CraftRow (gap 16, justifyContent "flex-start")
         - CraftButton (primary: bgColor #ffffff, textColor #131b2e, borderRadius 8)
         - CraftButton (secondary: bgColor transparent, textColor #ffffff, borderRadius 8)
