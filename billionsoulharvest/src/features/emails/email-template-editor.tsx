@@ -23,10 +23,12 @@ export function EmailTemplateEditor({ template: initial }: Props) {
   const [bodyJson, setBodyJson] = useState<string | null>(
     initial.body_json ? JSON.stringify(initial.body_json) : null
   );
-  const [useBlockEditor, setUseBlockEditor] = useState(true);
+  const hasBlockData = !!initial.body_json;
+  const [useBlockEditor, setUseBlockEditor] = useState(hasBlockData);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
-  const [showPreview, setShowPreview] = useState(false);
+  // Show preview by default for HTML-only templates (no block JSON)
+  const [showPreview, setShowPreview] = useState(!hasBlockData && !!initial.body_html);
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const builderRef = useRef<EmailBuilderHandle>(null);
 
