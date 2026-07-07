@@ -223,16 +223,16 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                       isGroupActive
                         ? "text-white"
-                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                        : "text-white/90 hover:bg-white/10 hover:text-white"
                     )}
                   >
-                    <span className={isGroupActive ? "text-white" : "text-white/50"}>
+                    <span className={isGroupActive ? "text-white" : "text-white/70"}>
                       {entry.icon}
                     </span>
                     <span className="flex-1 text-left">{entry.label}</span>
                     <svg
                       className={cn(
-                        "w-4 h-4 text-white/40 transition-transform",
+                        "w-4 h-4 text-white/60 transition-transform",
                         openGroups[entry.label] && "rotate-90"
                       )}
                       fill="none"
@@ -257,10 +257,10 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                               isActive
                                 ? "bg-white/20 text-white"
-                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                                : "text-white/90 hover:bg-white/10 hover:text-white"
                             )}
                           >
-                            <span className={isActive ? "text-white" : "text-white/50"}>
+                            <span className={isActive ? "text-white" : "text-white/70"}>
                               {child.icon}
                             </span>
                             {child.label}
@@ -286,10 +286,10 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   isActive
                     ? "bg-white/20 text-white"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                    : "text-white/90 hover:bg-white/10 hover:text-white"
                 )}
               >
-                <span className={isActive ? "text-white" : "text-white/50"}>
+                <span className={isActive ? "text-white" : "text-white/70"}>
                   {entry.icon}
                 </span>
                 {entry.label}
@@ -304,7 +304,7 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
             href="https://www.billionsoulharvest.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-xs text-white/80 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -312,11 +312,11 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
             View Site
           </a>
           {userEmail && (
-            <p className="text-xs text-white/40 truncate">{userEmail}</p>
+            <p className="text-xs text-white/70 truncate">{userEmail}</p>
           )}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-xs text-white/80 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
