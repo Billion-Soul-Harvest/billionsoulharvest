@@ -42,7 +42,7 @@ export function CraftPageRenderer({ content, event, pages = [] }: Props) {
   if (!rootNode) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "0 16px", boxSizing: "border-box" as const }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", boxSizing: "border-box" as const }}>
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 768px) {
           .craft-col { width: 100% !important; flex: none !important; min-width: 0 !important; }
