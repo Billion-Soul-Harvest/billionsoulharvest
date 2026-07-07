@@ -51,6 +51,7 @@ export async function PATCH(
     if (body.name !== undefined) updates.name = body.name;
     if (body.subject !== undefined) updates.subject = body.subject;
     if (body.body_html !== undefined) updates.body_html = body.body_html;
+    if (body.body_json !== undefined) updates.body_json = body.body_json;
     if (body.preview_text !== undefined) updates.preview_text = body.preview_text;
 
     const { data, error } = await supabase

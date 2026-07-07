@@ -240,6 +240,7 @@ export interface EmailTemplateWithStats {
   name: string;
   subject: string;
   body_html: string;
+  body_json: Record<string, unknown> | null;
   preview_text: string | null;
   created_by: string | null;
   created_at: string;

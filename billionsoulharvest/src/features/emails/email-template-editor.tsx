@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WysiwygEditor } from "@/shared/components/wysiwyg-editor";
-import { ArrowLeft } from "lucide-react";
+import { EmailBuilder } from "@/features/emails/builder/email-builder";
+import { renderEmailJson } from "@/features/emails/builder/render-to-html";
+import { ArrowLeft, Blocks, FileText } from "lucide-react";
 import type { EmailTemplateWithStats } from "@/shared/types/database";
 
 interface Props {
@@ -20,6 +22,10 @@ export function EmailTemplateEditor({ template: initial }: Props) {
   const [subject, setSubject] = useState(initial.subject);
   const [previewText, setPreviewText] = useState(initial.preview_text ?? "");
   const [bodyHtml, setBodyHtml] = useState(initial.body_html);
+  const [bodyJson, setBodyJson] = useState<string | null>(
+    initial.body_json ? JSON.stringify(initial.body_json) : null
+  );
+  const [useBlockEditor, setUseBlockEditor] = useState(!!initial.body_json);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
@@ -28,7 +34,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
   // Mark unsaved on any change
   useEffect(() => {
     setSaved(false);
-  }, [name, subject, previewText, bodyHtml]);
+  }, [name, subject, previewText, bodyHtml, bodyJson]);
 
   // Initial load should be "saved"
   useEffect(() => {
@@ -38,10 +44,25 @@ export function EmailTemplateEditor({ template: initial }: Props) {
   const save = useCallback(async () => {
     setSaving(true);
     try {
+      // If using block editor, render HTML from JSON
+      let htmlToSave = bodyHtml;
+      let jsonToSave: Record<string, unknown> | null = null;
+
+      if (useBlockEditor && bodyJson) {
+        htmlToSave = renderEmailJson(bodyJson);
+        jsonToSave = JSON.parse(bodyJson);
+      }
+
       await fetch(`/api/email-templates/${initial.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, subject, body_html: bodyHtml, preview_text: previewText || null }),
+        body: JSON.stringify({
+          name,
+          subject,
+          body_html: htmlToSave,
+          body_json: jsonToSave,
+          preview_text: previewText || null,
+        }),
       });
       setSaved(true);
     } catch (err) {
@@ -49,7 +70,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [initial.id, name, subject, bodyHtml, previewText]);
+  }, [initial.id, name, subject, bodyHtml, bodyJson, previewText, useBlockEditor]);
 
   // Auto-save on blur
   const handleBlur = useCallback(() => {
@@ -59,8 +80,20 @@ export function EmailTemplateEditor({ template: initial }: Props) {
     }
   }, [saved, save]);
 
+  const handleSwitchToBlockEditor = () => {
+    setUseBlockEditor(true);
+    setBodyJson(null); // start fresh
+  };
+
+  const handleSwitchToClassicEditor = () => {
+    setUseBlockEditor(false);
+  };
+
+  // Generate preview HTML for block editor
+  const previewHtml = useBlockEditor && bodyJson ? renderEmailJson(bodyJson) : bodyHtml;
+
   return (
-    <div className="max-w-3xl">
+    <div className={useBlockEditor && !showPreview ? "" : "max-w-3xl"}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -77,6 +110,26 @@ export function EmailTemplateEditor({ template: initial }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {!showPreview && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={useBlockEditor ? handleSwitchToClassicEditor : handleSwitchToBlockEditor}
+              title={useBlockEditor ? "Switch to classic editor" : "Switch to block editor"}
+            >
+              {useBlockEditor ? (
+                <>
+                  <FileText className="w-4 h-4 mr-1.5" />
+                  Classic
+                </>
+              ) : (
+                <>
+                  <Blocks className="w-4 h-4 mr-1.5" />
+                  Block Editor
+                </>
+              )}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowPreview(!showPreview)}>
             {showPreview ? "Edit" : "Preview"}
           </Button>
@@ -87,38 +140,45 @@ export function EmailTemplateEditor({ template: initial }: Props) {
       </div>
 
       {showPreview ? (
-        <div className="bg-[#f3f3f4] rounded-xl p-6">
-          <div className="bg-white max-w-[600px] mx-auto overflow-hidden">
-            {/* BSH Header */}
-            <div className="bg-white px-5 py-4 text-center border-b border-[#c4c6cc]">
-              <p className="text-black text-[22px] font-extrabold tracking-tight m-0 uppercase" style={{ fontFamily: "Manrope, sans-serif" }}>Billion Soul Harvest</p>
+        <div className="bg-[#f3f3f4] rounded-xl p-6 max-w-3xl">
+          {useBlockEditor && bodyJson ? (
+            <div
+              className="bg-white max-w-[600px] mx-auto overflow-hidden"
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
+          ) : (
+            <div className="bg-white max-w-[600px] mx-auto overflow-hidden">
+              {/* BSH Header */}
+              <div className="bg-white px-5 py-4 text-center border-b border-[#c4c6cc]">
+                <p className="text-black text-[22px] font-extrabold tracking-tight m-0 uppercase" style={{ fontFamily: "Manrope, sans-serif" }}>Billion Soul Harvest</p>
+              </div>
+              {/* Content */}
+              <div className="px-5 py-10 text-[#44474c] text-base leading-relaxed" style={{ fontFamily: "'Work Sans', sans-serif" }}>
+                <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+              </div>
+              {/* Footer */}
+              <div className="bg-[#f3f3f4] border-t border-[#c4c6cc] px-5 py-10 text-center">
+                <p className="text-[#1a1c1c] text-sm font-bold tracking-widest uppercase m-0 mb-3" style={{ fontFamily: "Manrope, sans-serif" }}>
+                  Billion Soul Harvest
+                </p>
+                <p className="text-[#44474c] text-sm m-0 mb-3">
+                  <span className="hover:underline cursor-pointer">Privacy Policy</span>
+                  {"  ·  "}
+                  <span className="hover:underline cursor-pointer">Contact Us</span>
+                  {"  ·  "}
+                  <span className="hover:underline cursor-pointer">Unsubscribe</span>
+                </p>
+                <p className="text-[#44474c] text-xs m-0">
+                  &copy; {new Date().getFullYear()} Billion Soul Harvest. All rights reserved.
+                </p>
+              </div>
             </div>
-            {/* Content */}
-            <div className="px-5 py-10 text-[#44474c] text-base leading-relaxed" style={{ fontFamily: "'Work Sans', sans-serif" }}>
-              <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
-            </div>
-            {/* Footer */}
-            <div className="bg-[#f3f3f4] border-t border-[#c4c6cc] px-5 py-10 text-center">
-              <p className="text-[#1a1c1c] text-sm font-bold tracking-widest uppercase m-0 mb-3" style={{ fontFamily: "Manrope, sans-serif" }}>
-                Billion Soul Harvest
-              </p>
-              <p className="text-[#44474c] text-sm m-0 mb-3">
-                <span className="hover:underline cursor-pointer">Privacy Policy</span>
-                {"  ·  "}
-                <span className="hover:underline cursor-pointer">Contact Us</span>
-                {"  ·  "}
-                <span className="hover:underline cursor-pointer">Unsubscribe</span>
-              </p>
-              <p className="text-[#44474c] text-xs m-0">
-                © {new Date().getFullYear()} Billion Soul Harvest. All rights reserved.
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       ) : (
         <div className="space-y-5">
           {/* Name */}
-          <div>
+          <div className="max-w-3xl">
             <Label htmlFor="name">Template name</Label>
             <Input
               id="name"
@@ -131,7 +191,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
           </div>
 
           {/* Subject */}
-          <div>
+          <div className="max-w-3xl">
             <Label htmlFor="subject">Subject line</Label>
             <Input
               id="subject"
@@ -144,7 +204,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
           </div>
 
           {/* Preview text */}
-          <div>
+          <div className="max-w-3xl">
             <Label htmlFor="preview_text">Preview text</Label>
             <Input
               id="preview_text"
@@ -162,12 +222,21 @@ export function EmailTemplateEditor({ template: initial }: Props) {
             <p className="text-xs text-gray-500 mb-1.5">
               Merge fields: {"{{first_name}}"}, {"{{last_name}}"}
             </p>
-            <WysiwygEditor value={bodyHtml} onChange={setBodyHtml} />
+            {useBlockEditor ? (
+              <EmailBuilder
+                initialJson={bodyJson}
+                onJsonChange={setBodyJson}
+              />
+            ) : (
+              <div className="max-w-3xl">
+                <WysiwygEditor value={bodyHtml} onChange={setBodyHtml} />
+              </div>
+            )}
           </div>
 
           {/* Stats (if sent) */}
           {initial.send_count > 0 && (
-            <div className="bg-gray-50 rounded-lg border p-4">
+            <div className="bg-gray-50 rounded-lg border p-4 max-w-3xl">
               <p className="text-sm font-medium text-gray-700 mb-2">Send history</p>
               <div className="grid grid-cols-5 gap-4 text-center text-sm">
                 <div>
