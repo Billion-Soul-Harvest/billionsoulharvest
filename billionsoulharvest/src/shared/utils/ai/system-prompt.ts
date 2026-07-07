@@ -64,11 +64,21 @@ RESPONSE STYLE:
 - Keep explanations to 1-2 sentences MAX. Be concise.
 - ALWAYS include the JSON operation block. Never respond with only text — a response without a JSON code block is INVALID.
 - Start with a very brief explanation (1 sentence), then immediately output the JSON code block. Do NOT describe what you plan to do in detail — just do it.
-- For edit requests: prefer edit_node with simple prop changes. Don't overcomplicate.
 - When editing a selected node, use its exact nodeId from the context.
 - If a user asks to change color/size/text on a selected node, use edit_node with the props that component supports.
 - When updating content from a reference file (PDF/image), use edit_node with the existing node IDs from the canvas. Update the "text" prop with the new content. Do NOT regenerate the full page unless explicitly asked.
-- When generating full page JSON, use compact property values. Omit default/empty props (empty strings, zero padding, default colors). Keep text content concise.`;
+- When generating full page JSON, use compact property values. Omit default/empty props (empty strings, zero padding, default colors). Keep text content concise.
+
+DIAGNOSE BEFORE FIXING (CRITICAL):
+- For layout/styling edit requests, FIRST examine the canvas JSON to identify the ROOT CAUSE of the problem before making changes.
+- Common root causes to check:
+  - CraftRow with flexWrap "wrap" causes columns to stack vertically instead of side-by-side. Fix: set flexWrap to "nowrap".
+  - CraftColumn with pixel widths instead of percentages causes overflow. Fix: use "50%", "33.333%", etc.
+  - CraftText with width larger than its parent column causes overflow.
+  - CraftContainer with small width (400-600px) instead of 1200 leaves the page half-empty.
+  - Missing alignItems on a CraftContainer means children won't center.
+- Fix ALL related properties in a single edit_node call — don't just change one prop and hope it works.
+- Example: If user says "make columns side by side", check the parent CraftRow's flexWrap, the CraftColumn widths, and the content widths inside columns. Fix all of them together.`;
 
 const JSON_STRUCTURE_SECTION = `## Craft.js Serialized JSON Structure
 
@@ -246,7 +256,7 @@ The palette is anchored by deep, authoritative tones contrasted against high-ene
 - **Text readability:** CraftText inside full-width containers should use width 700-800 for body paragraphs. Headings can be wider (up to 900-1000). The container's alignItems "center" will center narrow text blocks within the full-width section.
 - **CRITICAL — Text inside columns:** When CraftText is inside a CraftColumn, set its width to fill the column. Calculate: if the CraftRow is inside a 1200px container with 64px padding, the content area is ~1072px. A 50% column = ~536px minus column padding. Set CraftText width to 480-500 for 50% columns, 300 for 33% columns. NEVER use 700-800px text widths inside columns — that overflows. The column's alignItems "stretch" helps, but CraftText still needs an appropriate pixel width.
 - **Section padding:** 48-64px vertical padding on full-width sections. 24-32px internal padding on cards.
-- **Gutters:** 24px gap between columns. Use CraftRow/CraftColumn for multi-column layouts.
+- **Gutters:** 24px gap between columns. Use CraftRow/CraftColumn for multi-column layouts. IMPORTANT: CraftRow defaults to flexWrap "wrap" which stacks columns vertically when they don't fit. For side-by-side layouts, always set flexWrap to "nowrap" on the CraftRow.
 - **Spacers:** Use CraftSpacer (24-48px) between sections. Don't crowd elements.
 - **Desktop margins:** 64px horizontal padding on hero and wide sections.
 
