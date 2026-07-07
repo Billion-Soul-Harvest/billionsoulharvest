@@ -23,7 +23,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
   const [bodyJson, setBodyJson] = useState<string | null>(
     initial.body_json ? JSON.stringify(initial.body_json) : null
   );
-  const [useBlockEditor, setUseBlockEditor] = useState(!!initial.body_json);
+  const [useBlockEditor, setUseBlockEditor] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
