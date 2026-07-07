@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     // Send confirmation email
     try {
       if (process.env.SMTP_HOST) {
-        const transport = getSmtpTransport();
+        const transport = await getSmtpTransport();
         const siteUrl =
           process.env.NEXT_PUBLIC_SITE_URL || "https://billionsoulharvest.org";
         const checkInUrl = `${siteUrl}/check-in/${registration.id}`;

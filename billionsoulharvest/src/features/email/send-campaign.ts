@@ -17,7 +17,7 @@ export async function processCampaignSend(
   campaign: Record<string, unknown>,
   campaignId: string
 ) {
-  const transport = getSmtpTransport();
+  const transport = await getSmtpTransport();
 
   try {
     // Query contacts matching segment_filter
