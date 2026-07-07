@@ -87,24 +87,30 @@ export function EmailTemplateEditor({ template: initial }: Props) {
       </div>
 
       {showPreview ? (
-        <div className="bg-gray-100 rounded-xl p-6">
-          <div className="bg-white rounded-lg border max-w-[600px] mx-auto overflow-hidden">
+        <div className="bg-[#f3f3f4] rounded-xl p-6">
+          <div className="bg-white max-w-[600px] mx-auto overflow-hidden">
             {/* BSH Header */}
-            <div className="bg-[#1a3a2a] px-10 py-8 text-center">
-              <p className="text-[#d4a853] text-sm font-bold tracking-[3px] m-0">BILLION SOUL HARVEST</p>
+            <div className="bg-white px-5 py-4 text-center border-b border-[#c4c6cc]">
+              <p className="text-black text-[22px] font-extrabold tracking-tight m-0 uppercase" style={{ fontFamily: "Manrope, sans-serif" }}>Billion Soul Harvest</p>
             </div>
             {/* Content */}
-            <div className="p-10 text-[#4a4a4a] text-base leading-relaxed">
+            <div className="px-5 py-10 text-[#44474c] text-base leading-relaxed" style={{ fontFamily: "'Work Sans', sans-serif" }}>
               <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
             </div>
-            <hr className="border-[#e8e0d4] m-0" />
-            <div className="px-10 py-6 text-center">
-              <p className="text-[#8b7355] text-sm m-0 mb-2">
-                Billion Soul Harvest Ministry<br />Reaching the nations for Christ
+            {/* Footer */}
+            <div className="bg-[#f3f3f4] border-t border-[#c4c6cc] px-5 py-10 text-center">
+              <p className="text-[#1a1c1c] text-sm font-bold tracking-widest uppercase m-0 mb-3" style={{ fontFamily: "Manrope, sans-serif" }}>
+                Billion Soul Harvest
               </p>
-              <p className="text-[#b0a090] text-xs m-0">
-                You are receiving this email because you are a contact of Billion Soul Harvest.<br />
-                <span className="underline">Unsubscribe</span>
+              <p className="text-[#44474c] text-sm m-0 mb-3">
+                <span className="hover:underline cursor-pointer">Privacy Policy</span>
+                {"  ·  "}
+                <span className="hover:underline cursor-pointer">Contact Us</span>
+                {"  ·  "}
+                <span className="hover:underline cursor-pointer">Unsubscribe</span>
+              </p>
+              <p className="text-[#44474c] text-xs m-0">
+                © {new Date().getFullYear()} Billion Soul Harvest. All rights reserved.
               </p>
             </div>
           </div>

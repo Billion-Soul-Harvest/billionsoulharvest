@@ -26,6 +26,46 @@ function pct(num: number, total: number): string {
   return `${Math.round((num / total) * 100)}%`;
 }
 
+function EmailThumbnail({ bodyHtml }: { bodyHtml: string }) {
+  const previewHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Work+Sans:wght@400&display=swap" rel="stylesheet"/>
+      <style>
+        body { margin: 0; font-family: 'Work Sans', sans-serif; background: #f3f3f4; }
+      </style>
+    </head>
+    <body>
+      <div style="max-width:600px;margin:0 auto;background:#fff;overflow:hidden;">
+        <div style="background:#fff;padding:12px 16px;text-align:center;border-bottom:1px solid #c4c6cc;">
+          <p style="color:#000;font-family:Manrope,sans-serif;font-size:10px;font-weight:800;letter-spacing:-0.02em;text-transform:uppercase;margin:0;">Billion Soul Harvest</p>
+        </div>
+        <div style="padding:16px;color:#44474c;font-size:9px;line-height:1.5;">
+          ${bodyHtml || '<p style="color:#999;">No content yet</p>'}
+        </div>
+        <div style="background:#f3f3f4;border-top:1px solid #c4c6cc;padding:10px;text-align:center;">
+          <p style="color:#1a1c1c;font-family:Manrope,sans-serif;font-size:6px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin:0;">Billion Soul Harvest</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return (
+    <div className="w-[120px] h-[140px] rounded-lg border border-gray-200 overflow-hidden bg-gray-50 shrink-0">
+      <iframe
+        srcDoc={previewHtml}
+        className="w-[360px] h-[420px] border-0 pointer-events-none"
+        style={{ transform: "scale(0.333)", transformOrigin: "top left" }}
+        title="Email preview"
+        sandbox=""
+        tabIndex={-1}
+      />
+    </div>
+  );
+}
+
 export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -37,6 +77,14 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
   useEffect(() => {
     setTemplates(initialTemplates);
   }, [initialTemplates]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick() { setMenuOpen(null); }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [menuOpen]);
 
   function navigate(status: string) {
     const params = new URLSearchParams();
@@ -58,7 +106,6 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
   async function handleCopy(id: string, e: React.MouseEvent) {
     e.stopPropagation();
     setMenuOpen(null);
-    // For one-off sends (campaign:xxx), skip copy
     if (id.startsWith("campaign:")) return;
     try {
       const res = await fetch(`/api/email-templates/${id}`);
@@ -130,120 +177,122 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
         {filtered.length} email{filtered.length !== 1 ? "s" : ""}
       </p>
 
-      {/* Table */}
-      <div className={`bg-white rounded-xl border overflow-hidden relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+      {/* Email Cards */}
+      <div className={`space-y-3 relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
         {isPending && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-cyan-600" />
           </div>
         )}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Sends</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Opens</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Clicks</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Bounces</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Last sent</th>
-                <th className="w-10 px-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.length > 0 ? (
-                filtered.map((t) => {
-                  const isOneOff = t.id.startsWith("campaign:");
-                  const isDraft = t.send_count === 0;
 
-                  return (
-                    <tr
-                      key={t.id}
-                      className="hover:bg-gray-50/50 cursor-pointer"
-                      onClick={() => {
-                        if (isOneOff) return;
-                        router.push(`/admin/emails/${t.id}`);
-                      }}
+        {filtered.length > 0 ? (
+          filtered.map((t) => {
+            const isOneOff = t.id.startsWith("campaign:");
+            const isDraft = t.send_count === 0;
+            const hasSends = t.total_sends > 0;
+
+            return (
+              <div
+                key={t.id}
+                className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer flex items-stretch overflow-hidden"
+                onClick={() => {
+                  if (isOneOff) return;
+                  router.push(`/admin/emails/${t.id}`);
+                }}
+              >
+                {/* Thumbnail */}
+                <div className="p-3 flex items-center">
+                  <EmailThumbnail bodyHtml={t.body_html} />
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 py-4 pr-4 flex flex-col justify-center min-w-0">
+                  <div className="flex items-start gap-2 mb-1">
+                    <h3 className="font-semibold text-gray-900 text-sm truncate">
+                      {t.name}
+                    </h3>
+                    <Badge
+                      variant="secondary"
+                      className={`shrink-0 text-xs ${
+                        isDraft
+                          ? "bg-gray-100 text-gray-600"
+                          : "bg-green-100 text-green-700"
+                      }`}
                     >
-                      <td className="px-4 py-3">
-                        <span className="font-medium text-gray-900">{t.name}</span>
-                        {t.subject && (
-                          <span className="block text-xs text-gray-500 mt-0.5 truncate max-w-xs">
-                            {t.subject}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge
-                          variant="secondary"
-                          className={isDraft ? "bg-gray-100 text-gray-700" : "bg-green-100 text-green-700"}
-                        >
-                          {isDraft ? "Draft" : "Sent"}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
-                        {t.total_sends > 0 ? t.total_sends.toLocaleString() : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
-                        {t.total_opened > 0 ? `${t.total_opened.toLocaleString()} (${pct(t.total_opened, t.total_delivered)})` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
-                        {t.total_clicked > 0 ? `${t.total_clicked.toLocaleString()} (${pct(t.total_clicked, t.total_delivered)})` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600">
-                        {t.total_bounced > 0 ? `${t.total_bounced.toLocaleString()} (${pct(t.total_bounced, t.total_sends)})` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {t.last_sent_at ? new Date(t.last_sent_at).toLocaleDateString() : "—"}
-                      </td>
-                      <td className="px-2 py-3">
-                        {!isOneOff && (
-                          <div className="relative">
-                            <button
-                              type="button"
-                              className="p-1 rounded hover:bg-gray-100"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMenuOpen(menuOpen === t.id ? null : t.id);
-                              }}
-                            >
-                              <MoreVertical className="w-4 h-4 text-gray-400" />
-                            </button>
-                            {menuOpen === t.id && (
-                              <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
-                                <button
-                                  type="button"
-                                  className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                  onClick={(e) => handleCopy(t.id, e)}
-                                >
-                                  <Copy className="w-3.5 h-3.5" /> Copy
-                                </button>
-                                <button
-                                  type="button"
-                                  className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                  onClick={(e) => handleDelete(t.id, e)}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
-                    No emails found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      {isDraft ? "Draft" : "Sent"}
+                    </Badge>
+                  </div>
+
+                  {t.subject && (
+                    <p className="text-xs text-gray-500 truncate mb-2">
+                      {t.subject}
+                    </p>
+                  )}
+
+                  {hasSends ? (
+                    <p className="text-xs text-gray-500">
+                      <span className="font-medium text-gray-700">{t.total_sends.toLocaleString()}</span> sends
+                      {" · "}
+                      <span className="font-medium text-gray-700">{t.total_opened.toLocaleString()}</span>{" "}
+                      ({pct(t.total_opened, t.total_delivered)}) opens
+                      {" · "}
+                      <span className="font-medium text-gray-700">{t.total_clicked.toLocaleString()}</span>{" "}
+                      ({pct(t.total_clicked, t.total_delivered)}) clicks
+                      {" · "}
+                      <span className="font-medium text-gray-700">{t.total_bounced.toLocaleString()}</span>{" "}
+                      ({pct(t.total_bounced, t.total_sends)}) bounces
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-400">Not sent yet</p>
+                  )}
+                </div>
+
+                {/* Actions */}
+                {!isOneOff && (
+                  <div className="flex items-center pr-3">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpen(menuOpen === t.id ? null : t.id);
+                        }}
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {menuOpen === t.id && (
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                            onClick={(e) => handleCopy(t.id, e)}
+                          >
+                            <Copy className="w-3.5 h-3.5" /> Duplicate
+                          </button>
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            onClick={(e) => handleDelete(t.id, e)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <p className="text-gray-400 mb-3">No emails found</p>
+            <Link href="/admin/emails/new">
+              <Button variant="outline" size="sm">Create your first email</Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
