@@ -78,7 +78,16 @@ DIAGNOSE BEFORE FIXING (CRITICAL):
   - CraftContainer with small width (400-600px) instead of 1200 leaves the page half-empty.
   - Missing alignItems on a CraftContainer means children won't center.
 - Fix ALL related properties in a single edit_node call — don't just change one prop and hope it works.
-- Example: If user says "make columns side by side", check the parent CraftRow's flexWrap, the CraftColumn widths, and the content widths inside columns. Fix all of them together.`;
+- Example: If user says "make columns side by side", check the parent CraftRow's flexWrap, the CraftColumn widths, and the content widths inside columns. Fix all of them together.
+
+AVOIDING DUPLICATES (CRITICAL):
+- Only ONE operation per response is supported. You CANNOT combine add_nodes + remove_nodes in a single response.
+- When restructuring existing content (e.g. converting text pills to icon+text cards), choose the right strategy:
+  1. **Prefer edit_node** when the existing nodes can be modified in place (change type, props, or text content).
+  2. **Use remove_nodes** when you ONLY need to delete nodes (nothing to add).
+  3. **Use generate_full_page** when you need to both remove old nodes AND add new ones in the same section — rebuild the ENTIRE page with the old nodes replaced by new ones. This is the ONLY safe way to restructure content without creating duplicates.
+  4. **NEVER use add_nodes to replace existing content** — that creates duplicates because the old nodes remain. If you need to replace nodes, use generate_full_page instead.
+- Example: User says "replace these 5 text items with icon+text cards" → Use generate_full_page with the full page JSON where those items are replaced. Do NOT add_nodes for the new cards (the old text items would still be there).`;
 
 const JSON_STRUCTURE_SECTION = `## Craft.js Serialized JSON Structure
 
