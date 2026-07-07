@@ -21,13 +21,19 @@ const jsonHeaders = { "Content-Type": "application/json" };
 
 serve(async (req) => {
   try {
-    // Verify the caller is using the service role key
+    // Verify the caller has service_role privileges
     const authHeader = req.headers.get("Authorization");
-    const token = authHeader?.replace("Bearer ", "");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!token || token !== serviceRoleKey) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
+        headers: jsonHeaders,
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (payload.role !== "service_role") {
+      return new Response(JSON.stringify({ error: "Forbidden: service_role required" }), {
+        status: 403,
         headers: jsonHeaders,
       });
     }
