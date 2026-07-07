@@ -54,7 +54,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
         setBodyJson(currentJson);
       }
 
-      await fetch(`/api/email-templates/${initial.id}`, {
+      const res = await fetch(`/api/email-templates/${initial.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,13 +65,14 @@ export function EmailTemplateEditor({ template: initial }: Props) {
           preview_text: previewText || null,
         }),
       });
+      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       setSaved(true);
     } catch (err) {
       console.error("Save failed:", err);
     } finally {
       setSaving(false);
     }
-  }, [initial.id, name, subject, bodyHtml, previewText, useBlockEditor]);
+  }, [initial.id, name, subject, bodyHtml, bodyJson, previewText, useBlockEditor]);
 
   // Auto-save on blur
   const handleBlur = useCallback(() => {

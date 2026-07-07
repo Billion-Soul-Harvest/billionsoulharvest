@@ -9,6 +9,38 @@ function escAttr(value: unknown): string {
     .replace(/>/g, "&gt;");
 }
 
+/** Allowed HTML tags from Tiptap rich text output */
+const ALLOWED_TAGS = new Set(["p", "strong", "em", "u", "a", "h2", "h3", "br", "ul", "ol", "li"]);
+
+/** Sanitize Tiptap HTML — strip all tags/attributes except a safe whitelist */
+function sanitizeHtml(html: string): string {
+  // Remove script/style tags and their contents entirely
+  let clean = html.replace(/<(script|style|iframe|object|embed|form)\b[^>]*>[\s\S]*?<\/\1>/gi, "");
+  // Remove event handler attributes (on*)
+  clean = clean.replace(/\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, "");
+  // Strip disallowed tags but keep their text content
+  clean = clean.replace(/<\/?([a-z][a-z0-9]*)\b[^>]*\/?>/gi, (match, tag: string) => {
+    const lower = tag.toLowerCase();
+    if (!ALLOWED_TAGS.has(lower)) return "";
+    // For allowed tags, strip all attributes except href on <a>
+    if (lower === "a") {
+      const hrefMatch = match.match(/href\s*=\s*"([^"]*)"/i);
+      if (hrefMatch) {
+        const href = hrefMatch[1];
+        // Block javascript: protocol
+        if (/^\s*javascript:/i.test(href)) return "";
+        return match.startsWith("</") ? "</a>" : `<a href="${escAttr(href)}" style="color:#006a62;text-decoration:underline;">`;
+      }
+      return match.startsWith("</") ? "</a>" : "<a>";
+    }
+    // Self-closing tags
+    if (lower === "br") return "<br />";
+    // Strip attributes from all other allowed tags
+    return match.startsWith("</") ? `</${lower}>` : `<${lower}>`;
+  });
+  return clean;
+}
+
 interface SerializedNode {
   type: { resolvedName: string };
   props: Record<string, unknown>;
@@ -33,7 +65,7 @@ function renderNode(nodeId: string, nodes: NodeMap): string {
 
     case "EmailText": {
       const p = node.props;
-      return `<div style="font-family:'Work Sans',sans-serif;font-size:${p.fontSize || 16}px;color:${p.color || "#44474c"};text-align:${p.textAlign || "left"};line-height:1.625;padding-top:${p.paddingTop || 8}px;padding-bottom:${p.paddingBottom || 8}px;padding-left:${p.paddingLeft || 0}px;padding-right:${p.paddingRight || 0}px;">${p.text || ""}</div>`;
+      return `<div style="font-family:'Work Sans',sans-serif;font-size:${p.fontSize || 16}px;color:${p.color || "#44474c"};text-align:${p.textAlign || "left"};line-height:1.625;padding-top:${p.paddingTop || 8}px;padding-bottom:${p.paddingBottom || 8}px;padding-left:${p.paddingLeft || 0}px;padding-right:${p.paddingRight || 0}px;">${sanitizeHtml(String(p.text || ""))}</div>`;
     }
 
     case "EmailImage": {
