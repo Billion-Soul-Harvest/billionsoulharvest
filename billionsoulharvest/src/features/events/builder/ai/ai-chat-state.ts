@@ -136,9 +136,17 @@ export function useAIChat(eventData: EventData) {
         let fullContent = await streamResponse(response, assistantMsgId, setMessages);
 
         // Auto-continuation: if response was truncated, request continuation (up to 2 retries)
+        // Detect truncation via sentinel (Anthropic max_tokens) OR unclosed code block (Vercel timeout)
+        const isTruncated = (text: string) => {
+          if (text.endsWith("<!--STOP:max_tokens-->")) return true;
+          // Unclosed code block = stream died mid-JSON (Vercel timeout)
+          const hasOpenBlock = text.includes("```") && text.split("```").length % 2 === 0;
+          return hasOpenBlock;
+        };
+
         const MAX_CONTINUATIONS = 2;
         for (let i = 0; i < MAX_CONTINUATIONS; i++) {
-          if (!fullContent.endsWith("<!--STOP:max_tokens-->")) break;
+          if (!isTruncated(fullContent)) break;
 
           console.log(`[AI] Response truncated, requesting continuation ${i + 1}/${MAX_CONTINUATIONS}`);
           // Strip the sentinel marker
