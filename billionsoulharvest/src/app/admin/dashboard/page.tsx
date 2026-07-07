@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import CountryMap from "@/features/dashboard/country-map";
 import ContactTypeChart from "@/features/dashboard/contact-type-chart";
+import RegistrationsTimelineChart from "@/features/dashboard/registrations-timeline-chart";
+import RegistrationStatusChart from "@/features/dashboard/registration-status-chart";
 import { normalizeCountry } from "@/features/dashboard/country-codes";
 
 export const metadata: Metadata = {
@@ -12,13 +14,15 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [contactsRes, eventsRes, registrationsRes, followUpsRes, countriesRes, contactTypesRes] = await Promise.all([
+  const [contactsRes, eventsRes, registrationsRes, followUpsRes, countriesRes, contactTypesRes, regTimelineRes, regStatusRes] = await Promise.all([
     supabase.from("contacts").select("*", { count: "exact", head: true }),
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("registrations").select("*", { count: "exact", head: true }),
     supabase.from("follow_ups").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("contacts").select("country").not("country", "is", null),
     supabase.from("contacts").select("contact_type"),
+    supabase.from("registrations").select("created_at"),
+    supabase.from("registrations").select("status"),
   ]);
 
   const countryData = Object.entries(
@@ -35,6 +39,27 @@ export default async function DashboardPage() {
     (contactTypesRes.data ?? []).reduce<Record<string, number>>((acc, row) => {
       const t = (row.contact_type as string) || "other";
       acc[t] = (acc[t] ?? 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
+  const regTimelineData = Object.entries(
+    (regTimelineRes.data ?? []).reduce<Record<string, number>>((acc, row) => {
+      const d = new Date(row.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  const regStatusData = Object.entries(
+    (regStatusRes.data ?? []).reduce<Record<string, number>>((acc, row) => {
+      const s = (row.status as string) || "pending";
+      acc[s] = (acc[s] ?? 0) + 1;
       return acc;
     }, {})
   )
@@ -87,6 +112,8 @@ export default async function DashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <ContactTypeChart data={contactTypeData} />
+        <RegistrationsTimelineChart data={regTimelineData} />
+        <RegistrationStatusChart data={regStatusData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
