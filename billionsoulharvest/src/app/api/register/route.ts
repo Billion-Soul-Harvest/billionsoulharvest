@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { registrationSchema } from "@/features/registration/schema";
 import { z } from "zod";
-import { Resend } from "resend";
 import QRCode from "qrcode";
+import { render } from "@react-email/components";
 import { RegistrationConfirmationEmail } from "@/features/email/templates/registration-confirmation";
+import { getSmtpTransport, getFromAddress } from "@/shared/utils/smtp";
 import type { RegistrationConfig } from "@/shared/types/database";
 
 function getSupabase() {
@@ -12,10 +13,6 @@ function getSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
-}
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY);
 }
 
 function buildDynamicSchema(config: RegistrationConfig) {
@@ -52,7 +49,6 @@ function buildDynamicSchema(config: RegistrationConfig) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabase();
-    const resend = getResend();
     const body = await request.json();
     const { eventSlug, customFields, ...formData } = body;
 
@@ -183,7 +179,8 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email
     try {
-      if (process.env.RESEND_API_KEY) {
+      if (process.env.SMTP_HOST) {
+        const transport = getSmtpTransport();
         const siteUrl =
           process.env.NEXT_PUBLIC_SITE_URL || "https://billionsoulharvest.org";
         const checkInUrl = `${siteUrl}/check-in/${registration.id}`;
@@ -193,18 +190,22 @@ export async function POST(request: NextRequest) {
           color: { dark: "#1a3a2a" },
         });
 
-        await resend.emails.send({
-          from: "Billion Soul Harvest <noreply@billionsoulharvest.org>",
-          to: data.email as string,
-          subject: `Registration Confirmed — ${event.title}`,
-          react: RegistrationConfirmationEmail({
+        const html = await render(
+          RegistrationConfirmationEmail({
             firstName: data.firstName as string,
             eventTitle: event.title,
             eventDate: event.start_date,
             eventLocation: event.location || event.city || "TBD",
             qrCodeUrl,
             registrationId: registration.id,
-          }),
+          })
+        );
+
+        await transport.sendMail({
+          from: getFromAddress(),
+          to: data.email as string,
+          subject: `Registration Confirmed — ${event.title}`,
+          html,
         });
       }
     } catch (emailError) {

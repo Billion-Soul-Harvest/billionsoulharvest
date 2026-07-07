@@ -330,7 +330,7 @@ export function CampaignEditor({
               <div className="flex">
                 <dt className="w-32 text-sm text-gray-500">From</dt>
                 <dd className="text-sm text-gray-900">
-                  Billion Soul Harvest &lt;noreply@billionsoulharvest.org&gt;
+                  Billion Soul Harvest &lt;info@billionsoulharvest.org&gt;
                 </dd>
               </div>
             </dl>

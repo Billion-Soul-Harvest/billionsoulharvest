@@ -24,6 +24,6 @@
 - Always confirm the target environment before running any data migration.
 
 ### Email safety
-- NEVER send or test emails locally unless the user explicitly provides sample email addresses to use.
+- Only send test emails to these approved addresses: `bertwinr2@gmail.com`, `bertwinromero@gmail.com`
+- NEVER send emails to any other address without explicit user approval.
 - Do not use existing contacts from the database for email testing.
-- Always ask the user for test email addresses before any send operation.

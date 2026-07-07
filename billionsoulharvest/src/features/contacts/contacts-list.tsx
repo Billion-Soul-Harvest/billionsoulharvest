@@ -26,6 +26,8 @@ import {
 import { createClient } from "@/shared/utils/supabase/client";
 import type { ContactType } from "@/shared/types/database";
 import { CreateContactDialog } from "./create-contact-dialog";
+import { SendEmailDialog } from "@/features/emails/send-email-dialog";
+import type { SegmentFilter } from "@/shared/types/database";
 
 interface ContactRow {
   id: string;
@@ -757,6 +759,7 @@ export function ContactsListClient({
   const [bulkType, setBulkType] = useState<ContactType | "">("");
   const [bulkSelectedLists, setBulkSelectedLists] = useState<Set<string>>(new Set());
   const [bulkSelectedTags, setBulkSelectedTags] = useState<Set<string>>(new Set());
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -1125,8 +1128,8 @@ export function ContactsListClient({
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
                   <button
                     type="button"
-                    className="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed"
-                    disabled
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => { setSendEmailOpen(true); setActionsDropdownOpen(false); }}
                   >
                     Send email
                   </button>
@@ -1744,8 +1747,32 @@ export function ContactsListClient({
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {/* Send Email Dialog */}
+      <SendEmailDialog
+        open={sendEmailOpen}
+        onOpenChange={setSendEmailOpen}
+        contactIds={Array.from(selected)}
+        selectAllMode={selectAllMode}
+        selectAllFilter={selectAllMode ? buildSelectAllFilter() : undefined}
+        recipientCount={effectiveCount}
+        onSuccess={() => {
+          setSelected(new Set());
+          setSelectAllMode(false);
+        }}
+      />
     </div>
   );
+
+  function buildSelectAllFilter(): SegmentFilter {
+    const filter: SegmentFilter = {};
+    if (typeFilter) filter.contact_type = [typeFilter];
+    if (regionFilter) filter.region_id = regionFilter;
+    if (languageFilter) filter.language = languageFilter;
+    if (listFilter) filter.email_lists = listFilter.split(",").filter(Boolean);
+    if (tagFilter) filter.tags_include = tagFilter.split(",").filter(Boolean);
+    return filter;
+  }
 }
 
 function DebouncedSearchInput({

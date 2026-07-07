@@ -235,6 +235,24 @@ export interface Campaign {
   updated_at: string;
 }
 
+export interface EmailTemplateWithStats {
+  id: string;
+  name: string;
+  subject: string;
+  body_html: string;
+  preview_text: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  total_sends: number;
+  total_delivered: number;
+  total_opened: number;
+  total_clicked: number;
+  total_bounced: number;
+  last_sent_at: string | null;
+  send_count: number;
+}
+
 export interface CampaignSend {
   id: string;
   campaign_id: string;
