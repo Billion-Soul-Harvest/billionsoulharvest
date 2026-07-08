@@ -27,11 +27,12 @@ function getTransport() {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-    // When connecting via IP, set servername for TLS certificate validation
-    ...(host !== "smtp.hostinger.com" && {
-      tls: { servername: "smtp.hostinger.com" },
-    }),
-  });
+    tls: { servername: "smtp.hostinger.com" },
+    // Skip DNS lookup — Vercel serverless fails with getaddrinfo EBUSY
+    dnsLookup: (hostname: string, _opts: unknown, cb: (err: null, address: string, family: number) => void) => {
+      cb(null, hostname, 4);
+    },
+  } as Parameters<typeof nodemailer.createTransport>[0]);
 }
 
 export async function sendEmails(
