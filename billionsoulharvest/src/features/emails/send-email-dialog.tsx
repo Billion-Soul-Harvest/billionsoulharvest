@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { WysiwygEditor } from "@/shared/components/wysiwyg-editor";
-import { Check, ArrowLeft, Loader2 } from "lucide-react";
+import { Check, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import type { SegmentFilter, CampaignTemplate } from "@/shared/types/database";
 import { EmailThumbnail } from "./email-template-list";
 
@@ -39,6 +40,7 @@ export function SendEmailDialog({
   recipientCount,
   onSuccess,
 }: Props) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("compose");
   const [templates, setTemplates] = useState<CampaignTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -56,6 +58,7 @@ export function SendEmailDialog({
   const [activeTab, setActiveTab] = useState(0);
 
   // Sending state
+  const [campaignId, setCampaignId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Snapshot the count when dialog opens so it survives selection clearing
   const [snapshotCount, setSnapshotCount] = useState(0);
@@ -133,12 +136,14 @@ export function SendEmailDialog({
         throw new Error(data.error || "Send failed");
       }
 
+      const data = await res.json();
+      setCampaignId(data.campaign_id);
       setStep("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Send failed");
       setStep("confirm");
     }
-  }, [activeTab, selectedTemplateId, composeSubject, composeBody, saveAsTemplate, selectAllMode, selectAllFilter, contactIds, onSuccess]);
+  }, [activeTab, selectedTemplateId, composeSubject, composeBody, saveAsTemplate, selectAllMode, selectAllFilter, contactIds]);
 
   const emailSubject = activeTab === 0 ? selectedTemplate?.subject : composeSubject;
   const emailBodyHtml = activeTab === 0 ? selectedTemplate?.body_html : composeBody;
@@ -148,7 +153,7 @@ export function SendEmailDialog({
       <DialogContent className={step === "confirm" && emailBodyHtml ? "sm:max-w-3xl" : "sm:max-w-lg"}>
         <DialogHeader>
           <DialogTitle>
-            {step === "done" ? "Campaign sent!" : step === "confirm" ? "Confirm send" : "Send Campaign"}
+            {step === "done" ? "Campaign started!" : step === "confirm" ? "Confirm send" : "Send Campaign"}
           </DialogTitle>
           {step === "compose" && (
             <DialogDescription>
@@ -308,12 +313,17 @@ export function SendEmailDialog({
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-3">
                 <Check className="w-6 h-6 text-green-600" />
               </div>
+              <p className="text-sm font-medium text-gray-900 mb-1">Campaign started!</p>
               <p className="text-sm text-gray-600">
-                Your email is being sent to {snapshotCount.toLocaleString()} contact{snapshotCount !== 1 ? "s" : ""}.
+                Sending to {snapshotCount.toLocaleString()} contact{snapshotCount !== 1 ? "s" : ""} in the background.
               </p>
             </div>
             <DialogFooter>
-              <Button onClick={() => { onOpenChange(false); onSuccess?.(); }}>Done</Button>
+              <Button variant="outline" onClick={() => { onOpenChange(false); onSuccess?.(); }}>Close</Button>
+              <Button onClick={() => { onOpenChange(false); onSuccess?.(); router.push("/admin/campaigns"); }}>
+                <ExternalLink className="w-4 h-4 mr-1.5" />
+                View Progress
+              </Button>
             </DialogFooter>
           </div>
         )}

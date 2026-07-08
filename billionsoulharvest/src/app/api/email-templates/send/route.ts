@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createClient as createServerClient } from "@/shared/utils/supabase/server";
 import { getServiceSupabase, prepareCampaignSends, processNextBatch, finalizeCampaign } from "@/features/email/send-campaign";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,17 +103,40 @@ export async function POST(request: NextRequest) {
     // Prepare campaign sends (insert rows)
     await prepareCampaignSends(supabase, campaign, campaign.id);
 
-    // Process all batches inline (Hobby plan can't run cron frequently)
-    let remaining = 1;
-    while (remaining > 0) {
-      const result = await processNextBatch(supabase, campaign.id);
-      remaining = result.remaining;
-      if (result.processed === 0 && remaining === 0) break;
+    // Check if any sends were queued (prepareCampaignSends marks campaign "failed" if zero contacts)
+    const { count } = await supabase
+      .from("campaign_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaign.id);
+
+    if (!count || count === 0) {
+      return NextResponse.json(
+        { campaign_id: campaign.id, status: "failed", template_id: resolvedTemplateId },
+        { status: 202 }
+      );
     }
-    await finalizeCampaign(supabase, campaign.id);
+
+    // Fire-and-forget: process batches in background after response
+    after(async () => {
+      try {
+        let remaining = 1;
+        while (remaining > 0) {
+          const result = await processNextBatch(supabase, campaign.id);
+          remaining = result.remaining;
+          if (result.processed === 0 && remaining === 0) break;
+        }
+        await finalizeCampaign(supabase, campaign.id);
+      } catch (err) {
+        console.error("Background send error for campaign", campaign.id, err);
+        await supabase
+          .from("campaigns")
+          .update({ status: "failed", completed_at: new Date().toISOString() })
+          .eq("id", campaign.id);
+      }
+    });
 
     return NextResponse.json(
-      { campaign_id: campaign.id, status: "sent" },
+      { campaign_id: campaign.id, status: "sending", template_id: resolvedTemplateId },
       { status: 202 }
     );
   } catch (error) {
