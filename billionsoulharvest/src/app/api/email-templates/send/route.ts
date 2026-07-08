@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/shared/utils/supabase/server";
-import { getServiceSupabase, processCampaignSend } from "@/features/email/send-campaign";
+import { getServiceSupabase, prepareCampaignSends } from "@/features/email/send-campaign";
 
 export async function POST(request: NextRequest) {
   try {
@@ -98,12 +98,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create send" }, { status: 500 });
     }
 
-    // Process send — await directly so SMTP completes reliably
-    await processCampaignSend(supabase, campaign, campaign.id);
+    // Prepare campaign sends (insert rows) — returns immediately, cron handles batches
+    await prepareCampaignSends(supabase, campaign, campaign.id);
 
     return NextResponse.json(
-      { campaign_id: campaign.id, status: "sent" },
-      { status: 200 }
+      { campaign_id: campaign.id, status: "sending" },
+      { status: 202 }
     );
   } catch (error) {
     console.error("Email send error:", error);

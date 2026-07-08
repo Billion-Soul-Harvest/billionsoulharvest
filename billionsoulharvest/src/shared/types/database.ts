@@ -264,6 +264,7 @@ export interface CampaignSend {
   opened_at: string | null;
   clicked_at: string | null;
   bounced_at: string | null;
+  retry_count: number;
   error_message: string | null;
   created_at: string;
   updated_at: string;

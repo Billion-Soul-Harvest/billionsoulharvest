@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,8 +45,56 @@ function StatCard({ label, value, total, color }: { label: string; value: number
   );
 }
 
-export function CampaignReport({ campaign, sends }: Props) {
+function SendingProgress({ campaign }: { campaign: Campaign }) {
+  const processed = campaign.sent_count + campaign.failed_count;
+  const total = campaign.total_recipients;
+  const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+        <span className="text-sm font-medium text-blue-700">
+          Sending in progress...
+        </span>
+        <span className="text-sm text-blue-600 ml-auto">
+          {processed.toLocaleString()} / {total.toLocaleString()} ({pct}%)
+        </span>
+      </div>
+      <div className="w-full bg-blue-100 rounded-full h-2.5">
+        <div
+          className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function CampaignReport({ campaign: initialCampaign, sends: initialSends }: Props) {
   const router = useRouter();
+  const [campaign, setCampaign] = useState(initialCampaign);
+  const [sends, setSends] = useState(initialSends);
+  const isSending = campaign.status === "sending";
+
+  const fetchLatest = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/campaigns/${campaign.id}/status`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.campaign) setCampaign(data.campaign);
+      if (data.sends) setSends(data.sends);
+    } catch {
+      // Silently ignore polling errors
+    }
+  }, [campaign.id]);
+
+  useEffect(() => {
+    if (!isSending) return;
+    const interval = setInterval(fetchLatest, 5000);
+    return () => clearInterval(interval);
+  }, [isSending, fetchLatest]);
+
   const c = campaign;
 
   return (
@@ -69,9 +118,19 @@ export function CampaignReport({ campaign, sends }: Props) {
           </div>
         </div>
         <Badge variant="secondary" className={statusColors[c.status]}>
-          {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+          {c.status === "sending" ? (
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+              Sending
+            </span>
+          ) : (
+            c.status.charAt(0).toUpperCase() + c.status.slice(1)
+          )}
         </Badge>
       </div>
+
+      {/* Progress bar when sending */}
+      {isSending && <SendingProgress campaign={c} />}
 
       {/* Timestamps */}
       <div className="flex gap-6 text-sm text-gray-500 mb-6">
@@ -119,13 +178,13 @@ export function CampaignReport({ campaign, sends }: Props) {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {s.opened_at ? new Date(s.opened_at).toLocaleString() : "—"}
+                      {s.opened_at ? new Date(s.opened_at).toLocaleString() : "\u2014"}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {s.clicked_at ? new Date(s.clicked_at).toLocaleString() : "—"}
+                      {s.clicked_at ? new Date(s.clicked_at).toLocaleString() : "\u2014"}
                     </td>
                     <td className="px-4 py-3 text-red-600 text-xs max-w-xs truncate">
-                      {s.error_message || "—"}
+                      {s.error_message || "\u2014"}
                     </td>
                   </tr>
                 ))

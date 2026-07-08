@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/shared/utils/supabase/server";
-import { after } from "next/server";
-import { getServiceSupabase, processCampaignSend } from "@/features/email/send-campaign";
+import { getServiceSupabase, prepareCampaignSends } from "@/features/email/send-campaign";
 
 export async function POST(
   _request: NextRequest,
@@ -50,8 +49,8 @@ export async function POST(
       .update({ status: "sending", started_at: new Date().toISOString() })
       .eq("id", id);
 
-    // Respond immediately with 202, process in background
-    after(processCampaignSend(supabase, campaign, id));
+    // Prepare campaign sends (insert rows) — cron handles batch processing
+    await prepareCampaignSends(supabase, campaign, id);
 
     return NextResponse.json({ status: "sending" }, { status: 202 });
   } catch (error) {
