@@ -31,6 +31,7 @@ import { CraftYouTube } from "./components/craft-youtube";
 import { CraftCarousel } from "./components/craft-carousel";
 import { CraftIcon } from "./components/craft-icon";
 import { CraftRegistrationForm } from "./components/craft-registration-form";
+import { CraftEventList } from "./components/craft-event-list";
 
 interface Props {
   event: Event;
@@ -58,6 +59,7 @@ const resolver = {
   CraftCarousel,
   CraftIcon,
   CraftRegistrationForm,
+  CraftEventList,
 };
 
 export function PageBuilder({ event }: Props) {
