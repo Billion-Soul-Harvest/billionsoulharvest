@@ -9,33 +9,45 @@ export const metadata: Metadata = {
 interface Props {
   searchParams: Promise<{
     status?: string;
+    page?: string;
+    pageSize?: string;
   }>;
 }
 
 export default async function EmailsPage({ searchParams }: Props) {
   const params = await searchParams;
   const statusFilter = params.status ?? "all";
+  const page = Math.max(1, Number(params.page) || 1);
+  const pageSize = [10, 25, 50].includes(Number(params.pageSize))
+    ? Number(params.pageSize)
+    : 10;
 
   const supabase = await createClient();
 
-  // Fetch templates with stats from the view
-  const { data: templates } = await supabase
+  let query = supabase
     .from("email_template_stats")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("updated_at", { ascending: false });
 
-  let filtered = templates ?? [];
   if (statusFilter === "draft") {
-    filtered = filtered.filter((t: Record<string, unknown>) => (t.send_count as number) === 0);
+    query = query.eq("send_count", 0);
   } else if (statusFilter === "sent") {
-    filtered = filtered.filter((t: Record<string, unknown>) => (t.send_count as number) > 0);
+    query = query.gt("send_count", 0);
   }
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data: templates, count } = await query.range(from, to);
 
   return (
     <div>
       <EmailTemplateList
-        initialTemplates={filtered as never[]}
+        initialTemplates={(templates ?? []) as never[]}
         statusFilter={statusFilter}
+        totalCount={count ?? 0}
+        page={page}
+        pageSize={pageSize}
       />
     </div>
   );

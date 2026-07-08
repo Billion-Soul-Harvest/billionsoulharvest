@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { WysiwygEditor } from "@/shared/components/wysiwyg-editor";
 import { Check, ArrowLeft, Loader2 } from "lucide-react";
 import type { SegmentFilter, CampaignTemplate } from "@/shared/types/database";
+import { EmailThumbnail } from "./email-template-list";
 
 interface Props {
   open: boolean;
@@ -140,10 +141,11 @@ export function SendEmailDialog({
   }, [activeTab, selectedTemplateId, composeSubject, composeBody, saveAsTemplate, selectAllMode, selectAllFilter, contactIds, onSuccess]);
 
   const emailSubject = activeTab === 0 ? selectedTemplate?.subject : composeSubject;
+  const emailBodyHtml = activeTab === 0 ? selectedTemplate?.body_html : composeBody;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={step === "confirm" && emailBodyHtml ? "sm:max-w-3xl" : "sm:max-w-lg"}>
         <DialogHeader>
           <DialogTitle>
             {step === "done" ? "Email sent!" : step === "confirm" ? "Confirm send" : "Send email"}
@@ -174,20 +176,23 @@ export function SendEmailDialog({
                     No templates yet. Create one from the Emails page or compose a new email below.
                   </p>
                 ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
                     {templates.map((t) => (
                       <button
                         key={t.id}
                         type="button"
-                        className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        className={`w-full text-left p-2.5 rounded-lg border transition-colors flex items-center gap-3 ${
                           selectedTemplateId === t.id
                             ? "border-cyan-500 bg-cyan-50"
                             : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                         }`}
                         onClick={() => setSelectedTemplateId(t.id)}
                       >
-                        <p className="font-medium text-gray-900 text-sm">{t.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">{t.subject}</p>
+                        <EmailThumbnail bodyHtml={t.body_html} />
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 text-sm">{t.name}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">{t.subject}</p>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -251,6 +256,20 @@ export function SendEmailDialog({
                   {snapshotCount.toLocaleString()} contact{snapshotCount !== 1 ? "s" : ""}
                 </p>
               </div>
+
+              {/* Email preview */}
+              {emailBodyHtml && (
+                <div className="bg-[#f3f3f4] rounded-lg border overflow-hidden">
+                  <iframe
+                    srcDoc={emailBodyHtml}
+                    title="Email preview"
+                    className="w-full border-0"
+                    style={{ height: "400px" }}
+                    sandbox=""
+                  />
+                </div>
+              )}
+
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-sm text-amber-800">
                   Emails send immediately and can&apos;t be unscheduled!

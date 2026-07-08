@@ -13,12 +13,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, MoreVertical, Copy, Trash2 } from "lucide-react";
+import { Search, MoreVertical, Copy, Trash2, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import type { EmailTemplateWithStats } from "@/shared/types/database";
 
 interface Props {
   initialTemplates: EmailTemplateWithStats[];
   statusFilter: string;
+  totalCount: number;
+  page: number;
+  pageSize: number;
 }
 
 function pct(num: number, total: number): string {
@@ -26,7 +37,7 @@ function pct(num: number, total: number): string {
   return `${Math.round((num / total) * 100)}%`;
 }
 
-function EmailThumbnail({ bodyHtml }: { bodyHtml: string }) {
+export function EmailThumbnail({ bodyHtml }: { bodyHtml: string }) {
   const previewHtml = `
     <!DOCTYPE html>
     <html>
@@ -56,8 +67,8 @@ function EmailThumbnail({ bodyHtml }: { bodyHtml: string }) {
     <div className="w-[120px] h-[140px] rounded-lg border border-gray-200 overflow-hidden bg-gray-50 shrink-0">
       <iframe
         srcDoc={previewHtml}
-        className="w-[360px] h-[420px] border-0 pointer-events-none"
-        style={{ transform: "scale(0.333)", transformOrigin: "top left" }}
+        className="w-[600px] h-[700px] border-0 pointer-events-none"
+        style={{ transform: "scale(0.2)", transformOrigin: "top left" }}
         title="Email preview"
         sandbox=""
         tabIndex={-1}
@@ -66,16 +77,20 @@ function EmailThumbnail({ bodyHtml }: { bodyHtml: string }) {
   );
 }
 
-export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
+export function EmailTemplateList({ initialTemplates, statusFilter, totalCount, page, pageSize }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [templates, setTemplates] = useState(initialTemplates);
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "single"; id: string } | { type: "bulk" } | null>(null);
 
   useEffect(() => {
     setTemplates(initialTemplates);
+    setSelectedIds(new Set());
   }, [initialTemplates]);
 
   // Close menu on outside click
@@ -86,14 +101,23 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
     return () => document.removeEventListener("click", handleClick);
   }, [menuOpen]);
 
-  function navigate(status: string) {
+  function navigate(updates: Record<string, string>) {
+    const merged = { status: statusFilter, page: String(page), pageSize: String(pageSize), ...updates };
     const params = new URLSearchParams();
-    if (status !== "all") params.set("status", status);
+    for (const [k, v] of Object.entries(merged)) {
+      if (v && v !== "all" && !(k === "page" && v === "1") && !(k === "pageSize" && v === "10")) {
+        params.set(k, v);
+      }
+    }
     const qs = params.toString();
     startTransition(() => {
       router.push(qs ? `${pathname}?${qs}` : pathname);
     });
   }
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, totalCount);
 
   const filtered = search
     ? templates.filter(
@@ -128,16 +152,58 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
     }
   }
 
-  async function handleDelete(id: string, e: React.MouseEvent) {
+  function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
     setMenuOpen(null);
     if (id.startsWith("campaign:")) return;
-    if (!confirm("Delete this email template?")) return;
+    setDeleteConfirm({ type: "single", id });
+  }
+
+  // Selectable templates (exclude one-off campaigns)
+  const selectableFiltered = filtered.filter((t) => !t.id.startsWith("campaign:"));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === selectableFiltered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableFiltered.map((t) => t.id)));
+    }
+  }
+
+  function handleBulkDelete() {
+    setDeleteConfirm({ type: "bulk" });
+  }
+
+  async function executeDelete() {
+    if (!deleteConfirm) return;
+    setBulkDeleting(true);
     try {
-      await fetch(`/api/email-templates/${id}`, { method: "DELETE" });
-      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      if (deleteConfirm.type === "single") {
+        await fetch(`/api/email-templates/${deleteConfirm.id}`, { method: "DELETE" });
+      } else {
+        await Promise.all(
+          Array.from(selectedIds).map((id) =>
+            fetch(`/api/email-templates/${id}`, { method: "DELETE" })
+          )
+        );
+      }
+      setSelectedIds(new Set());
+      setDeleteConfirm(null);
+      router.refresh();
     } catch (err) {
       console.error("Delete failed:", err);
+      setDeleteConfirm(null);
+    } finally {
+      setBulkDeleting(false);
     }
   }
 
@@ -161,7 +227,7 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={(v: string | null) => { if (v) navigate(v); }}>
+        <Select value={statusFilter} onValueChange={(v: string | null) => { if (v) navigate({ status: v, page: "1" }); }}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="All" />
           </SelectTrigger>
@@ -173,9 +239,43 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
         </Select>
       </div>
 
-      <p className="text-sm text-gray-500 mb-3">
-        {filtered.length} email{filtered.length !== 1 ? "s" : ""}
-      </p>
+      <div className="flex items-center gap-3 mb-3">
+        {selectableFiltered.length > 0 && (
+          <input
+            type="checkbox"
+            checked={selectedIds.size > 0 && selectedIds.size === selectableFiltered.length}
+            ref={(el) => {
+              if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < selectableFiltered.length;
+            }}
+            onChange={toggleSelectAll}
+            className="h-4 w-4 rounded border-gray-300 text-cyan-600 cursor-pointer"
+          />
+        )}
+        {selectedIds.size > 0 ? (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-700 font-medium">
+              {selectedIds.size} selected
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+            >
+              {bulkDeleting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5 mr-1" />
+              )}
+              Delete
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">
+            {totalCount} email{totalCount !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
 
       {/* Email Cards */}
       <div className={`space-y-3 relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
@@ -200,6 +300,19 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
                   router.push(`/admin/emails/${t.id}`);
                 }}
               >
+                {/* Checkbox */}
+                {!isOneOff && (
+                  <div className="flex items-center pl-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(t.id)}
+                      onChange={() => toggleSelect(t.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-4 w-4 rounded border-gray-300 text-cyan-600 cursor-pointer"
+                    />
+                  </div>
+                )}
+
                 {/* Thumbnail */}
                 <div className="p-3 flex items-center">
                   <EmailThumbnail bodyHtml={t.body_html} />
@@ -294,6 +407,99 @@ export function EmailTemplateList({ initialTemplates, statusFilter }: Props) {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalCount > 0 && (
+        <div className="flex items-center justify-between border-t mt-4 pt-3">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">
+              {startIndex}–{endIndex} of {totalCount}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Rows:</span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(v: string | null) => {
+                  if (v) navigate({ pageSize: v, page: "1" });
+                }}
+              >
+                <SelectTrigger className="w-[70px] h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate({ page: "1" })}
+              disabled={page <= 1}
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate({ page: String(page - 1) })}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm text-gray-600 px-2">
+              {page} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate({ page: String(page + 1) })}
+              disabled={page >= totalPages}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate({ page: String(totalPages) })}
+              disabled={page >= totalPages}
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>
+              {deleteConfirm?.type === "bulk"
+                ? `Delete ${selectedIds.size} email${selectedIds.size !== 1 ? "s" : ""}?`
+                : "Delete email?"}
+            </DialogTitle>
+            <DialogDescription>
+              {deleteConfirm?.type === "bulk"
+                ? `This will permanently delete ${selectedIds.size} selected email${selectedIds.size !== 1 ? "s" : ""}. This action cannot be undone.`
+                : "This will permanently delete this email. This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={executeDelete} disabled={bulkDeleting}>
+              {bulkDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

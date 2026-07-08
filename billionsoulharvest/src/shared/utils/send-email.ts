@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import nodemailer from "nodemailer";
 
 interface EmailPayload {
   to: string;
@@ -16,26 +16,55 @@ interface EmailResult {
   error?: string;
 }
 
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+function getTransport() {
+  const port = Number(process.env.SMTP_PORT || 587);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.hostinger.com",
+    port,
+    secure: port === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
 }
 
 export async function sendEmails(
   emails: EmailPayload[]
 ): Promise<EmailResult[]> {
-  const supabase = getServiceClient();
-  const { data, error } = await supabase.functions.invoke("send-email", {
-    body: { emails },
-  });
+  const transport = getTransport();
+  const defaultFrom = getFromAddress();
+  const results: EmailResult[] = [];
 
-  if (error) {
-    throw new Error(`Edge function error: ${error.message}`);
+  try {
+    for (const email of emails) {
+      try {
+        const info = await transport.sendMail({
+          from: email.from || defaultFrom,
+          to: email.to,
+          subject: email.subject,
+          html: email.html,
+          replyTo: email.replyTo,
+          headers: email.headers,
+        });
+        results.push({
+          to: email.to,
+          success: true,
+          messageId: info.messageId,
+        });
+      } catch (err) {
+        results.push({
+          to: email.to,
+          success: false,
+          error: err instanceof Error ? err.message : "Send failed",
+        });
+      }
+    }
+  } finally {
+    transport.close();
   }
 
-  return data.results as EmailResult[];
+  return results;
 }
 
 export async function sendEmail(

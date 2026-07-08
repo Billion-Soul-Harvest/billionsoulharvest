@@ -59,20 +59,27 @@ export async function processCampaignSend(
           batch.map(async (contact) => {
             const unsubscribeUrl = buildUnsubscribeUrl(contact.id);
 
-            // Replace merge fields
+            // Replace merge fields and strip href="#" placeholder links
             const bodyHtml = (campaign.body_html as string)
               .replace(/\{\{first_name\}\}/g, contact.first_name || "")
-              .replace(/\{\{last_name\}\}/g, contact.last_name || "");
+              .replace(/\{\{last_name\}\}/g, contact.last_name || "")
+              .replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl)
+              .replace(/<a\s+[^>]*href="#"[^>]*>(.*?)<\/a>/gi, "$1");
 
-            const html = await render(
-              CampaignWrapperEmail({
-                bodyHtml,
-                previewText: (campaign.preview_text as string) || "",
-                firstName: contact.first_name || "",
-                lastName: contact.last_name || "",
-                unsubscribeUrl,
-              })
-            );
+            // If body_html is already a complete HTML document, send as-is
+            // Otherwise wrap it in the campaign email layout
+            const isFullDocument = /^\s*<!doctype\s|^\s*<html[\s>]/i.test(bodyHtml);
+            const html = isFullDocument
+              ? bodyHtml
+              : await render(
+                  CampaignWrapperEmail({
+                    bodyHtml,
+                    previewText: (campaign.preview_text as string) || "",
+                    firstName: contact.first_name || "",
+                    lastName: contact.last_name || "",
+                    unsubscribeUrl,
+                  })
+                );
 
             return {
               from: getFromAddress(),
@@ -82,10 +89,6 @@ export async function processCampaignSend(
                 .replace(/\{\{last_name\}\}/g, contact.last_name || ""),
               html,
               replyTo: (campaign.reply_to as string) || undefined,
-              headers: {
-                "List-Unsubscribe": `<${unsubscribeUrl}>`,
-                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-              },
             };
           })
         );
