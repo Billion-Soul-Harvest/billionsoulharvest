@@ -101,13 +101,15 @@ export interface Event {
   description: string | null;
   long_description: string | null;
   location: string | null;
+  address: string | null;
   city: string | null;
+  region: string | null;
   country: string | null;
+  postal_code: string | null;
   start_date: string | null;
   end_date: string | null;
   status: EventStatus;
   event_type: EventType;
-  region_id: string | null;
   banner_url: string | null;
   page_content: Record<string, unknown> | null;
   max_registrations: number | null;
