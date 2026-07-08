@@ -83,6 +83,7 @@ const dummyEvent: Event = {
   address: null,
   region: null,
   postal_code: null,
+  external_url: null,
   banner_url: null,
   page_content: null,
   max_registrations: null,

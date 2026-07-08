@@ -110,6 +110,7 @@ export interface Event {
   end_date: string | null;
   status: EventStatus;
   event_type: EventType;
+  external_url: string | null;
   banner_url: string | null;
   page_content: Record<string, unknown> | null;
   max_registrations: number | null;

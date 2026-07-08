@@ -8,3 +8,6 @@ work/
 
 # Media files
 *.mp4
+
+# Claude worktrees
+.claude/worktrees/

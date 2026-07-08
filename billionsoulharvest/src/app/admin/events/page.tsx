@@ -58,7 +58,7 @@ export default async function EventsPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("*, region:ministry_regions(name, color)")
+    .select("*")
     .order("created_at", { ascending: false });
 
   // Get registration counts per event
@@ -126,10 +126,12 @@ export default async function EventsPage() {
                         {event.city}, {event.country}
                       </span>
                     )}
-                    {event.region && (
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: event.region.color }} />
-                        {event.region.name}
+                    {event.external_url && (
+                      <span className="flex items-center gap-1 text-blue-500">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        External
                       </span>
                     )}
                   </div>

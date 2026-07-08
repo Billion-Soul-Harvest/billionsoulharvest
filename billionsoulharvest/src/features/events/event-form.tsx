@@ -37,6 +37,7 @@ interface EventData {
   status: EventStatus;
   max_registrations: string;
   banner_url: string;
+  external_url: string;
   registration_config?: RegistrationConfig | null;
 }
 
@@ -90,6 +91,7 @@ export function EventForm({ event }: Props) {
     status: event?.status ?? "draft",
     max_registrations: event?.max_registrations ?? "",
     banner_url: event?.banner_url ?? "",
+    external_url: event?.external_url ?? "",
   });
 
   const [regConfig, setRegConfig] = useState<RegistrationConfig>(
@@ -138,6 +140,7 @@ export function EventForm({ event }: Props) {
       status: form.status,
       max_registrations: form.max_registrations ? parseInt(form.max_registrations) : null,
       banner_url: form.banner_url || null,
+      external_url: form.external_url || null,
       registration_config: regConfig,
     };
 
@@ -303,6 +306,13 @@ export function EventForm({ event }: Props) {
             <Input type="number" value={form.max_registrations}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("max_registrations", e.target.value)}
               placeholder="Unlimited" />
+          </div>
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label>External Event Link</Label>
+            <Input type="url" value={form.external_url}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("external_url", e.target.value)}
+              placeholder="https://sites.google.com/..." />
+            <p className="text-xs text-gray-400">If set, visitors will be redirected to this URL instead of the built-in event page.</p>
           </div>
         </div>
       </div>

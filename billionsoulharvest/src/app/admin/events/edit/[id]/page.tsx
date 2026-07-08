@@ -146,6 +146,7 @@ export default async function EventDetailPage({ params }: Props) {
               postal_code: event.postal_code ?? "",
               max_registrations: event.max_registrations?.toString() ?? "",
               banner_url: event.banner_url ?? "",
+              external_url: event.external_url ?? "",
               registration_config: event.registration_config as RegistrationConfig | null,
             }}
           />

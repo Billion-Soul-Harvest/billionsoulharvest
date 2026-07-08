@@ -1,5 +1,5 @@
 import { createClient } from "@/shared/utils/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { Event, EventSpeaker, EventProgram, EventFaq, EventSection, EventPage, EventPageBlock } from "@/shared/types/database";
@@ -47,6 +47,9 @@ export default async function EventPage({ params, searchParams }: Props) {
     .single();
 
   if (!event) notFound();
+
+  // Redirect to external URL if set (e.g. legacy sites.google.com events)
+  if (event.external_url) redirect(event.external_url);
 
   // Fetch pages — skip published filter in preview mode
   let pagesQuery = supabase
