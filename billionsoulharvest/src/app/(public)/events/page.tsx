@@ -26,7 +26,7 @@ export default async function EventsListPage() {
   const supabase = await createClient();
   const { data: events } = await supabase
     .from("events")
-    .select("*, region:ministry_regions(name, color)")
+    .select("*")
     .in("status", ["published", "registration_open", "completed"])
     .order("start_date", { ascending: false });
 
@@ -53,7 +53,9 @@ export default async function EventsListPage() {
               {events.map((event) => (
                 <Link
                   key={event.id}
-                  href={`/events/${event.slug}`}
+                  href={event.external_url || `/events/${event.slug}`}
+                  target={event.external_url ? "_blank" : undefined}
+                  rel={event.external_url ? "noopener noreferrer" : undefined}
                   className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-[#29BDD6]/30 transition-all"
                 >
                   {/* Banner placeholder */}
@@ -75,7 +77,7 @@ export default async function EventsListPage() {
                       </Badge>
                       {event.region && (
                         <Badge variant="outline" className="border-white/10 text-gray-400">
-                          {(event.region as { name: string }).name}
+                          {event.region}
                         </Badge>
                       )}
                     </div>

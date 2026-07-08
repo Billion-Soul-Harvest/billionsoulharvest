@@ -1,6 +1,7 @@
 import type { Event, RegistrationConfig } from "@/shared/types/database";
 import Link from "next/link";
 import { InlineRegistrationForm } from "@/features/registration/inline-registration-form";
+import { EventListCards } from "@/features/events/public/event-list-cards";
 import { Star } from "lucide-react";
 import { ICON_MAP } from "./icon-map";
 import { ScrollReveal } from "@/shared/components/scroll-reveal";
@@ -595,6 +596,21 @@ function RenderNode({
             backgroundColor: (props.backgroundColor as string) ?? "#ffffff",
             color: (props.textColor as string) ?? "#111827",
           }}
+        />
+      );
+    }
+
+    case "CraftEventList": {
+      return (
+        <EventListCards
+          columns={(props.columns as number) ?? 3}
+          maxItems={(props.maxItems as number) ?? 6}
+          statusFilter={(props.statusFilter as "all" | "upcoming" | "past") ?? "all"}
+          cardBg={(props.cardBg as string) ?? "rgba(255,255,255,0.05)"}
+          cardBorder={(props.cardBorder as string) ?? "rgba(255,255,255,0.1)"}
+          titleColor={(props.titleColor as string) ?? "#ffffff"}
+          textColor={(props.textColor as string) ?? "#9ca3af"}
+          gap={(props.gap as number) ?? 24}
         />
       );
     }
