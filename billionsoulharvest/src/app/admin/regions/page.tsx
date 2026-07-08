@@ -26,17 +26,8 @@ export default async function RegionsPage() {
     }
   });
 
-  // Get event counts per region
-  const { data: events } = await supabase
-    .from("events")
-    .select("region_id");
-
+  // Event counts per region — events no longer have region_id
   const eventCounts: Record<string, number> = {};
-  events?.forEach((e) => {
-    if (e.region_id) {
-      eventCounts[e.region_id] = (eventCounts[e.region_id] ?? 0) + 1;
-    }
-  });
 
   return (
     <div>

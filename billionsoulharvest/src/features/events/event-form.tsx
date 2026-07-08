@@ -14,16 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import { GooglePlacesInput, type PlaceResult } from "@/features/events/google-places-input";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType } from "@/shared/types/database";
 import { eventTemplates } from "@/features/events/templates/event-templates";
 import { applyTemplate } from "@/features/events/templates/apply-template";
-
-interface Region {
-  id: string;
-  name: string;
-}
 
 interface EventData {
   id?: string;
@@ -31,13 +26,15 @@ interface EventData {
   slug: string;
   description: string;
   location: string;
+  address: string;
   city: string;
+  region: string;
   country: string;
+  postal_code: string;
   start_date: string;
   end_date: string;
   event_type: EventType;
   status: EventStatus;
-  region_id: string;
   max_registrations: string;
   banner_url: string;
   registration_config?: RegistrationConfig | null;
@@ -45,14 +42,13 @@ interface EventData {
 
 interface Props {
   event?: EventData;
-  regions: Region[];
 }
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-export function EventForm({ event, regions }: Props) {
+export function EventForm({ event }: Props) {
   const router = useRouter();
   const isEditing = !!event?.id;
   const [saving, setSaving] = useState(false);
@@ -83,13 +79,15 @@ export function EventForm({ event, regions }: Props) {
     slug: event?.slug ?? "",
     description: event?.description ?? "",
     location: event?.location ?? "",
+    address: event?.address ?? "",
     city: event?.city ?? "",
+    region: event?.region ?? "",
     country: event?.country ?? "",
+    postal_code: event?.postal_code ?? "",
     start_date: event?.start_date ?? "",
     end_date: event?.end_date ?? "",
     event_type: event?.event_type ?? "conference",
     status: event?.status ?? "draft",
-    region_id: event?.region_id ?? "",
     max_registrations: event?.max_registrations ?? "",
     banner_url: event?.banner_url ?? "",
   });
@@ -106,6 +104,18 @@ export function EventForm({ event, regions }: Props) {
     setForm((prev) => ({ ...prev, ...updates }));
   }
 
+  function handlePlaceSelect(place: PlaceResult) {
+    setForm((prev) => ({
+      ...prev,
+      location: place.venue,
+      address: place.address,
+      city: place.city,
+      region: place.region,
+      country: place.country,
+      postal_code: place.postalCode,
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
@@ -117,13 +127,15 @@ export function EventForm({ event, regions }: Props) {
       slug: form.slug,
       description: form.description || null,
       location: form.location || null,
+      address: form.address || null,
       city: form.city || null,
+      region: form.region || null,
       country: form.country || null,
+      postal_code: form.postal_code || null,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
       event_type: form.event_type,
       status: form.status,
-      region_id: form.region_id || null,
       max_registrations: form.max_registrations ? parseInt(form.max_registrations) : null,
       banner_url: form.banner_url || null,
       registration_config: regConfig,
@@ -233,31 +245,33 @@ export function EventForm({ event, regions }: Props) {
 
       <div className="bg-white rounded-xl border p-6 space-y-4">
         <h3 className="font-semibold text-gray-900">Location & Dates</h3>
+
+        <GooglePlacesInput onPlaceSelect={handlePlaceSelect} />
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+          <div className="sm:col-span-2 space-y-1.5">
             <Label>Venue / Location</Label>
             <Input value={form.location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("location", e.target.value)} />
+          </div>
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label>Address</Label>
+            <Input value={form.address} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("address", e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>City</Label>
             <Input value={form.city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("city", e.target.value)} />
           </div>
           <div className="space-y-1.5">
+            <Label>Region</Label>
+            <Input value={form.region} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("region", e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
             <Label>Country</Label>
             <Input value={form.country} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("country", e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Region</Label>
-            <SearchableSelect
-              value={form.region_id}
-              onValueChange={(v) => updateField("region_id", v === "none" ? "" : v)}
-              options={[
-                { value: "none", label: "No region" },
-                ...regions.map((r) => ({ value: r.id, label: r.name })),
-              ]}
-              placeholder="Select region"
-              searchPlaceholder="Search regions..."
-            />
+            <Label>Postal Code</Label>
+            <Input value={form.postal_code} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("postal_code", e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>Start Date</Label>

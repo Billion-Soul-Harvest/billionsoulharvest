@@ -33,11 +33,6 @@ export default async function EventDetailPage({ params }: Props) {
 
   if (error || !event) notFound();
 
-  const { data: regions } = await supabase
-    .from("ministry_regions")
-    .select("id, name")
-    .order("name");
-
   const { data: registrations } = await supabase
     .from("registrations")
     .select("*, contact:contacts(first_name, last_name, email, phone)")
@@ -146,12 +141,13 @@ export default async function EventDetailPage({ params }: Props) {
               start_date: event.start_date ?? "",
               end_date: event.end_date ?? "",
               status: event.status as EventStatus,
-              region_id: event.region_id ?? "",
+              address: event.address ?? "",
+              region: event.region ?? "",
+              postal_code: event.postal_code ?? "",
               max_registrations: event.max_registrations?.toString() ?? "",
               banner_url: event.banner_url ?? "",
               registration_config: event.registration_config as RegistrationConfig | null,
             }}
-            regions={regions ?? []}
           />
         </div>
 
