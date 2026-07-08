@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/shared/utils/supabase/server";
-import { getServiceSupabase, prepareCampaignSends } from "@/features/email/send-campaign";
+import { getServiceSupabase, prepareCampaignSends, processNextBatch, finalizeCampaign } from "@/features/email/send-campaign";
+
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -98,11 +100,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create send" }, { status: 500 });
     }
 
-    // Prepare campaign sends (insert rows) — returns immediately, cron handles batches
+    // Prepare campaign sends (insert rows)
     await prepareCampaignSends(supabase, campaign, campaign.id);
 
+    // Process all batches inline (Hobby plan can't run cron frequently)
+    let remaining = 1;
+    while (remaining > 0) {
+      const result = await processNextBatch(supabase, campaign.id);
+      remaining = result.remaining;
+      if (result.processed === 0 && remaining === 0) break;
+    }
+    await finalizeCampaign(supabase, campaign.id);
+
     return NextResponse.json(
-      { campaign_id: campaign.id, status: "sending" },
+      { campaign_id: campaign.id, status: "sent" },
       { status: 202 }
     );
   } catch (error) {
