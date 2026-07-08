@@ -29,10 +29,10 @@ interface Props {
   gap: number;
 }
 
-const statusStyles: Record<string, string> = {
-  registration_open: "background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(34,197,94,0.3)",
-  published: "background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3)",
-  completed: "background: rgba(107,114,128,0.2); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3)",
+const statusStyles: Record<string, React.CSSProperties> = {
+  registration_open: { background: "rgba(34,197,94,0.2)", color: "#86efac", border: "1px solid rgba(34,197,94,0.3)" },
+  published: { background: "rgba(59,130,246,0.2)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.3)" },
+  completed: { background: "rgba(107,114,128,0.2)", color: "#9ca3af", border: "1px solid rgba(107,114,128,0.3)" },
 };
 
 const statusLabels: Record<string, string> = {
@@ -138,16 +138,7 @@ export function EventListCards({ columns, maxItems, statusFilter, cardBg, cardBo
                     padding: "2px 8px",
                     borderRadius: "9999px",
                     fontSize: "11px",
-                    ...(Object.fromEntries(
-                      (statusStyles[event.status] ?? "background: rgba(107,114,128,0.2); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3)")
-                        .split(";")
-                        .map(s => s.trim())
-                        .filter(Boolean)
-                        .map(s => {
-                          const [k, v] = s.split(":").map(x => x.trim());
-                          return [k, v];
-                        })
-                    ) as React.CSSProperties),
+                    ...(statusStyles[event.status] ?? statusStyles.completed),
                   }}
                 >
                   {statusLabels[event.status] ?? event.status}
