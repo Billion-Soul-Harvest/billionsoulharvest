@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GooglePlacesInput, type PlaceResult } from "@/features/events/google-places-input";
+import { LocationSearchInput, type PlaceResult } from "@/features/events/location-search-input";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType } from "@/shared/types/database";
 import { eventTemplates } from "@/features/events/templates/event-templates";
@@ -246,7 +246,7 @@ export function EventForm({ event }: Props) {
       <div className="bg-white rounded-xl border p-6 space-y-4">
         <h3 className="font-semibold text-gray-900">Location & Dates</h3>
 
-        <GooglePlacesInput onPlaceSelect={handlePlaceSelect} />
+        <LocationSearchInput onPlaceSelect={handlePlaceSelect} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 space-y-1.5">
