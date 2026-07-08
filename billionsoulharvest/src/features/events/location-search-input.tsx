@@ -75,7 +75,7 @@ export function LocationSearchInput({ onPlaceSelect }: Props) {
     const addr = result.address;
     onPlaceSelect({
       venue: addr.amenity || addr.building || result.name || "",
-      address: result.display_name,
+      address: [addr.house_number, addr.road, addr.suburb].filter(Boolean).join(", ") || result.display_name,
       city: addr.city || addr.town || addr.village || addr.municipality || "",
       region: addr.state || addr.region || addr.county || "",
       country: addr.country || "",
@@ -93,7 +93,10 @@ export function LocationSearchInput({ onPlaceSelect }: Props) {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, []);
 
   return (
