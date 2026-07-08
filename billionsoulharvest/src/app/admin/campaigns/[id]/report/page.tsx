@@ -25,6 +25,16 @@ export default async function CampaignReportPage({ params }: Props) {
     redirect("/admin/campaigns");
   }
 
+  let templateName: string | null = null;
+  if (campaign.template_id) {
+    const { data: tpl } = await supabase
+      .from("campaign_templates")
+      .select("name")
+      .eq("id", campaign.template_id)
+      .single();
+    templateName = tpl?.name ?? null;
+  }
+
   const { data: sends } = await supabase
     .from("campaign_sends")
     .select("*")
@@ -35,6 +45,7 @@ export default async function CampaignReportPage({ params }: Props) {
     <CampaignReport
       campaign={campaign}
       sends={sends ?? []}
+      templateName={templateName}
     />
   );
 }

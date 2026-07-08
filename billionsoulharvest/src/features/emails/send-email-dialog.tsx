@@ -148,7 +148,7 @@ export function SendEmailDialog({
       <DialogContent className={step === "confirm" && emailBodyHtml ? "sm:max-w-3xl" : "sm:max-w-lg"}>
         <DialogHeader>
           <DialogTitle>
-            {step === "done" ? "Email sent!" : step === "confirm" ? "Confirm send" : "Send email"}
+            {step === "done" ? "Campaign sent!" : step === "confirm" ? "Confirm send" : "Send Campaign"}
           </DialogTitle>
           {step === "compose" && (
             <DialogDescription>

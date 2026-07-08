@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, MoreVertical, Copy, Trash2, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Search, MoreVertical, Copy, Trash2, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,21 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { EmailTemplateWithStats } from "@/shared/types/database";
+
+interface TemplateCampaign {
+  id: string;
+  name: string;
+  status: string;
+  total_recipients: number;
+  sent_count: number;
+  delivered_count: number;
+  opened_count: number;
+  clicked_count: number;
+  bounced_count: number;
+  failed_count: number;
+  started_at: string | null;
+  completed_at: string | null;
+}
 
 interface Props {
   initialTemplates: EmailTemplateWithStats[];
@@ -87,6 +102,9 @@ export function EmailTemplateList({ initialTemplates, statusFilter, totalCount, 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "single"; id: string } | { type: "bulk" } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [campaignsCache, setCampaignsCache] = useState<Record<string, TemplateCampaign[]>>({});
+  const [campaignsLoading, setCampaignsLoading] = useState<string | null>(null);
 
   useEffect(() => {
     setTemplates(initialTemplates);
@@ -207,6 +225,37 @@ export function EmailTemplateList({ initialTemplates, statusFilter, totalCount, 
     }
   }
 
+  async function toggleExpand(templateId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (expandedId === templateId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(templateId);
+    if (!campaignsCache[templateId]) {
+      setCampaignsLoading(templateId);
+      try {
+        // For one-off campaigns (campaign:UUID), fetch that single campaign directly
+        const isOneOff = templateId.startsWith("campaign:");
+        const realId = isOneOff ? templateId.replace("campaign:", "") : templateId;
+        const url = isOneOff
+          ? `/api/campaigns/${realId}`
+          : `/api/email-templates/${realId}/campaigns`;
+        const res = await fetch(url);
+        const data = await res.json();
+        // Single campaign endpoint returns an object, wrap in array
+        setCampaignsCache((prev) => ({
+          ...prev,
+          [templateId]: isOneOff ? [data] : data,
+        }));
+      } catch (err) {
+        console.error("Failed to load campaigns:", err);
+      } finally {
+        setCampaignsLoading(null);
+      }
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -290,109 +339,198 @@ export function EmailTemplateList({ initialTemplates, statusFilter, totalCount, 
             const isOneOff = t.id.startsWith("campaign:");
             const isDraft = t.send_count === 0;
             const hasSends = t.total_sends > 0;
+            const isExpanded = expandedId === t.id;
+            const campaigns = campaignsCache[t.id];
+            const isLoadingCampaigns = campaignsLoading === t.id;
 
             return (
-              <div
-                key={t.id}
-                className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer flex items-stretch overflow-hidden"
-                onClick={() => {
-                  if (isOneOff) return;
-                  router.push(`/admin/emails/${t.id}`);
-                }}
-              >
-                {/* Checkbox */}
-                {!isOneOff && (
-                  <div className="flex items-center pl-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(t.id)}
-                      onChange={() => toggleSelect(t.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-4 w-4 rounded border-gray-300 text-cyan-600 cursor-pointer"
-                    />
-                  </div>
-                )}
-
-                {/* Thumbnail */}
-                <div className="p-3 flex items-center">
-                  <EmailThumbnail bodyHtml={t.body_html} />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 py-4 pr-4 flex flex-col justify-center min-w-0">
-                  <div className="flex items-start gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900 text-sm truncate">
-                      {t.name}
-                    </h3>
-                    <Badge
-                      variant="secondary"
-                      className={`shrink-0 text-xs ${
-                        isDraft
-                          ? "bg-gray-100 text-gray-600"
-                          : "bg-green-100 text-green-700"
-                      }`}
-                    >
-                      {isDraft ? "Draft" : "Sent"}
-                    </Badge>
-                  </div>
-
-                  {t.subject && (
-                    <p className="text-xs text-gray-500 truncate mb-2">
-                      {t.subject}
-                    </p>
-                  )}
-
-                  {hasSends ? (
-                    <p className="text-xs text-gray-500">
-                      <span className="font-medium text-gray-700">{t.total_sends.toLocaleString()}</span> sends
-                      {" · "}
-                      <span className="font-medium text-gray-700">{t.total_opened.toLocaleString()}</span>{" "}
-                      ({pct(t.total_opened, t.total_delivered)}) opens
-                      {" · "}
-                      <span className="font-medium text-gray-700">{t.total_clicked.toLocaleString()}</span>{" "}
-                      ({pct(t.total_clicked, t.total_delivered)}) clicks
-                      {" · "}
-                      <span className="font-medium text-gray-700">{t.total_bounced.toLocaleString()}</span>{" "}
-                      ({pct(t.total_bounced, t.total_sends)}) bounces
-                    </p>
-                  ) : (
-                    <p className="text-xs text-gray-400">Not sent yet</p>
-                  )}
-                </div>
-
-                {/* Actions */}
-                {!isOneOff && (
-                  <div className="flex items-center pr-3">
-                    <div className="relative">
-                      <button
-                        type="button"
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpen(menuOpen === t.id ? null : t.id);
-                        }}
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                      {menuOpen === t.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
-                          <button
-                            type="button"
-                            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                            onClick={(e) => handleCopy(t.id, e)}
-                          >
-                            <Copy className="w-3.5 h-3.5" /> Duplicate
-                          </button>
-                          <button
-                            type="button"
-                            className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                            onClick={(e) => handleDelete(t.id, e)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete
-                          </button>
-                        </div>
-                      )}
+              <div key={t.id} className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden">
+                <div
+                  className="flex items-stretch cursor-pointer"
+                  onClick={() => {
+                    if (isOneOff) return;
+                    router.push(`/admin/emails/${t.id}`);
+                  }}
+                >
+                  {/* Checkbox */}
+                  {!isOneOff && (
+                    <div className="flex items-center pl-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(t.id)}
+                        onChange={() => toggleSelect(t.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-4 w-4 rounded border-gray-300 text-cyan-600 cursor-pointer"
+                      />
                     </div>
+                  )}
+
+                  {/* Thumbnail */}
+                  <div className="p-3 flex items-center">
+                    <EmailThumbnail bodyHtml={t.body_html} />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 py-4 pr-4 flex flex-col justify-center min-w-0">
+                    <div className="flex items-start gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate">
+                        {t.name}
+                      </h3>
+                      <Badge
+                        variant="secondary"
+                        className={`shrink-0 text-xs ${
+                          isDraft
+                            ? "bg-gray-100 text-gray-600"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {isDraft ? "Draft" : "Sent"}
+                      </Badge>
+                    </div>
+
+                    {t.subject && (
+                      <p className="text-xs text-gray-500 truncate mb-2">
+                        {t.subject}
+                      </p>
+                    )}
+
+                    {hasSends ? (
+                      <div className="flex items-center gap-1">
+                        <p className="text-xs text-gray-500">
+                          <span className="font-medium text-gray-700">{t.total_sends.toLocaleString()}</span> sends
+                          {" · "}
+                          <span className="font-medium text-gray-700">{t.total_opened.toLocaleString()}</span>{" "}
+                          ({pct(t.total_opened, t.total_delivered)}) opens
+                          {" · "}
+                          <span className="font-medium text-gray-700">{t.total_clicked.toLocaleString()}</span>{" "}
+                          ({pct(t.total_clicked, t.total_delivered)}) clicks
+                          {" · "}
+                          <span className="font-medium text-gray-700">{t.total_bounced.toLocaleString()}</span>{" "}
+                          ({pct(t.total_bounced, t.total_sends)}) bounces
+                        </p>
+                        <button
+                          type="button"
+                          className="p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                          onClick={(e) => toggleExpand(t.id, e)}
+                          title={isExpanded ? "Hide send history" : "Show send history"}
+                        >
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">Not sent yet</p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  {!isOneOff && (
+                    <div className="flex items-center pr-3">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpen(menuOpen === t.id ? null : t.id);
+                          }}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {menuOpen === t.id && (
+                          <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                            <button
+                              type="button"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                              onClick={(e) => handleCopy(t.id, e)}
+                            >
+                              <Copy className="w-3.5 h-3.5" /> Duplicate
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              onClick={(e) => handleDelete(t.id, e)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Expandable send history */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 px-4 py-3">
+                    {isLoadingCampaigns ? (
+                      <div className="flex items-center justify-center py-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                        <span className="ml-2 text-xs text-gray-400">Loading campaigns...</span>
+                      </div>
+                    ) : campaigns && campaigns.length > 0 ? (
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-gray-500 text-left">
+                            <th className="pb-2 font-medium">Date</th>
+                            <th className="pb-2 font-medium">Campaign</th>
+                            <th className="pb-2 font-medium">Status</th>
+                            <th className="pb-2 font-medium text-right">Recipients</th>
+                            <th className="pb-2 font-medium text-right">Delivered</th>
+                            <th className="pb-2 font-medium text-right">Opened</th>
+                            <th className="pb-2 font-medium text-right">Clicked</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {campaigns.map((c: TemplateCampaign) => (
+                            <tr
+                              key={c.id}
+                              className="hover:bg-gray-50 cursor-pointer border-t border-gray-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (t.id.startsWith("campaign:")) {
+                                  router.push(`/admin/campaigns/${c.id}/report`);
+                                } else {
+                                  router.push(`/admin/emails/${t.id}`);
+                                }
+                              }}
+                            >
+                              <td className="py-1.5 text-gray-600">
+                                {c.started_at
+                                  ? new Date(c.started_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                  : "--"}
+                              </td>
+                              <td className="py-1.5 text-gray-900 font-medium truncate max-w-[200px]">{c.name}</td>
+                              <td className="py-1.5">
+                                <Badge
+                                  variant="secondary"
+                                  className={`text-[10px] ${
+                                    c.status === "sent"
+                                      ? "bg-green-100 text-green-700"
+                                      : c.status === "sending"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  {c.status === "sent" ? "Sent" : c.status === "sending" ? "Sending" : c.status}
+                                </Badge>
+                              </td>
+                              <td className="py-1.5 text-right text-gray-700">{c.total_recipients}</td>
+                              <td className="py-1.5 text-right text-gray-700">
+                                {c.delivered_count} <span className="text-gray-400">({pct(c.delivered_count, c.sent_count)})</span>
+                              </td>
+                              <td className="py-1.5 text-right text-gray-700">
+                                {c.opened_count} <span className="text-gray-400">({pct(c.opened_count, c.delivered_count)})</span>
+                              </td>
+                              <td className="py-1.5 text-right text-gray-700">
+                                {c.clicked_count} <span className="text-gray-400">({pct(c.clicked_count, c.delivered_count)})</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-xs text-gray-400 text-center py-2">No campaigns found</p>
+                    )}
                   </div>
                 )}
               </div>

@@ -1182,7 +1182,7 @@ export function ContactsListClient({
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => { setSendEmailOpen(true); setActionsDropdownOpen(false); }}
                   >
-                    Send email
+                    Send Campaign
                   </button>
                   <div className="h-px bg-gray-100 mx-2" />
                   <button
@@ -1837,7 +1837,7 @@ export function ContactsListClient({
         />
       )}
 
-      {/* Send Email Dialog */}
+      {/* Send Campaign Dialog */}
       <SendEmailDialog
         open={sendEmailOpen}
         onOpenChange={setSendEmailOpen}
