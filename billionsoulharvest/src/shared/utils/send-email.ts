@@ -1,4 +1,18 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
+import { isIP } from "net";
+
+// Vercel serverless: getaddrinfo EBUSY even for IP addresses.
+// Override dns.lookup to skip system resolver when host is already an IP.
+const originalLookup = dns.lookup;
+dns.lookup = function patchedLookup(hostname: string, ...args: unknown[]) {
+  const family = isIP(hostname);
+  if (family) {
+    const cb = args[args.length - 1] as (err: null, address: string, family: number) => void;
+    return cb(null, hostname, family);
+  }
+  return (originalLookup as Function).call(dns, hostname, ...args);
+} as typeof dns.lookup;
 
 interface EmailPayload {
   to: string;
@@ -28,11 +42,7 @@ function getTransport() {
       pass: process.env.SMTP_PASS,
     },
     tls: { servername: "smtp.hostinger.com" },
-    // Skip DNS lookup — Vercel serverless fails with getaddrinfo EBUSY
-    dnsLookup: (hostname: string, _opts: unknown, cb: (err: null, address: string, family: number) => void) => {
-      cb(null, hostname, 4);
-    },
-  } as Parameters<typeof nodemailer.createTransport>[0]);
+  });
 }
 
 export async function sendEmails(
