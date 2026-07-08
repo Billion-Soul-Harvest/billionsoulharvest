@@ -18,14 +18,19 @@ interface EmailResult {
 
 function getTransport() {
   const port = Number(process.env.SMTP_PORT || 587);
+  const host = process.env.SMTP_HOST || "smtp.hostinger.com";
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.hostinger.com",
+    host,
     port,
     secure: port === 465,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // When connecting via IP, set servername for TLS certificate validation
+    ...(host !== "smtp.hostinger.com" && {
+      tls: { servername: "smtp.hostinger.com" },
+    }),
   });
 }
 
