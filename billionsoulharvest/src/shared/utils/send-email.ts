@@ -1,6 +1,4 @@
-import nodemailer from "nodemailer";
-import dns from "dns";
-import { isIP } from "net";
+import { createClient } from "@supabase/supabase-js";
 
 interface EmailPayload {
   to: string;
@@ -18,75 +16,26 @@ interface EmailResult {
   error?: string;
 }
 
-// Vercel serverless: getaddrinfo EBUSY even for IP addresses.
-// Patch dns.lookup at runtime to skip system resolver for IPs.
-let dnsPatched = false;
-function patchDns() {
-  if (dnsPatched) return;
-  dnsPatched = true;
-  const original = dns.lookup;
-  dns.lookup = function (hostname: string, ...args: unknown[]) {
-    const family = isIP(hostname as string);
-    if (family) {
-      const cb = args[args.length - 1] as (err: null, address: string, family: number) => void;
-      return cb(null, hostname, family);
-    }
-    return (original as Function).call(dns, hostname, ...args);
-  } as typeof dns.lookup;
-}
-
-function getTransport() {
-  patchDns();
-  const port = Number(process.env.SMTP_PORT || 587);
-  const host = process.env.SMTP_HOST || "smtp.hostinger.com";
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: { servername: "smtp.hostinger.com" },
-  });
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 }
 
 export async function sendEmails(
   emails: EmailPayload[]
 ): Promise<EmailResult[]> {
-  const transport = getTransport();
-  const defaultFrom = getFromAddress();
-  const results: EmailResult[] = [];
+  const supabase = getServiceClient();
+  const { data, error } = await supabase.functions.invoke("send-email", {
+    body: { emails },
+  });
 
-  try {
-    for (const email of emails) {
-      try {
-        const info = await transport.sendMail({
-          from: email.from || defaultFrom,
-          to: email.to,
-          subject: email.subject,
-          html: email.html,
-          replyTo: email.replyTo,
-          headers: email.headers,
-        });
-        results.push({
-          to: email.to,
-          success: true,
-          messageId: info.messageId,
-        });
-      } catch (err) {
-        results.push({
-          to: email.to,
-          success: false,
-          error: err instanceof Error ? err.message : "Send failed",
-        });
-      }
-    }
-  } finally {
-    transport.close();
+  if (error) {
+    throw new Error(`Edge function error: ${error.message}`);
   }
 
-  return results;
+  return data.results as EmailResult[];
 }
 
 export async function sendEmail(

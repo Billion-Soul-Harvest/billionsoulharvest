@@ -60,14 +60,16 @@ serve(async (req) => {
       );
     }
 
+    const port = Number(Deno.env.get("SMTP_PORT") || 587);
     const transport = nodemailer.createTransport({
       host: Deno.env.get("SMTP_HOST") || "smtp.hostinger.com",
-      port: Number(Deno.env.get("SMTP_PORT") || 465),
-      secure: true,
+      port,
+      secure: port === 465,
       auth: {
         user: Deno.env.get("SMTP_USER"),
         pass: Deno.env.get("SMTP_PASS"),
       },
+      tls: { servername: "smtp.hostinger.com" },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
