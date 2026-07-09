@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft } from "lucide-react";
+import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft, Trash2 } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
 import { toast } from "sonner";
 
@@ -424,6 +424,8 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [pageSize, setPageSize] = useState(25);
   const [actionMenu, setActionMenu] = useState<string | null>(null);
   const [actionMenuStatusSub, setActionMenuStatusSub] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "single"; id: string } | { type: "bulk" } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Unique countries for filter dropdown
   const uniqueCountries = useMemo(() =>
@@ -642,6 +644,40 @@ export function RegistrationsTable({ registrations, events }: Props) {
     [router]
   );
 
+  async function handleDelete() {
+    if (!deleteConfirm) return;
+    setDeleting(true);
+    try {
+      const idsToDelete = deleteConfirm.type === "single"
+        ? [deleteConfirm.id]
+        : Array.from(selectedIds);
+
+      let failed = 0;
+      for (let i = 0; i < idsToDelete.length; i += 10) {
+        const batch = idsToDelete.slice(i, i + 10);
+        const results = await Promise.all(
+          batch.map((id) => fetch(`/api/registrations/${id}`, { method: "DELETE" }))
+        );
+        failed += results.filter((r) => !r.ok).length;
+      }
+
+      if (failed > 0) {
+        toast.error(`${failed} of ${idsToDelete.length} deletions failed`);
+      } else {
+        toast.success(`${idsToDelete.length} registration${idsToDelete.length !== 1 ? "s" : ""} deleted`);
+      }
+      if (deleteConfirm.type === "bulk") {
+        setSelectedIds(new Set());
+      }
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete");
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm(null);
+    }
+  }
+
   const filteredIds = filtered.map((r) => r.id);
   const allFilteredSelected =
     filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
@@ -796,6 +832,15 @@ export function RegistrationsTable({ registrations, events }: Props) {
           </div>
           <Button size="sm" variant="outline" onClick={exportSelected}>
             Export Selected
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-red-600 border-red-200 hover:bg-red-50"
+            onClick={() => setDeleteConfirm({ type: "bulk" })}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Delete Selected
           </Button>
           <Button
             size="sm"
@@ -998,6 +1043,18 @@ export function RegistrationsTable({ registrations, events }: Props) {
                           <RefreshCw className="w-4 h-4" />
                           Resend Email
                         </button>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActionMenu(null);
+                            setDeleteConfirm({ type: "single", id: reg.id });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
                       </ActionMenu>
                     </td>
                   </tr>
@@ -1098,6 +1155,41 @@ export function RegistrationsTable({ registrations, events }: Props) {
             setSelectedRegistration(null);
           }}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[80]" onClick={() => !deleting && setDeleteConfirm(null)} />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl border p-6 w-full max-w-md z-[90]">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete Registration{deleteConfirm.type === "bulk" ? "s" : ""}
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              {deleteConfirm.type === "single"
+                ? "Are you sure you want to delete this registration? This action cannot be undone."
+                : `Are you sure you want to delete ${selectedIds.size} registration${selectedIds.size !== 1 ? "s" : ""}? This action cannot be undone.`}
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

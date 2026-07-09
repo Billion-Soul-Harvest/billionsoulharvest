@@ -160,3 +160,37 @@ export async function PATCH(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authSupabase = await createServerClient();
+    const { data: { user } } = await authSupabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    if (!UUID_REGEX.test(id)) {
+      return NextResponse.json({ error: "Invalid registration ID" }, { status: 400 });
+    }
+
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from("registrations")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Delete registration error:", error);
+      return NextResponse.json({ error: "Failed to delete registration" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete registration error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
