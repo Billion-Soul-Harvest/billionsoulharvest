@@ -136,12 +136,39 @@ function sanitizeCraftJson(json: Record<string, unknown>): Record<string, unknow
     }
   }
 
+  // Build a child→parent lookup from nodes arrays so we can infer missing parents
+  const childToParent: Record<string, string> = {};
+  for (const [nodeId, rawNode] of Object.entries(sanitized)) {
+    const node = rawNode as Record<string, unknown>;
+    if (Array.isArray(node.nodes)) {
+      for (const childId of node.nodes as string[]) {
+        childToParent[childId] = nodeId;
+      }
+    }
+  }
+
   // Fix parent references — ensure every non-ROOT node points to a valid parent
   for (const [nodeId, rawNode] of Object.entries(sanitized)) {
     if (nodeId === "ROOT") continue;
     const node = rawNode as Record<string, unknown>;
-    if (node.parent && !sanitized[node.parent as string]) {
-      node.parent = "ROOT";
+    if (!node.parent) {
+      // Infer parent from who lists this node as a child, or default to ROOT
+      node.parent = childToParent[nodeId] || "ROOT";
+    } else if (!sanitized[node.parent as string]) {
+      node.parent = childToParent[nodeId] || "ROOT";
+    }
+  }
+
+  // Ensure ROOT.nodes includes all nodes that claim ROOT as parent
+  const root = sanitized.ROOT as Record<string, unknown> | undefined;
+  if (root && Array.isArray(root.nodes)) {
+    const rootChildren = new Set(root.nodes as string[]);
+    for (const [nodeId, rawNode] of Object.entries(sanitized)) {
+      if (nodeId === "ROOT") continue;
+      const node = rawNode as Record<string, unknown>;
+      if (node.parent === "ROOT" && !rootChildren.has(nodeId)) {
+        (root.nodes as string[]).push(nodeId);
+      }
     }
   }
 
