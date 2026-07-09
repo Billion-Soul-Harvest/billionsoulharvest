@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Billion Soul Harvest | Reaching 1 Billion Souls by 2033</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&amp;family=Hanken+Grotesk:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#dfe3e9",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "surface-dim": "#d8dadc",
+                        "on-tertiary-fixed-variant": "#43474c",
+                        "on-secondary-fixed": "#001f26",
+                        "on-secondary-container": "#006172",
+                        "primary-fixed-dim": "#bec6e0",
+                        "surface-bright": "#f7f9fb",
+                        "surface-variant": "#e0e3e5",
+                        "background": "#f7f9fb",
+                        "primary-container": "#131b2e",
+                        "on-surface-variant": "#45464d",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#57dffe",
+                        "surface-tint": "#565e74",
+                        "on-surface": "#191c1e",
+                        "outline": "#76777d",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#000000",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e6e8ea",
+                        "primary": "#000000",
+                        "secondary-fixed": "#acedff",
+                        "on-tertiary-fixed": "#171c20",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "inverse-on-surface": "#eff1f3",
+                        "surface-container-low": "#f2f4f6",
+                        "primary-fixed": "#dae2fd",
+                        "surface-container": "#eceef0",
+                        "outline-variant": "#c6c6cd",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#171c20",
+                        "on-tertiary-container": "#80848a",
+                        "on-primary-fixed": "#131b2e",
+                        "surface-container-highest": "#e0e3e5",
+                        "secondary": "#00687a",
+                        "inverse-primary": "#bec6e0",
+                        "on-primary-container": "#7c839b",
+                        "surface": "#f7f9fb",
+                        "inverse-surface": "#2d3133",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-background": "#191c1e",
+                        "tertiary-fixed-dim": "#c3c7cd",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Source Serif 4"],
+                        "body-md": ["Source Serif 4"],
+                        "label-sm": ["Hanken Grotesk"],
+                        "headline-lg": ["Source Serif 4"],
+                        "display-lg": ["Source Serif 4"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hero-overlay {
+            background: linear-gradient(to right, rgba(19, 27, 46, 0.9) 0%, rgba(19, 27, 46, 0.4) 100%);
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+        .bento-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .bento-card:hover {
+            box-shadow: 0 4px 20px -2px rgba(0, 104, 122, 0.1);
+            transform: translateY(-4px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden">
+<!-- TopNavBar Component -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-margin-desktop py-4 max-w-container-max mx-auto bg-transparent" id="top-nav">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-[24px] font-bold text-white tracking-tight">Billion Soul Harvest</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label-md text-label-md text-white border-b-2 border-secondary-container pb-1 transition-all" href="#">About</a>
+<a class="font-label-md text-label-md text-white/80 hover:text-white transition-colors" href="#">Initiatives</a>
+<a class="font-label-md text-label-md text-white/80 hover:text-white transition-colors" href="#">Global Gatherings</a>
+<a class="font-label-md text-label-md text-white/80 hover:text-white transition-colors" href="#">Media</a>
+<a class="font-label-md text-label-md text-white/80 hover:text-white transition-colors" href="#">Connect</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="bg-secondary-fixed text-on-secondary-fixed px-6 py-2 rounded-full font-label-md text-sm font-bold active:scale-95 transition-transform">
+                Join Movement
+            </button>
+<button class="md:hidden text-white">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center pt-20 overflow-hidden">
+<div class="absolute inset-0 z-0">
+<div class="absolute inset-0 hero-overlay z-10"></div>
+<img class="w-full h-full object-cover" data-alt="A diverse group of people from different global backgrounds standing together in a sun-drenched cityscape, looking hopeful and empowered. The lighting is warm and cinematic, emphasizing a sense of community and mission. The aesthetic is clean and high-contrast, aligning with the Billion Soul Harvest brand values of institutional trust and modern precision." src="https://lh3.googleusercontent.com/aida/AP1WRLtULE_OkzfX8U7jx0-4fBPL71UPK-aKh333FNF2YFeNQzEzCRLfiH5FQElTfr9IxfqHlCkfCAEcJI4ALZNhYWuAzn0EE9CQzrfZCW1pLNnrSjARBOoFCYCDm3uiw6W32UuI0bJ91cj7qbGedqc0vCHW8VDB7D7Em9nss-mCZ9KC2J1K8vI2sLofEerv090_izmFMR3sQJK66zsWKXU5sFdFvOwi1X_r9IJUwcY1IpgccZmRaujek0Y3FuUd"/>
+</div>
+<div class="relative z-20 px-6 md:px-margin-desktop max-w-container-max mx-auto w-full">
+<div class="max-w-2xl">
+<h1 class="font-display-lg text-display-lg text-white mb-6 leading-tight">
+                        Reach 1 Billion Souls <br/>By 2033
+                    </h1>
+<p class="text-white/90 text-xl mb-10 font-body-md leading-relaxed">
+                        Evangelize. Disciple. Multiply. We are mobilizing a global movement of believers dedicated to the Great Commission with a heart that is Holy, Humble, and Hidden.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-4">
+<button class="bg-secondary text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-on-secondary-fixed-variant transition-colors">
+                            INDIVIDUALS
+                        </button>
+<button class="bg-white/10 backdrop-blur-md border border-white/30 text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white/20 transition-colors">
+                            CHURCHES
+                        </button>
+</div>
+</div>
+</div>
+<!-- Atmospheric micro-interaction element -->
+<div class="absolute bottom-10 right-10 z-20 flex items-center gap-4 text-white/80 animate-pulse">
+<span class="text-xs font-label-sm uppercase tracking-widest">Our Global Mission</span>
+<div class="w-12 h-px bg-white/40"></div>
+</div>
+</section>
+<!-- Mission Movement Section -->
+<section class="py-24 bg-surface px-6 md:px-margin-desktop">
+<div class="max-w-container-max mx-auto">
+<div class="text-center mb-16">
+<h2 class="font-headline-lg text-headline-lg text-primary mb-4">HOW WE MOVE THE MISSION FORWARD</h2>
+<div class="w-24 h-1 bg-secondary mx-auto"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- GO Day Card -->
+<div class="bento-card rounded-xl overflow-hidden flex flex-col">
+<div class="h-64 relative">
+<img class="w-full h-full object-cover" data-alt="Close up of enthusiastic young people smiling and talking in a modern urban environment, representing a lifestyle of evangelism. The image is bright, crisp, and high-quality, focusing on natural human connection and joy. The color palette is vibrant yet professional, fitting the Billion Soul Harvest brand style." src="https://lh3.googleusercontent.com/aida/AP1WRLs8_-SvXVgNcJghUeLCJfijbAzusLgBvX6u1yleA5tF7wbBwJA2J6uduWQc4ypA9CvDDE9smIVg1TwhEGblgdj8nSbfKqBxoV_HotcozCKzM6SgJ19SGTea_3NVmddm7jLtLXi5Our2IvzIZPBIZ22H4SV259ky2c14I9JLKgviqgbILgjPJTNweVgxhbnkmgbCU7iQTPZZRhjzHRM8jKtD51CujL2Az-rapR3scrIx0RiTINFZ0jgJkPVY"/>
+</div>
+<div class="p-8 flex flex-col flex-grow">
+<h3 class="font-headline-lg text-2xl text-primary mb-2">GO DAY</h3>
+<p class="text-secondary font-bold text-sm mb-4 uppercase tracking-wider">A Day to Share Jesus</p>
+<p class="text-on-surface-variant mb-8 flex-grow">Each year on Pentecost Saturday, millions of believers commit to sharing Christ with at least one person.</p>
+<button class="self-start text-secondary font-bold flex items-center gap-2 hover:gap-4 transition-all">
+                                I'M IN <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- GO Lifestyle Card -->
+<div class="bento-card rounded-xl overflow-hidden flex flex-col">
+<div class="h-64 relative">
+<img class="w-full h-full object-cover" data-alt="A modern, diverse group of people engaging in genuine conversation in a casual setting. The lighting is natural and bright, conveying warmth and authenticity. The composition is dynamic, showing the 'lifestyle' aspect of faith sharing through everyday activities. Minimalist and corporate modern aesthetic." src="https://lh3.googleusercontent.com/aida/AP1WRLuRl-LaufGsp3zUchdSLs40HGWytBe5E6Xe_-1c_PVw5RvymnHatzTUBli4xMBpglZHHjf30FIG-zJ1-GyJNcIer9Td4MvQ7GG58Tkr07ICORFp_0-6NhAeUJXNct3F06vdqfoDG3bZXjLJ2z4OTDI2L6gx7jObCVanEQtKhWZbhtXSGpDACnB9VcLGLf8Pr3WFlZveagNpua5HQZlxkyFrwMDQfKBR9B8gr-kSt4Pr27AYn4CUdfCBa5At"/>
+</div>
+<div class="p-8 flex flex-col flex-grow">
+<h3 class="font-headline-lg text-2xl text-primary mb-2">GO LIFESTYLE</h3>
+<p class="text-secondary font-bold text-sm mb-4 uppercase tracking-wider">Living a Life of Evangelism</p>
+<p class="text-on-surface-variant mb-8 flex-grow">Make sharing Jesus a natural part of your everyday life through consistent discipleship and witness.</p>
+<button class="self-start text-secondary font-bold flex items-center gap-2 hover:gap-4 transition-all">
+                                LEARN MORE <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Pentecost Season Card -->
+<div class="bento-card rounded-xl overflow-hidden flex flex-col">
+<div class="h-64 relative bg-primary-container flex items-center justify-center p-8">
+<img class="w-full h-full object-contain" data-alt="A bold, stylized graphic representing the movement from Easter to Pentecost. The design uses high-contrast colors, primarily deep navy and vibrant cyan, with clean geometric lines. The look is professional, authoritative, and future-facing, reflecting the institutional trust and ethical clarity of the brand." src="https://lh3.googleusercontent.com/aida/AP1WRLudnp2joT8PpxF16QCZEEd9CkD_EwCaesHTlpHpyPqKJ76mny7r6v-_j2H5Yk_py0dkD3SOvIIG3RwXrruxywFFNd1xYlPOQd0x9wxYWy4eBlvfQCoJMlKADYjoIzLlSW5Z5eEelTaLh5EUYNYFH8SWLf9CVktSKj9iXcOg0ygil8yN9dGjaXR5t5MPqVXw0AR50TwAT-JyWrjuRUHPG6PRnpZ_9jC-Tt2IuJlEdElXsitLkQWukM1EINb-"/>
+</div>
+<div class="p-8 flex flex-col flex-grow">
+<h3 class="font-headline-lg text-2xl text-primary mb-2">EASTER TO PENTECOST</h3>
+<p class="text-secondary font-bold text-sm mb-4 uppercase tracking-wider">A Season to Pray and Share</p>
+<p class="text-on-surface-variant mb-8 flex-grow">Expanding momentum into a global season of mission through public proclamation, prayer, and digital outreach.</p>
+<button class="self-start text-secondary font-bold flex items-center gap-2 hover:gap-4 transition-all">
+                                LEARN MORE <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Impact Report Section -->
+<section class="bg-primary-container text-white py-24 overflow-hidden relative">
+<div class="absolute inset-0 opacity-10">
+<div class="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-secondary-fixed to-transparent"></div>
+</div>
+<div class="max-w-container-max mx-auto px-6 md:px-margin-desktop relative z-10">
+<div class="flex flex-col lg:flex-row items-center gap-16">
+<div class="w-full lg:w-1/2">
+<div class="relative group">
+<div class="absolute -inset-4 bg-secondary/20 blur-xl rounded-xl"></div>
+<img class="relative rounded-xl shadow-2xl transform group-hover:scale-105 transition-transform duration-500" data-alt="A professionally designed impact report layout showing global statistics of gospel reach and engagement. The design is archival in quality, using precise typography and high-contrast color blocking. The mood is informed confidence, showing data-driven success within a spiritual framework." src="https://lh3.googleusercontent.com/aida/AP1WRLsuwq1EYdhPfNgjnn-BYp2QWAz0X7EnAX82ADdfdi2BcY30r3sq1Lxj_Lggl22r_tI9Xz0zURByTBZAtAJ6q3TBw5UGYWITDg_EW11NIQk15gIh76gv42aQjwLYuFpuuOL5grocIUXopG1a9skCBO-vuOD12nO4WyV0p28yxxIxSGs--hTDpJbWeJ_CsQ3LdVmQ0MDwsE0TTnw6yEgGu0Jbbl8D0Xkx14Fo-EZl28jPPThe-i-ZViA0S7I"/>
+</div>
+</div>
+<div class="w-full lg:w-1/2">
+<h2 class="font-display-lg text-4xl mb-6">2025 IMPACT REPORT</h2>
+<p class="text-on-primary-container text-xl mb-10 leading-relaxed font-body-md">
+                            Discover how believers were equipped and mobilized to share the Gospel during the 50-day journey from Easter to Pentecost in 2025. Thousands joined, millions reached.
+                        </p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-white text-primary-container px-8 py-3 rounded font-bold hover:bg-secondary-fixed transition-colors">
+                                VIEW IMPACT REPORT
+                            </button>
+<button class="border border-white/30 text-white px-8 py-3 rounded font-bold hover:bg-white/10 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined">play_circle</span> WATCH VIDEO
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Resources Section -->
+<section class="py-24 bg-surface-container-low px-6 md:px-margin-desktop">
+<div class="max-w-container-max mx-auto">
+<div class="flex justify-between items-end mb-12">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary">EXPLORE OUR RESOURCES</h2>
+<p class="text-on-surface-variant mt-2">Tools to help you evangelize, disciple, and multiply.</p>
+</div>
+<button class="hidden md:flex text-secondary font-bold items-center gap-2">
+                        VIEW ALL <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Resource 1 -->
+<div class="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow group">
+<div class="mb-6 overflow-hidden rounded-lg">
+<img class="w-full h-40 object-cover group-hover:scale-110 transition-transform" data-alt="A digital workspace showing the YouVersion Bible app on several devices, emphasizing the integration of technology and faith. The aesthetic is clean, minimal, and modern, using light grey and slate tones. The mood is one of technological precision and ease of use." src="https://lh3.googleusercontent.com/aida/AP1WRLtn2NwkRsgFCXrSk1QYHm1bKqsONLeUxs5HR2NkVh1XM47dJDwrM8rwSa3joIP9z-dv9VpTx5eporYhYSWgHgTe80ZlMlYKi9tds1VGBaRrRP4_wgXQRVOZ4YEZ-iT5PleVndz64VfoGmxdukJ3LnZSGbR6Z03-oXcPN31vXKWzNyjhRFCFPtlQDZqRZya2X_zQFJaza5Pf9qEiVXw2DrBbM4v8DuTqTLHxg4W9LTs0b8ntLv_3H3Hbcsd5"/>
+</div>
+<h4 class="font-bold text-lg mb-2">BIBLE READING PLANS</h4>
+<p class="text-sm text-on-surface-variant mb-4">Daily plans to share the gospel and grow spiritually.</p>
+<a class="text-secondary text-sm font-bold flex items-center gap-1" href="#">EXPLORE NOW <span class="material-symbols-outlined text-xs">open_in_new</span></a>
+</div>
+<!-- Resource 2 -->
+<div class="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow group">
+<div class="mb-6 overflow-hidden rounded-lg">
+<img class="w-full h-40 object-cover group-hover:scale-110 transition-transform" data-alt="Three simple steps illustrated through minimalist icons and high-quality photography of people connecting. The layout is structured and easy to follow, representing ethical clarity and purposeful action. The lighting is bright and inviting." src="https://lh3.googleusercontent.com/aida/AP1WRLuRl-LaufGsp3zUchdSLs40HGWytBe5E6Xe_-1c_PVw5RvymnHatzTUBli4xMBpglZHHjf30FIG-zJ1-GyJNcIer9Td4MvQ7GG58Tkr07ICORFp_0-6NhAeUJXNct3F06vdqfoDG3bZXjLJ2z4OTDI2L6gx7jObCVanEQtKhWZbhtXSGpDACnB9VcLGLf8Pr3WFlZveagNpua5HQZlxkyFrwMDQfKBR9B8gr-kSt4Pr27AYn4CUdfCBa5At"/>
+</div>
+<h4 class="font-bold text-lg mb-2">3STEPS PATHWAY</h4>
+<p class="text-sm text-on-surface-variant mb-4">A simple pathway to start sharing your faith today.</p>
+<a class="text-secondary text-sm font-bold flex items-center gap-1" href="#">GO TO 3STEPS <span class="material-symbols-outlined text-xs">open_in_new</span></a>
+</div>
+<!-- Resource 3 -->
+<div class="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow group">
+<div class="mb-6 overflow-hidden rounded-lg">
+<img class="w-full h-40 object-cover group-hover:scale-110 transition-transform" data-alt="Hands holding a small printed card with a logo, symbolizing personal testimony tools. The setting is a blurry city background, suggesting the everyday nature of witness. The style is editorial and authentic, with a focus on tactile engagement." src="https://lh3.googleusercontent.com/aida/AP1WRLtrwEmP8jWYuQv-8dPhRg6CMP8G3vNrGKk6a_OGbLrz03LrDemyaoMYyf1jTtcMJQGrSNhq52A55IhpfhF1mGrWZ8AZZIrXGTBZX_vNXp3uBzBWB8ddSyrbHQAUugkWRDXlaX0-tghmkbE4CXEtSkJXZBuzZZoyzZRVI8_6KXS86vkyjxxLkPok4BQegiFriLoJqLeI8TwNCSg92RMKEwm0J8j6yBu095GmpRkbi9QVdcNN_7vM6bFovGOa"/>
+</div>
+<h4 class="font-bold text-lg mb-2">MY STORY TOOL</h4>
+<p class="text-sm text-on-surface-variant mb-4">Turn your testimony into a powerful tool for the gospel.</p>
+<a class="text-secondary text-sm font-bold flex items-center gap-1" href="#">CREATE NOW <span class="material-symbols-outlined text-xs">open_in_new</span></a>
+</div>
+<!-- Resource 4 -->
+<div class="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow group">
+<div class="mb-6 overflow-hidden rounded-lg flex items-center justify-center bg-slate-100">
+<span class="material-symbols-outlined text-5xl text-slate-400">language</span>
+</div>
+<h4 class="font-bold text-lg mb-2">GLOBAL COMMUNITY</h4>
+<p class="text-sm text-on-surface-variant mb-4">Connect with gospel-sharers across the world map.</p>
+<a class="text-secondary text-sm font-bold flex items-center gap-1" href="#">JOIN NOW <span class="material-symbols-outlined text-xs">open_in_new</span></a>
+</div>
+</div>
+</div>
+</section>
+<!-- Global Map Section -->
+<section class="py-24 bg-white px-6 md:px-margin-desktop text-center">
+<div class="max-w-4xl mx-auto mb-12">
+<h2 class="font-headline-lg text-headline-lg mb-4">GLOBAL GO LIFESTYLE COMMUNITY</h2>
+<div class="text-5xl md:text-7xl font-bold text-secondary mb-4 tracking-tighter" id="counter">18,500,000+</div>
+<p class="text-on-surface-variant text-lg">Believers committed to reaching their nations for Jesus.</p>
+</div>
+<div class="max-w-container-max mx-auto h-[500px] rounded-2xl overflow-hidden border border-slate-200 relative">
+<div class="absolute inset-0 bg-slate-50 flex items-center justify-center">
+<!-- Placeholder for Map Visualization -->
+<div class="w-full h-full grayscale opacity-40 bg-[url('https://www.transparenttextures.com/patterns/world-map.png')] bg-center bg-no-repeat bg-contain"></div>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-4 h-4 bg-secondary rounded-full animate-ping"></div>
+<div class="w-3 h-3 bg-secondary rounded-full absolute"></div>
+</div>
+</div>
+<div class="absolute bottom-6 right-6 z-10">
+<button class="bg-primary-container text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-secondary transition-colors">
+                        EXPLORE GLOBAL DATA
+                    </button>
+</div>
+</div>
+</section>
+<!-- Voices / Testimonials -->
+<section class="py-24 bg-surface px-6 md:px-margin-desktop">
+<div class="max-w-container-max mx-auto">
+<h2 class="font-headline-lg text-headline-lg text-center mb-16">VOICES BEHIND THE MISSION</h2>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Highlighted Video Testimonial -->
+<div class="bento-card rounded-xl p-8 flex flex-col justify-center items-center text-center">
+<div class="relative w-full aspect-video rounded-lg overflow-hidden mb-8 group cursor-pointer shadow-lg">
+<img class="w-full h-full object-cover" data-alt="A powerful cinematic still from a documentary video about mission work in Angola. The image features a strong, emotive subject in a beautiful natural setting. The color grade is warm and professional, conveying hope and resilience." src="https://lh3.googleusercontent.com/aida/AP1WRLtn2NwkRsgFCXrSk1QYHm1bKqsONLeUxs5HR2NkVh1XM47dJDwrM8rwSa3joIP9z-dv9VpTx5eporYhYSWgHgTe80ZlMlYKi9tds1VGBaRrRP4_wgXQRVOZ4YEZ-iT5PleVndz64VfoGmxdukJ3LnZSGbR6Z03-oXcPN31vXKWzNyjhRFCFPtlQDZqRZya2X_zQFJaza5Pf9qEiVXw2DrBbM4v8DuTqTLHxg4W9LTs0b8ntLv_3H3Hbcsd5"/>
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-all">
+<span class="material-symbols-outlined text-white text-7xl" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+</div>
+</div>
+<h3 class="text-2xl font-bold mb-4">Running Faster than the Wind in Angola</h3>
+<p class="text-on-surface-variant max-w-lg mx-auto">"We need to run faster than the wind to reach our generation before the storms of life do." — Denilson, Regional Coordinator</p>
+</div>
+<!-- Testimonial List -->
+<div class="space-y-6">
+<div class="bg-white p-8 border border-slate-100 rounded-xl shadow-sm relative">
+<span class="material-symbols-outlined text-secondary/20 text-6xl absolute top-4 right-8">format_quote</span>
+<p class="text-lg italic mb-6 leading-relaxed relative z-10">"GO Movement has the potential to be a movement of God’s people and the Gospel like never before in the history of the Church."</p>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-slate-200"></div>
+<div>
+<h5 class="font-bold">Dave Gibson</h5>
+<p class="text-xs text-secondary font-bold uppercase">Vice President Lifestyle, GO Movement</p>
+</div>
+</div>
+</div>
+<div class="bg-white p-8 border border-slate-100 rounded-xl shadow-sm relative">
+<span class="material-symbols-outlined text-secondary/20 text-6xl absolute top-4 right-8">format_quote</span>
+<p class="text-lg italic mb-6 leading-relaxed relative z-10">"The GO Movement is calling every believer in the world to be a witness for Jesus Christ. Together we can be a part of another great awakening."</p>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-slate-200"></div>
+<div>
+<h5 class="font-bold">Greg Stier</h5>
+<p class="text-xs text-secondary font-bold uppercase">Founder of Dare 2 Share</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Newsletter Signup Section -->
+<section class="relative py-32 overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover" data-alt="Two people walking and talking in a modern outdoor plaza, holding phones and looking engaged in meaningful conversation. The image represents the modern, technological approach to gospel sharing. The color tones are cool and professional with bright white highlights." src="https://lh3.googleusercontent.com/aida/AP1WRLtULE_OkzfX8U7jx0-4fBPL71UPK-aKh333FNF2YFeNQzEzCRLfiH5FQElTfr9IxfqHlCkfCAEcJI4ALZNhYWuAzn0EE9CQzrfZCW1pLNnrSjARBOoFCYCDm3uiw6W32UuI0bJ91cj7qbGedqc0vCHW8VDB7D7Em9nss-mCZ9KC2J1K8vI2sLofEerv090_izmFMR3sQJK66zsWKXU5sFdFvOwi1X_r9IJUwcY1IpgccZmRaujek0Y3FuUd"/>
+<div class="absolute inset-0 bg-primary-container/80 backdrop-blur-sm"></div>
+</div>
+<div class="relative z-10 max-w-2xl mx-auto px-6 text-center text-white">
+<h2 class="font-display-lg text-4xl mb-4">SIGN UP FOR OUR NEWSLETTER TODAY</h2>
+<p class="text-secondary-fixed mb-12 text-lg">Stay connected with the global movement and receive monthly updates, resources, and stories of impact.</p>
+<form class="space-y-4 text-left">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-bold uppercase tracking-widest mb-2">First Name</label>
+<input class="w-full bg-white/10 border border-white/20 rounded px-4 py-3 focus:ring-2 focus:ring-secondary focus:border-transparent outline-none transition-all" type="text"/>
+</div>
+<div>
+<label class="block text-xs font-bold uppercase tracking-widest mb-2">Last Name</label>
+<input class="w-full bg-white/10 border border-white/20 rounded px-4 py-3 focus:ring-2 focus:ring-secondary focus:border-transparent outline-none transition-all" type="text"/>
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold uppercase tracking-widest mb-2">Email Address *</label>
+<input class="w-full bg-white/10 border border-white/20 rounded px-4 py-3 focus:ring-2 focus:ring-secondary focus:border-transparent outline-none transition-all" required="" type="email"/>
+</div>
+<button class="w-full bg-secondary py-4 rounded font-bold text-lg hover:bg-secondary-fixed transition-colors mt-6">
+                        SUBSCRIBE NOW
+                    </button>
+</form>
+</div>
+</section>
+</main>
+<!-- Footer Component -->
+<footer class="bg-primary-container text-on-primary-container">
+<div class="w-full py-24 px-6 md:px-margin-desktop flex flex-col md:flex-row justify-between items-start gap-12 max-w-container-max mx-auto">
+<div class="max-w-sm">
+<span class="font-headline-md text-headline-md font-bold text-white block mb-6">Billion Soul Harvest</span>
+<p class="text-sm mb-6 text-on-primary-fixed-variant leading-relaxed">
+                    P.O. BOX 386145<br/>
+                    MINNEAPOLIS, MN 55438<br/>
+                    Phone: 714.470.6711<br/>
+                    Email: info@billionsoulharvest.org
+                </p>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-secondary transition-colors" href="#"><span class="material-symbols-outlined text-white text-sm">face_nod</span></a>
+<a class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-secondary transition-colors" href="#"><span class="material-symbols-outlined text-white text-sm">photo_camera</span></a>
+<a class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-secondary transition-colors" href="#"><span class="material-symbols-outlined text-white text-sm">smart_display</span></a>
+</div>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-12 flex-grow">
+<div>
+<h4 class="text-white font-bold mb-6 text-sm uppercase tracking-widest">Participate</h4>
+<ul class="space-y-4 text-sm">
+<li><a class="hover:text-white transition-colors" href="#">Contact Us</a></li>
+<li><a class="hover:text-white transition-colors" href="#">Member Portal</a></li>
+<li><a class="hover:text-white transition-colors" href="#">Give Now</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-bold mb-6 text-sm uppercase tracking-widest">Resources</h4>
+<ul class="space-y-4 text-sm">
+<li><a class="hover:text-white transition-colors" href="#">3 Steps</a></li>
+<li><a class="hover:text-white transition-colors" href="#">GO Lifestyle</a></li>
+<li><a class="hover:text-white transition-colors" href="#">Media Center</a></li>
+<li><a class="text-secondary-fixed font-bold" href="#">Privacy Policy</a></li>
+</ul>
+</div>
+<div class="col-span-2 lg:col-span-1">
+<h4 class="text-white font-bold mb-6 text-sm uppercase tracking-widest">Connect</h4>
+<p class="text-sm mb-4">Reaching the world starts with you.</p>
+<button class="bg-white/10 border border-white/20 text-white px-6 py-2 rounded text-xs font-bold hover:bg-white/20 transition-all uppercase">Find a Local Movement</button>
+</div>
+</div>
+</div>
+<div class="border-t border-white/5 py-8 px-6 md:px-margin-desktop max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center text-[12px] uppercase tracking-widest opacity-60">
+<span>© 2026 Billion Soul Harvest. All rights reserved.</span>
+<div class="flex gap-6 mt-4 md:mt-0">
+<a class="hover:underline" href="#">Privacy Policy</a>
+<a class="hover:underline" href="#">Terms of Service</a>
+<a class="hover:underline" href="#">Cookie Policy</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple script for nav background change on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('top-nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('bg-primary-container/95', 'backdrop-blur-sm', 'shadow-lg');
+                nav.classList.remove('bg-transparent');
+            } else {
+                nav.classList.remove('bg-primary-container/95', 'backdrop-blur-sm', 'shadow-lg');
+                nav.classList.add('bg-transparent');
+            }
+        });
+
+        // Animation for counter (simplified)
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Logic to start counter could go here
+                }
+            });
+        });
+        observer.observe(document.getElementById('counter'));
+    </script>
+</body></html>
