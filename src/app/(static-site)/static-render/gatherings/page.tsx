@@ -13,7 +13,7 @@ export default async function GatheringsPage() {
     .select(
       "id, title, slug, start_date, end_date, city, country, banner_url, status, is_external, external_url"
     )
-    .eq("status", "published")
+    .in("status", ["published", "registration_open", "registration_closed"])
     .order("start_date", { ascending: true });
 
   return (
@@ -106,6 +106,20 @@ export default async function GatheringsPage() {
                       />
                     )}
                     <div className="p-6 flex flex-col flex-1">
+                      {(event.status === "registration_open" ||
+                        event.status === "registration_closed") && (
+                        <span
+                          className={`inline-block w-fit text-xs font-semibold font-[family-name:var(--font-geist-sans)] px-2.5 py-1 rounded-full mb-3 ${
+                            event.status === "registration_open"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {event.status === "registration_open"
+                            ? "Registration Open"
+                            : "Registration Closed"}
+                        </span>
+                      )}
                       <h3 className="font-[family-name:var(--font-jakarta)] text-lg font-bold text-[#0d223f] mb-2">
                         {event.title}
                       </h3>
