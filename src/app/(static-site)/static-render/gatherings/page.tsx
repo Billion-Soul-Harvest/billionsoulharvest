@@ -93,10 +93,22 @@ export default async function GatheringsPage() {
                     ? `/events/${event.slug}`
                     : null;
 
+                const Wrapper = href ? Link : "div";
+                const wrapperProps = href
+                  ? {
+                      href,
+                      target: event.is_external ? "_blank" : undefined,
+                      rel: event.is_external
+                        ? "noopener noreferrer"
+                        : undefined,
+                    }
+                  : {};
+
                 return (
-                  <div
+                  <Wrapper
                     key={event.id}
-                    className="bg-white rounded-2xl border border-[#b4c7ec]/30 overflow-hidden hover:shadow-lg hover:border-[#00b8d4]/30 transition-all duration-300 flex flex-col"
+                    {...(wrapperProps as any)}
+                    className="bg-white rounded-2xl border border-[#b4c7ec]/30 overflow-hidden hover:shadow-lg hover:border-[#00b8d4]/30 transition-all duration-300 flex flex-col cursor-pointer"
                   >
                     {event.banner_url && (
                       <img
@@ -135,18 +147,9 @@ export default async function GatheringsPage() {
                       )}
                       <div className="mt-auto">
                         {href ? (
-                          <Link
-                            href={href}
-                            target={event.is_external ? "_blank" : undefined}
-                            rel={
-                              event.is_external
-                                ? "noopener noreferrer"
-                                : undefined
-                            }
-                            className="inline-flex items-center gap-1 text-[#00b8d4] text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:underline"
-                          >
+                          <span className="inline-flex items-center gap-1 text-[#00b8d4] text-sm font-semibold font-[family-name:var(--font-geist-sans)]">
                             Learn More &rarr;
-                          </Link>
+                          </span>
                         ) : (
                           <span className="text-sm text-[#44474d]/60 italic font-[family-name:var(--font-geist-sans)]">
                             Details coming soon
@@ -154,7 +157,7 @@ export default async function GatheringsPage() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Wrapper>
                 );
               })}
             </div>
