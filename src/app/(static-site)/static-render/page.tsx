@@ -51,7 +51,7 @@ export default async function StaticHomePage() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                href="/events"
+                href="/gatherings"
                 className="bg-[#00b8d4] text-white px-10 py-4 rounded-lg text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:bg-[#006879] transition-all inline-flex items-center gap-2"
               >
                 Join the Movement
@@ -281,7 +281,7 @@ export default async function StaticHomePage() {
                 Reaching the world with the Gospel.
               </p>
               <Link
-                href="/events"
+                href="/gatherings"
                 className="mt-8 inline-flex items-center gap-2 text-[#a9edff] text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:underline"
               >
                 LEARN MORE
@@ -530,7 +530,7 @@ export default async function StaticHomePage() {
 
             <div className="text-center mt-12">
               <Link
-                href="/events"
+                href="/gatherings"
                 className="text-[#006879] hover:text-[#00b8d4] font-[family-name:var(--font-geist-sans)] text-sm font-semibold transition-colors inline-flex items-center gap-2"
               >
                 View All Events
@@ -558,13 +558,13 @@ export default async function StaticHomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/events"
+              href="/gatherings"
               className="bg-[#00b8d4] text-white px-12 py-5 rounded-lg text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:scale-105 transition-all shadow-xl shadow-[#00b8d4]/40 uppercase tracking-widest"
             >
               Join the Movement Now
             </Link>
             <Link
-              href="/contact"
+              href="/connect"
               className="bg-white text-[#0d223f] px-12 py-5 rounded-lg text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:bg-[#dee8ff] transition-all uppercase tracking-widest"
             >
               Partner With Us
