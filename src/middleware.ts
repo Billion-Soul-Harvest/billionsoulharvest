@@ -105,13 +105,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // Rewrite public page routes to the static site route group
+  // Event detail pages are excluded — they use the (events) route group
+  // which renders Craft.js page_content from the event page builder.
   const isPublicPageRoute =
     !pathname.startsWith("/admin") &&
     !pathname.startsWith("/api") &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/static-render") &&
     !pathname.startsWith("/_next") &&
-    !pathname.startsWith("/young-cho");
+    !pathname.startsWith("/young-cho") &&
+    !pathname.match(/^\/events\/[^/]/);
 
   if (isPublicPageRoute) {
     const url = request.nextUrl.clone();
