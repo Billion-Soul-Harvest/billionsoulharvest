@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronDown, MoreVertical, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft } from "lucide-react";
+import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft } from "lucide-react";
+import { ActionMenu } from "@/components/ui/action-menu";
 
 function FilterDropdown({
   value,
@@ -438,8 +438,6 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [pageSize, setPageSize] = useState(25);
   const [actionMenu, setActionMenu] = useState<string | null>(null);
   const [actionMenuStatusSub, setActionMenuStatusSub] = useState(false);
-  const [actionMenuPos, setActionMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
-  const actionMenuRef = useRef<HTMLDivElement>(null);
 
   // Unique countries for filter dropdown
   const uniqueCountries = Array.from(
@@ -490,18 +488,6 @@ export function RegistrationsTable({ registrations, events }: Props) {
     setPage(1);
   }, [search, eventFilter, statusFilter, countryFilter]);
 
-  // Close action menu on click outside
-  useEffect(() => {
-    if (!actionMenu) return;
-    function handleClick(e: MouseEvent) {
-      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
-        setActionMenu(null);
-        setActionMenuStatusSub(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [actionMenu]);
 
   async function handleResendEmail(regId: string) {
     try {
@@ -907,114 +893,93 @@ export function RegistrationsTable({ registrations, events }: Props) {
                       {new Date(reg.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 sticky right-0 bg-white group-hover/row:bg-gray-50" data-action-menu>
-                      <div className="relative" ref={actionMenu === reg.id ? actionMenuRef : undefined}>
+                      <ActionMenu
+                        open={actionMenu === reg.id}
+                        onToggle={() => {
+                          setActionMenu(actionMenu === reg.id ? null : reg.id);
+                          setActionMenuStatusSub(false);
+                        }}
+                        onClose={() => { setActionMenu(null); setActionMenuStatusSub(false); }}
+                      >
                         <button
                           type="button"
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (actionMenu === reg.id) {
-                              setActionMenu(null);
-                            } else {
-                              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                              const spaceBelow = window.innerHeight - rect.bottom;
-                              const menuHeight = 180; // approx height of 4 menu items
-                              const top = spaceBelow < menuHeight ? rect.top - menuHeight : rect.bottom + 4;
-                              setActionMenuPos({ top, right: window.innerWidth - rect.right });
-                              setActionMenu(reg.id);
-                            }
-                            setActionMenuStatusSub(false);
+                            setSelectedRegistration(reg);
+                            setActionMenu(null);
                           }}
-                          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
                         >
-                          <MoreVertical className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
+                          View Details
                         </button>
-                        {actionMenu === reg.id && typeof document !== "undefined" && createPortal(
-                          <>
-                          <div className="fixed inset-0 z-[60]" onClick={(e) => { e.stopPropagation(); setActionMenu(null); setActionMenuStatusSub(false); }} />
-                          <div className="fixed w-48 bg-white rounded-lg shadow-lg border py-1 z-[70]" style={{ top: actionMenuPos.top, right: actionMenuPos.right }}>
-                            <button
-                              type="button"
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedRegistration(reg);
-                                setActionMenu(null);
-                              }}
-                            >
-                              <Eye className="w-4 h-4" />
-                              View Details
-                            </button>
-                            <div
-                              className="relative"
-                              onMouseEnter={() => setActionMenuStatusSub(true)}
-                              onMouseLeave={() => setActionMenuStatusSub(false)}
-                            >
-                              <button
-                                type="button"
-                                className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActionMenuStatusSub((prev) => !prev);
-                                }}
-                              >
-                                <span className="flex items-center gap-2">
-                                  <ArrowRightLeft className="w-4 h-4" />
-                                  Change Status
-                                </span>
-                                <ChevronRight className="w-3 h-3 text-gray-400" />
-                              </button>
-                              {actionMenuStatusSub && (
-                                <div className="absolute right-full top-0 mr-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-[80]">
-                                  {STATUS_OPTIONS.map((s) => (
-                                    <button
-                                      key={s}
-                                      type="button"
-                                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 capitalize ${
-                                        reg.status === s
-                                          ? "font-semibold text-gray-900"
-                                          : "text-gray-700"
-                                      }`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChange(reg, s);
-                                        setActionMenu(null);
-                                        setActionMenuStatusSub(false);
-                                      }}
-                                    >
-                                      {s}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
+                        <div
+                          className="relative"
+                          onMouseEnter={() => setActionMenuStatusSub(true)}
+                          onMouseLeave={() => setActionMenuStatusSub(false)}
+                        >
+                          <button
+                            type="button"
+                            className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActionMenuStatusSub((prev) => !prev);
+                            }}
+                          >
+                            <span className="flex items-center gap-2">
+                              <ArrowRightLeft className="w-4 h-4" />
+                              Change Status
+                            </span>
+                            <ChevronRight className="w-3 h-3 text-gray-400" />
+                          </button>
+                          {actionMenuStatusSub && (
+                            <div className="absolute right-full top-0 mr-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-[80]">
+                              {STATUS_OPTIONS.map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 capitalize ${
+                                    reg.status === s
+                                      ? "font-semibold text-gray-900"
+                                      : "text-gray-700"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusChange(reg, s);
+                                    setActionMenu(null);
+                                    setActionMenuStatusSub(false);
+                                  }}
+                                >
+                                  {s}
+                                </button>
+                              ))}
                             </div>
-                            <button
-                              type="button"
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedRegistration(reg);
-                                setActionMenu(null);
-                              }}
-                            >
-                              <FileText className="w-4 h-4" />
-                              Add/Edit Note
-                            </button>
-                            <button
-                              type="button"
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleResendEmail(reg.id);
-                              }}
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                              Resend Email
-                            </button>
-                          </div>
-                          </>,
-                          document.body
-                        )}
-                      </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRegistration(reg);
+                            setActionMenu(null);
+                          }}
+                        >
+                          <FileText className="w-4 h-4" />
+                          Add/Edit Note
+                        </button>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResendEmail(reg.id);
+                          }}
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Resend Email
+                        </button>
+                      </ActionMenu>
                     </td>
                   </tr>
                 ))

@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp, MoreVertical } from "lucide-react";
+import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp } from "lucide-react";
+import { ActionMenu } from "@/components/ui/action-menu";
 import {
   Dialog,
   DialogContent,
@@ -1489,45 +1490,38 @@ export function ContactsListClient({
                       </td>
                     )}
                     <td className="px-4 py-3 sticky right-0 bg-white group-hover/row:bg-gray-50">
-                      <div className="relative" ref={actionMenu === c.id ? actionMenuRef : undefined}>
-                        <button
-                          type="button"
-                          onClick={() => setActionMenu(actionMenu === c.id ? null : c.id)}
-                          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                      <ActionMenu
+                        open={actionMenu === c.id}
+                        onToggle={() => setActionMenu(actionMenu === c.id ? null : c.id)}
+                        onClose={() => setActionMenu(null)}
+                      >
+                        <Link
+                          href={`/admin/contacts/${c.id}`}
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setActionMenu(null)}
                         >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                        {actionMenu === c.id && (
-                          <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border py-1 z-50">
-                            <Link
-                              href={`/admin/contacts/${c.id}`}
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                              onClick={() => setActionMenu(null)}
-                            >
-                              <Eye className="w-4 h-4" />
-                              View
-                            </Link>
-                            <Link
-                              href={`/admin/contacts/${c.id}?edit=true`}
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                              onClick={() => setActionMenu(null)}
-                            >
-                              <Pencil className="w-4 h-4" />
-                              Edit
-                            </Link>
-                            {c.email && (
-                              <a
-                                href={`mailto:${c.email}`}
-                                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                onClick={() => setActionMenu(null)}
-                              >
-                                <Mail className="w-4 h-4" />
-                                Email
-                              </a>
-                            )}
-                          </div>
+                          <Eye className="w-4 h-4" />
+                          View
+                        </Link>
+                        <Link
+                          href={`/admin/contacts/${c.id}?edit=true`}
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setActionMenu(null)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                          Edit
+                        </Link>
+                        {c.email && (
+                          <a
+                            href={`mailto:${c.email}`}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => setActionMenu(null)}
+                          >
+                            <Mail className="w-4 h-4" />
+                            Email
+                          </a>
                         )}
-                      </div>
+                      </ActionMenu>
                     </td>
                   </tr>
                 ))
