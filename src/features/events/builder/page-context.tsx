@@ -8,10 +8,7 @@ export interface PageInfo {
   slug: string;
   sort_order: number;
   published: boolean;
-  show_in_nav?: boolean;
   page_content: Record<string, unknown> | null;
-  parent_id?: string | null;
-  nav_anchor?: string | null;
 }
 
 interface PageContextValue {

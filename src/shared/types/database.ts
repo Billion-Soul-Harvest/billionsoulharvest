@@ -421,20 +421,3 @@ export interface EventPageBlock {
   created_at: string;
   updated_at: string;
 }
-
-export interface SitePage {
-  id: string;
-  title: string;
-  slug: string;
-  sort_order: number;
-  published: boolean;
-  show_in_nav: boolean;
-  is_home: boolean;
-  page_content: Record<string, unknown> | null;
-  meta_title: string | null;
-  meta_description: string | null;
-  parent_id: string | null;
-  nav_anchor: string | null;
-  created_at: string;
-  updated_at: string;
-}

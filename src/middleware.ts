@@ -104,8 +104,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Static mode rewrite: check if this is a public page route that should be
-  // rewritten to the static site route group when rendering_mode is "static"
+  // Rewrite public page routes to the static site route group
   const isPublicPageRoute =
     !pathname.startsWith("/admin") &&
     !pathname.startsWith("/api") &&
@@ -119,17 +118,13 @@ export async function middleware(request: NextRequest) {
     !pathname.match(/^\/events\/[^/]+/);
 
   if (isPublicPageRoute) {
-    const renderingMode = "static";
-
-    if (renderingMode === "static") {
-      const url = request.nextUrl.clone();
-      url.pathname = `/static-render${pathname}`;
-      const rewriteResponse = NextResponse.rewrite(url, { request });
-      supabaseResponse.cookies.getAll().forEach((cookie) => {
-        rewriteResponse.cookies.set(cookie.name, cookie.value, cookie);
-      });
-      return rewriteResponse;
-    }
+    const url = request.nextUrl.clone();
+    url.pathname = `/static-render${pathname}`;
+    const rewriteResponse = NextResponse.rewrite(url, { request });
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      rewriteResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return rewriteResponse;
   }
 
   return supabaseResponse;
