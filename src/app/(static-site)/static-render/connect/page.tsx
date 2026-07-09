@@ -83,7 +83,7 @@ export default function ConnectPage() {
       {/* Hero */}
       <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
         <img
-          src="/connect-hero-bg.jpg"
+          src="/connect-hero-bg.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />

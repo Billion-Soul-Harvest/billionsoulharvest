@@ -59,7 +59,7 @@ export function StaticHeader() {
       <div className="flex justify-between items-center w-full px-4 md:px-8 py-4 max-w-[1280px] mx-auto">
         <Link href="/" className="h-12 flex items-center shrink-0">
           <Image
-            src="/bsh-logo.png"
+            src="/bsh-logo.webp"
             alt="Billion Soul Harvest"
             width={180}
             height={48}

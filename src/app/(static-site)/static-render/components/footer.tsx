@@ -8,7 +8,7 @@ export function StaticFooter() {
         <div className="md:col-span-1">
           <div className="h-12 flex items-center mb-6">
             <Image
-              src="/bsh-logo.png"
+              src="/bsh-logo.webp"
               alt="Billion Soul Harvest"
               width={180}
               height={48}

@@ -4,7 +4,7 @@ import { VideoDialogButton } from "./components/video-dialog";
 import { ScrollReveal } from "./components/scroll-reveal";
 import { HeroSlideshow } from "./components/hero-slideshow";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function StaticHomePage() {
   const supabase = await createClient();
@@ -270,7 +270,7 @@ export default async function StaticHomePage() {
             </div>
 
             {/* Great Harvest (featured) */}
-            <div className="md:col-span-2 md:row-span-2 bg-[#0d223f] text-white p-8 rounded-lg flex flex-col justify-end relative overflow-hidden" style={{ backgroundImage: "linear-gradient(to top, rgba(13,34,63,0.9) 20%, rgba(13,34,63,0.4) 100%), url('/great-harvest-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+            <div className="md:col-span-2 md:row-span-2 bg-[#0d223f] text-white p-8 rounded-lg flex flex-col justify-end relative overflow-hidden" style={{ backgroundImage: "linear-gradient(to top, rgba(13,34,63,0.9) 20%, rgba(13,34,63,0.4) 100%), url('/great-harvest-bg.webp')", backgroundSize: "cover", backgroundPosition: "center" }}>
               <svg className="w-12 h-12 text-[#a9edff] mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
               </svg>
@@ -436,7 +436,7 @@ export default async function StaticHomePage() {
 
               <div className="relative rounded-2xl shadow-2xl overflow-hidden border border-[#b4c7ec]/20">
                 <img
-                  src="/initiatives-collab.jpg"
+                  src="/initiatives-collab.webp"
                   alt="Leaders collaborating together"
                   className="w-full h-[620px] object-cover"
                 />

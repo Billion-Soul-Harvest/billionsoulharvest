@@ -1,9 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/shared/utils/supabase/server";
 import { PastGatherings } from "./past-gatherings";
 import { ScrollReveal } from "../components/scroll-reveal";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // re-generate every hour
 
 export default async function GatheringsPage() {
   const supabase = await createClient();
@@ -20,10 +21,13 @@ export default async function GatheringsPage() {
     <div>
       {/* ── Hero ── */}
       <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
-        <img
-          src="/initiatives-collab.jpg"
+        <Image
+          src="/initiatives-collab.webp"
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          className="object-cover"
+          priority
+          sizes="100vw"
         />
         <div
           className="absolute inset-0"
@@ -111,11 +115,16 @@ export default async function GatheringsPage() {
                     className="bg-white rounded-2xl border border-[#b4c7ec]/30 overflow-hidden hover:shadow-lg hover:border-[#00b8d4]/30 transition-all duration-300 flex flex-col cursor-pointer"
                   >
                     {event.banner_url && (
-                      <img
-                        src={event.banner_url}
-                        alt={event.title}
-                        className="w-full h-48 object-cover"
-                      />
+                      <div className="relative w-full h-48">
+                        <Image
+                          src={event.banner_url}
+                          alt={event.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          loading="lazy"
+                        />
+                      </div>
                     )}
                     <div className="p-6 flex flex-col flex-1">
                       {(event.status === "registration_open" ||

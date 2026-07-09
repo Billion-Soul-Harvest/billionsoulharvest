@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 
 const images = [
-  "/hero-harvest.jpg",
+  "/hero-harvest.webp",
   "/about-hero-bg.jpg",
-  "/initiatives-hero-bg.jpg",
-  "/connect-hero-bg.jpg",
-  "/media-hero-bg.jpg",
+  "/initiatives-hero-bg.webp",
+  "/connect-hero-bg.webp",
+  "/media-hero-bg.webp",
 ];
 
 const INTERVAL = 6000; // 6 seconds per image

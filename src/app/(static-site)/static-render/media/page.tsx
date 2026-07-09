@@ -65,7 +65,7 @@ export default function MediaPage() {
       {/* Hero */}
       <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
         <img
-          src="/media-hero-bg.jpg"
+          src="/media-hero-bg.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />

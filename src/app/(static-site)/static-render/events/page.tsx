@@ -3,7 +3,7 @@ import { createClient } from "@/shared/utils/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Events — Billion Soul Harvest",

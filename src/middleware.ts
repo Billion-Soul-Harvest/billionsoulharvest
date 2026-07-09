@@ -109,13 +109,9 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/admin") &&
     !pathname.startsWith("/api") &&
     !pathname.startsWith("/login") &&
-    !pathname.startsWith("/register") &&
     !pathname.startsWith("/static-render") &&
     !pathname.startsWith("/_next") &&
-    !pathname.startsWith("/contact") &&
-    !pathname.startsWith("/leadership") &&
-    !pathname.startsWith("/young-cho") &&
-    !pathname.match(/^\/events\/[^/]+/);
+    !pathname.startsWith("/young-cho");
 
   if (isPublicPageRoute) {
     const url = request.nextUrl.clone();

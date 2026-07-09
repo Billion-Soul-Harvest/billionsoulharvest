@@ -96,7 +96,7 @@ export default function InitiativesPage() {
     <div>
       {/* ── Hero ── */}
       <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
-        <img src="/initiatives-hero-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/initiatives-hero-bg.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(13,34,63,0.95) 20%, rgba(13,34,63,0.7) 100%)" }} />
         <div className="max-w-[1280px] mx-auto px-4 md:px-8 relative z-10">
           <span className="text-[#a9edff] text-xs font-semibold font-[family-name:var(--font-geist-sans)] uppercase tracking-widest">

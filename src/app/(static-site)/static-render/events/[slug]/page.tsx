@@ -9,7 +9,7 @@ import type {
   EventFaq,
 } from "@/shared/types/database";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 interface Props {
   params: Promise<{ slug: string }>;
