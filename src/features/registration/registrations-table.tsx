@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,100 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Search, ChevronDown, MoreVertical, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft } from "lucide-react";
+
+function FilterDropdown({
+  value,
+  label,
+  options,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (open && searchRef.current) searchRef.current.focus();
+  }, [open]);
+
+  const activeLabel = options.find((o) => o.value === value)?.label ?? label;
+  const filtered = query
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => { setOpen(!open); setQuery(""); }}
+        className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[160px] ${
+          open
+            ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
+            : value !== "all"
+              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+              : "border-gray-200 text-gray-600 hover:border-gray-300"
+        }`}
+      >
+        {activeLabel}
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg z-50 min-w-[220px]">
+          <div className="p-2 border-b border-gray-100">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search..."
+                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-100"
+              />
+            </div>
+          </div>
+          <div className="max-h-56 overflow-y-auto py-1">
+            {filtered.length > 0 ? (
+              filtered.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => { onChange(opt.value); setOpen(false); setQuery(""); }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                    opt.value === value
+                      ? "bg-cyan-50 text-cyan-700 font-medium"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))
+            ) : (
+              <p className="px-4 py-2.5 text-sm text-gray-400">No results</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Registration {
   id: string;
@@ -59,194 +154,6 @@ const statusColor: Record<string, string> = {
   waitlisted: "bg-blue-100 text-blue-800",
 };
 
-// --- Row Action Menu Component ---
-function RowActionMenu({
-  reg,
-  onViewDetails,
-  onStatusChange,
-  onEditNote,
-}: {
-  reg: Registration;
-  onViewDetails: () => void;
-  onStatusChange: (status: string) => void;
-  onEditNote: () => void;
-}) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [showStatusSub, setShowStatusSub] = useState(false);
-  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-        setShowStatusSub(false);
-      }
-    }
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [open]);
-
-  async function handleResendEmail() {
-    try {
-      const res = await fetch(`/api/registrations/${reg.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "resend_email" }),
-      });
-      if (res.ok) {
-        setActionFeedback("Email sent!");
-      } else {
-        setActionFeedback("Failed to send");
-      }
-    } catch {
-      setActionFeedback("Failed to send");
-    }
-    setOpen(false);
-    setShowStatusSub(false);
-    setTimeout(() => setActionFeedback(null), 2500);
-  }
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
-          setShowStatusSub(false);
-        }}
-        className="p-1 rounded hover:bg-gray-100 transition-colors"
-        aria-label="Row actions"
-      >
-        <svg
-          className="w-5 h-5 text-gray-500"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-        </svg>
-      </button>
-
-      {actionFeedback && (
-        <span className="absolute right-8 top-1 text-xs whitespace-nowrap bg-gray-800 text-white rounded px-2 py-1 z-50">
-          {actionFeedback}
-        </span>
-      )}
-
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-52 rounded-lg border bg-white shadow-lg py-1">
-          <button
-            type="button"
-            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors text-gray-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewDetails();
-              setOpen(false);
-            }}
-          >
-            View Details
-          </button>
-
-          {/* Change Status with submenu */}
-          <div
-            className="relative"
-            onMouseEnter={() => setShowStatusSub(true)}
-            onMouseLeave={() => setShowStatusSub(false)}
-          >
-            <button
-              type="button"
-              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors text-gray-700 flex items-center justify-between"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowStatusSub((prev) => !prev);
-              }}
-            >
-              Change Status
-              <svg
-                className="w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-            {showStatusSub && (
-              <div className="absolute left-full top-0 ml-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-50">
-                {STATUS_OPTIONS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors capitalize ${
-                      reg.status === s
-                        ? "font-semibold text-gray-900"
-                        : "text-gray-700"
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStatusChange(s);
-                      setOpen(false);
-                      setShowStatusSub(false);
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors text-gray-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditNote();
-              setOpen(false);
-            }}
-          >
-            Add/Edit Note
-          </button>
-
-          <button
-            type="button"
-            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors text-gray-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleResendEmail();
-            }}
-          >
-            Resend Confirmation Email
-          </button>
-
-          <button
-            type="button"
-            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors text-gray-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-              router.push("/admin/follow-ups");
-            }}
-          >
-            Create Follow-up
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // --- Detail Slide-out Panel Component ---
 function DetailPanel({
@@ -527,6 +434,12 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
     useState<Registration | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [actionMenu, setActionMenu] = useState<string | null>(null);
+  const [actionMenuStatusSub, setActionMenuStatusSub] = useState(false);
+  const [actionMenuPos, setActionMenuPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const actionMenuRef = useRef<HTMLDivElement>(null);
 
   // Unique countries for filter dropdown
   const uniqueCountries = Array.from(
@@ -564,6 +477,44 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const waitlistedCount = filtered.filter(
     (r) => r.status === "waitlisted"
   ).length;
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safePageNum = Math.min(page, totalPages);
+  const startIndex = (safePageNum - 1) * pageSize;
+  const endIndex = Math.min(safePageNum * pageSize, totalCount);
+  const paginatedRows = filtered.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, eventFilter, statusFilter, countryFilter]);
+
+  // Close action menu on click outside
+  useEffect(() => {
+    if (!actionMenu) return;
+    function handleClick(e: MouseEvent) {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
+        setActionMenu(null);
+        setActionMenuStatusSub(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [actionMenu]);
+
+  async function handleResendEmail(regId: string) {
+    try {
+      await fetch(`/api/registrations/${regId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resend_email" }),
+      });
+    } catch (error) {
+      console.error("Resend email failed:", error);
+    }
+    setActionMenu(null);
+  }
 
   // Select all / deselect all filtered
   function toggleSelectAll() {
@@ -693,116 +644,103 @@ export function RegistrationsTable({ registrations, events }: Props) {
   return (
     <div>
       {/* Summary Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-        <div
-          className="bg-white rounded-lg border p-4"
-          style={{ borderLeft: "4px solid #9ca3af" }}
-        >
-          <div className="text-2xl font-bold text-gray-900">{totalCount}</div>
-          <div className="text-sm text-gray-500">Total Registrations</div>
-        </div>
-        <div
-          className="bg-white rounded-lg border p-4"
-          style={{ borderLeft: "4px solid #22c55e" }}
-        >
-          <div className="text-2xl font-bold text-green-700">
-            {confirmedCount}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Total Registrations</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">Confirmed</div>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount.toLocaleString()}</p>
         </div>
-        <div
-          className="bg-white rounded-lg border p-4"
-          style={{ borderLeft: "4px solid #eab308" }}
-        >
-          <div className="text-2xl font-bold text-yellow-700">
-            {pendingCount}
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Confirmed</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-100 text-green-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">Pending</div>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{confirmedCount.toLocaleString()}</p>
         </div>
-        <div
-          className="bg-white rounded-lg border p-4"
-          style={{ borderLeft: "4px solid #ef4444" }}
-        >
-          <div className="text-2xl font-bold text-red-700">
-            {cancelledCount}
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Pending</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-yellow-100 text-yellow-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">Cancelled</div>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{pendingCount.toLocaleString()}</p>
         </div>
-        <div
-          className="bg-white rounded-lg border p-4"
-          style={{ borderLeft: "4px solid #3b82f6" }}
-        >
-          <div className="text-2xl font-bold text-blue-700">
-            {waitlistedCount}
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Cancelled</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-100 text-red-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">Waitlisted</div>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{cancelledCount.toLocaleString()}</p>
+        </div>
+        <div className="bg-white rounded-xl border p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Waitlisted</p>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{waitlistedCount.toLocaleString()}</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <Input
-          placeholder="Search by name or email..."
-          value={search}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setSearch(e.target.value)
-          }
-          className="max-w-sm"
-        />
-        <Select
+      {/* Filters — Constant Contact style */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        {/* Search input with icon */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setSearch(e.target.value)
+            }
+            className="pl-9 pr-4 h-[42px] min-w-[260px] rounded-lg border-gray-200"
+          />
+        </div>
+
+        <FilterDropdown
           value={eventFilter}
-          onValueChange={(v: string | null) => {
-            if (v) setEventFilter(v);
-          }}
-        >
-          <SelectTrigger className="w-[240px]">
-            <SelectValue placeholder="All Events" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Events</SelectItem>
-            {events.map((ev) => (
-              <SelectItem key={ev.id} value={ev.slug}>
-                {ev.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
+          label="All Events"
+          options={[
+            { value: "all", label: "All Events" },
+            ...events.map((ev) => ({ value: ev.slug, label: ev.title })),
+          ]}
+          onChange={setEventFilter}
+        />
+
+        <FilterDropdown
           value={statusFilter}
-          onValueChange={(v: string | null) => {
-            if (v) setStatusFilter(v);
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="waitlisted">Waitlisted</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
+          label="All Statuses"
+          options={[
+            { value: "all", label: "All Statuses" },
+            { value: "confirmed", label: "Confirmed" },
+            { value: "pending", label: "Pending" },
+            { value: "cancelled", label: "Cancelled" },
+            { value: "waitlisted", label: "Waitlisted" },
+          ]}
+          onChange={setStatusFilter}
+        />
+
+        <FilterDropdown
           value={countryFilter}
-          onValueChange={(v: string | null) => {
-            if (v) setCountryFilter(v);
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Countries" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Countries</SelectItem>
-            {uniqueCountries.map((country) => (
-              <SelectItem key={country} value={country}>
-                {country}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="outline" onClick={exportCSV} className="sm:ml-auto">
+          label="All Countries"
+          options={[
+            { value: "all", label: "All Countries" },
+            ...uniqueCountries.map((c) => ({ value: c, label: c })),
+          ]}
+          onChange={setCountryFilter}
+        />
+
+        <Button variant="outline" onClick={exportCSV} className="sm:ml-auto rounded-lg h-[42px]">
           <svg
             className="w-4 h-4 mr-2"
             fill="none"
@@ -870,8 +808,8 @@ export function RegistrationsTable({ registrations, events }: Props) {
       </p>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl border" style={{ overflow: "visible" }}>
+        <div>
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b">
@@ -907,19 +845,17 @@ export function RegistrationsTable({ registrations, events }: Props) {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">
                   Date
                 </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Actions
+                <th className="px-4 py-3 font-medium text-gray-600 sticky right-0 bg-gray-50">
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.length > 0 ? (
-                filtered.map((reg) => (
+              {paginatedRows.length > 0 ? (
+                paginatedRows.map((reg) => (
                   <tr
                     key={reg.id}
-                    className="hover:bg-gray-50/50 cursor-pointer"
+                    className="group/row hover:bg-gray-50/50 cursor-pointer"
                     onClick={(e) => {
-                      // Don't open detail panel if clicking checkbox or action menu
                       const target = e.target as HTMLElement;
                       if (
                         target.closest('input[type="checkbox"]') ||
@@ -970,15 +906,115 @@ export function RegistrationsTable({ registrations, events }: Props) {
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {new Date(reg.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3" data-action-menu>
-                      <RowActionMenu
-                        reg={reg}
-                        onViewDetails={() => setSelectedRegistration(reg)}
-                        onStatusChange={(status) =>
-                          handleStatusChange(reg, status)
-                        }
-                        onEditNote={() => setSelectedRegistration(reg)}
-                      />
+                    <td className="px-4 py-3 sticky right-0 bg-white group-hover/row:bg-gray-50" data-action-menu>
+                      <div className="relative" ref={actionMenu === reg.id ? actionMenuRef : undefined}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (actionMenu === reg.id) {
+                              setActionMenu(null);
+                            } else {
+                              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                              const spaceBelow = window.innerHeight - rect.bottom;
+                              const menuHeight = 180; // approx height of 4 menu items
+                              const top = spaceBelow < menuHeight ? rect.top - menuHeight : rect.bottom + 4;
+                              setActionMenuPos({ top, right: window.innerWidth - rect.right });
+                              setActionMenu(reg.id);
+                            }
+                            setActionMenuStatusSub(false);
+                          }}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {actionMenu === reg.id && typeof document !== "undefined" && createPortal(
+                          <>
+                          <div className="fixed inset-0 z-[60]" onClick={(e) => { e.stopPropagation(); setActionMenu(null); setActionMenuStatusSub(false); }} />
+                          <div className="fixed w-48 bg-white rounded-lg shadow-lg border py-1 z-[70]" style={{ top: actionMenuPos.top, right: actionMenuPos.right }}>
+                            <button
+                              type="button"
+                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRegistration(reg);
+                                setActionMenu(null);
+                              }}
+                            >
+                              <Eye className="w-4 h-4" />
+                              View Details
+                            </button>
+                            <div
+                              className="relative"
+                              onMouseEnter={() => setActionMenuStatusSub(true)}
+                              onMouseLeave={() => setActionMenuStatusSub(false)}
+                            >
+                              <button
+                                type="button"
+                                className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActionMenuStatusSub((prev) => !prev);
+                                }}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <ArrowRightLeft className="w-4 h-4" />
+                                  Change Status
+                                </span>
+                                <ChevronRight className="w-3 h-3 text-gray-400" />
+                              </button>
+                              {actionMenuStatusSub && (
+                                <div className="absolute right-full top-0 mr-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-[80]">
+                                  {STATUS_OPTIONS.map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 capitalize ${
+                                        reg.status === s
+                                          ? "font-semibold text-gray-900"
+                                          : "text-gray-700"
+                                      }`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusChange(reg, s);
+                                        setActionMenu(null);
+                                        setActionMenuStatusSub(false);
+                                      }}
+                                    >
+                                      {s}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRegistration(reg);
+                                setActionMenu(null);
+                              }}
+                            >
+                              <FileText className="w-4 h-4" />
+                              Add/Edit Note
+                            </button>
+                            <button
+                              type="button"
+                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleResendEmail(reg.id);
+                              }}
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                              Resend Email
+                            </button>
+                          </div>
+                          </>,
+                          document.body
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -994,6 +1030,77 @@ export function RegistrationsTable({ registrations, events }: Props) {
               )}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {totalCount > 0 && (
+            <div className="flex items-center justify-between border-t px-4 py-3">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-500">
+                  {startIndex + 1}–{endIndex} of {totalCount}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Rows:</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v: string | null) => {
+                      if (v) {
+                        setPageSize(Number(v));
+                        setPage(1);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[70px] h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[10, 25, 50, 100].map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(1)}
+                  disabled={safePageNum <= 1}
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePageNum <= 1}
+                >
+                  Prev
+                </Button>
+                <span className="px-3 text-sm text-gray-600">
+                  {safePageNum} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePageNum >= totalPages}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(totalPages)}
+                  disabled={safePageNum >= totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
