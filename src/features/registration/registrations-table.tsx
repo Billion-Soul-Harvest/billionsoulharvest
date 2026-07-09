@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
+import { toast } from "sonner";
 
 function FilterDropdown({
   value,
@@ -167,14 +168,12 @@ function DetailPanel({
 }) {
   const [editingNotes, setEditingNotes] = useState(registration.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
-  const [notesFeedback, setNotesFeedback] = useState<string | null>(null);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   // Sync notes when registration changes
   useEffect(() => {
     setEditingNotes(registration.notes ?? "");
-    setNotesFeedback(null);
   }, [registration.id, registration.notes]);
 
   // Click outside to close status dropdown
@@ -195,7 +194,6 @@ function DetailPanel({
 
   async function handleSaveNotes() {
     setSavingNotes(true);
-    setNotesFeedback(null);
     try {
       const res = await fetch(`/api/registrations/${registration.id}`, {
         method: "PATCH",
@@ -203,15 +201,14 @@ function DetailPanel({
         body: JSON.stringify({ action: "update_notes", notes: editingNotes }),
       });
       if (res.ok) {
-        setNotesFeedback("Notes saved!");
+        toast.success("Notes saved");
       } else {
-        setNotesFeedback("Failed to save notes");
+        toast.error("Failed to save notes");
       }
     } catch {
-      setNotesFeedback("Failed to save notes");
+      toast.error("Failed to save notes");
     } finally {
       setSavingNotes(false);
-      setTimeout(() => setNotesFeedback(null), 2500);
     }
   }
 
@@ -386,17 +383,6 @@ function DetailPanel({
               >
                 {savingNotes ? "Saving..." : "Save Notes"}
               </Button>
-              {notesFeedback && (
-                <span
-                  className={`text-sm ${
-                    notesFeedback.includes("Failed")
-                      ? "text-red-600"
-                      : "text-green-600"
-                  }`}
-                >
-                  {notesFeedback}
-                </span>
-              )}
             </div>
           </section>
         </div>
@@ -490,16 +476,21 @@ export function RegistrationsTable({ registrations, events }: Props) {
 
 
   async function handleResendEmail(regId: string) {
+    setActionMenu(null);
     try {
-      await fetch(`/api/registrations/${regId}`, {
+      const res = await fetch(`/api/registrations/${regId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "resend_email" }),
       });
-    } catch (error) {
-      console.error("Resend email failed:", error);
+      if (res.ok) {
+        toast.success("Confirmation email sent");
+      } else {
+        toast.error("Failed to send email");
+      }
+    } catch {
+      toast.error("Failed to send email");
     }
-    setActionMenu(null);
   }
 
   // Select all / deselect all filtered
@@ -587,6 +578,7 @@ export function RegistrationsTable({ registrations, events }: Props) {
 
   async function bulkUpdateStatus() {
     if (!bulkStatus || selectedIds.size === 0) return;
+    const count = selectedIds.size;
     setBulkUpdating(true);
     try {
       const promises = Array.from(selectedIds).map((id) =>
@@ -600,8 +592,9 @@ export function RegistrationsTable({ registrations, events }: Props) {
       setSelectedIds(new Set());
       setBulkStatus("");
       router.refresh();
-    } catch (error) {
-      console.error("Bulk update failed:", error);
+      toast.success(`${count} registration${count !== 1 ? "s" : ""} updated to ${bulkStatus}`);
+    } catch {
+      toast.error("Bulk update failed");
     } finally {
       setBulkUpdating(false);
     }
@@ -610,14 +603,19 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const handleStatusChange = useCallback(
     async (reg: Registration, status: string) => {
       try {
-        await fetch(`/api/registrations/${reg.id}`, {
+        const res = await fetch(`/api/registrations/${reg.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "update_status", status }),
         });
-        router.refresh();
-      } catch (error) {
-        console.error("Status update failed:", error);
+        if (res.ok) {
+          toast.success(`Status updated to ${status}`);
+          router.refresh();
+        } else {
+          toast.error("Failed to update status");
+        }
+      } catch {
+        toast.error("Failed to update status");
       }
     },
     [router]
