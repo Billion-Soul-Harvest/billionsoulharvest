@@ -449,8 +449,10 @@ function DetailPanel({
                 <DetailRow
                   key={key}
                   label={key
+                    .replace(/([A-Z])/g, " $1")
                     .replace(/_/g, " ")
-                    .replace(/\b\w/g, (c) => c.toUpperCase())}
+                    .replace(/^\w/, (c) => c.toUpperCase())
+                    .trim()}
                   value={value != null ? String(value) : null}
                 />
               ))}
