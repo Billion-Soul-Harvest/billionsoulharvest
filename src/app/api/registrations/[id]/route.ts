@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/shared/utils/supabase/server";
 import QRCode from "qrcode";
 import { render } from "@react-email/components";
 import { RegistrationConfirmationEmail } from "@/features/email/templates/registration-confirmation";
 import { sendEmail, getFromAddress } from "@/shared/utils/send-email";
 
 const VALID_STATUSES = ["confirmed", "pending", "cancelled", "waitlisted"] as const;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function getSupabase() {
   return createClient(
@@ -19,7 +21,20 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Auth check
+    const authSupabase = await createServerClient();
+    const { data: { user } } = await authSupabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
+
+    // Validate UUID format
+    if (!UUID_REGEX.test(id)) {
+      return NextResponse.json({ error: "Invalid registration ID" }, { status: 400 });
+    }
+
     const body = await request.json();
     const { action, ...payload } = body;
 
@@ -54,6 +69,12 @@ export async function PATCH(
 
     if (action === "update_notes") {
       const { notes } = payload;
+      if (typeof notes !== "string") {
+        return NextResponse.json({ error: "Notes must be a string" }, { status: 400 });
+      }
+      if (notes.length > 5000) {
+        return NextResponse.json({ error: "Notes must be 5000 characters or fewer" }, { status: 400 });
+      }
 
       const { data, error } = await supabase
         .from("registrations")
@@ -90,6 +111,13 @@ export async function PATCH(
 
       const contact = registration.contact;
       const event = registration.event;
+
+      if (!contact || !contact.email) {
+        return NextResponse.json({ error: "Contact not found for this registration" }, { status: 404 });
+      }
+      if (!event) {
+        return NextResponse.json({ error: "Event not found for this registration" }, { status: 404 });
+      }
 
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://billionsoulharvest.org";
       const checkInUrl = `${siteUrl}/check-in/${registration.id}`;

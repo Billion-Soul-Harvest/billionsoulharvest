@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -426,41 +426,50 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [actionMenuStatusSub, setActionMenuStatusSub] = useState(false);
 
   // Unique countries for filter dropdown
-  const uniqueCountries = Array.from(
-    new Set(
-      registrations
-        .map((reg) => reg.country)
-        .filter((c): c is string => Boolean(c))
-    )
-  ).sort();
+  const uniqueCountries = useMemo(() =>
+    Array.from(
+      new Set(
+        registrations
+          .map((reg) => reg.country)
+          .filter((c): c is string => Boolean(c))
+      )
+    ).sort(),
+    [registrations]
+  );
 
-  const filtered = registrations.filter((reg) => {
-    const matchesSearch =
-      !search ||
-      `${reg.contact?.first_name} ${reg.contact?.last_name} ${reg.contact?.email}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
+  const filtered = useMemo(() =>
+    registrations.filter((reg) => {
+      const matchesSearch =
+        !search ||
+        `${reg.contact?.first_name} ${reg.contact?.last_name} ${reg.contact?.email}`
+          .toLowerCase()
+          .includes(search.toLowerCase());
 
-    const matchesEvent =
-      eventFilter === "all" || reg.event?.slug === eventFilter;
+      const matchesEvent =
+        eventFilter === "all" || reg.event?.slug === eventFilter;
 
-    const matchesStatus =
-      statusFilter === "all" || reg.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || reg.status === statusFilter;
 
-    const matchesCountry =
-      countryFilter === "all" || reg.country === countryFilter;
+      const matchesCountry =
+        countryFilter === "all" || reg.country === countryFilter;
 
-    return matchesSearch && matchesEvent && matchesStatus && matchesCountry;
-  });
+      return matchesSearch && matchesEvent && matchesStatus && matchesCountry;
+    }),
+    [registrations, search, eventFilter, statusFilter, countryFilter]
+  );
 
-  // Stat counts from filtered data
-  const totalCount = filtered.length;
-  const confirmedCount = filtered.filter((r) => r.status === "confirmed").length;
-  const pendingCount = filtered.filter((r) => r.status === "pending").length;
-  const cancelledCount = filtered.filter((r) => r.status === "cancelled").length;
-  const waitlistedCount = filtered.filter(
-    (r) => r.status === "waitlisted"
-  ).length;
+  // Stat counts from filtered data (single pass)
+  const { totalCount, confirmedCount, pendingCount, cancelledCount, waitlistedCount } = useMemo(() => {
+    const counts = { totalCount: filtered.length, confirmedCount: 0, pendingCount: 0, cancelledCount: 0, waitlistedCount: 0 };
+    for (const r of filtered) {
+      if (r.status === "confirmed") counts.confirmedCount++;
+      else if (r.status === "pending") counts.pendingCount++;
+      else if (r.status === "cancelled") counts.cancelledCount++;
+      else if (r.status === "waitlisted") counts.waitlistedCount++;
+    }
+    return counts;
+  }, [filtered]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -578,21 +587,33 @@ export function RegistrationsTable({ registrations, events }: Props) {
 
   async function bulkUpdateStatus() {
     if (!bulkStatus || selectedIds.size === 0) return;
-    const count = selectedIds.size;
+    const ids = Array.from(selectedIds);
+    const count = ids.length;
     setBulkUpdating(true);
     try {
-      const promises = Array.from(selectedIds).map((id) =>
-        fetch(`/api/registrations/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update_status", status: bulkStatus }),
-        })
-      );
-      await Promise.all(promises);
+      let failed = 0;
+      // Batch in groups of 10 to avoid connection saturation
+      for (let i = 0; i < ids.length; i += 10) {
+        const batch = ids.slice(i, i + 10);
+        const results = await Promise.all(
+          batch.map((id) =>
+            fetch(`/api/registrations/${id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "update_status", status: bulkStatus }),
+            })
+          )
+        );
+        failed += results.filter((r) => !r.ok).length;
+      }
       setSelectedIds(new Set());
       setBulkStatus("");
       router.refresh();
-      toast.success(`${count} registration${count !== 1 ? "s" : ""} updated to ${bulkStatus}`);
+      if (failed > 0) {
+        toast.error(`${failed} of ${count} updates failed`);
+      } else {
+        toast.success(`${count} registration${count !== 1 ? "s" : ""} updated to ${bulkStatus}`);
+      }
     } catch {
       toast.error("Bulk update failed");
     } finally {
