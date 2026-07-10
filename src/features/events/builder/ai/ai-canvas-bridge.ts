@@ -191,6 +191,7 @@ export function applyFullPageGeneration(
       const t = node.type as Record<string, unknown> | undefined;
       return `${id}: ${t?.resolvedName} (isCanvas: ${node.isCanvas}, children: ${(node.nodes as string[])?.length ?? 0})`;
     }));
+    actions.clearEvents();
     actions.deserialize(JSON.stringify(sanitized));
     return { success: true };
   } catch (err) {
@@ -330,12 +331,13 @@ export function applyAddNodes(
       return { success: false, error: `Parent node "${parentId}" not found in canvas` };
     }
 
+    // Identify which nodes are root-level (their parent is not within the new tree)
+    const newNodeIdSet = new Set(Object.keys(data.nodes));
+    const rootNodeIds: string[] = [];
+
     // Add new nodes to the canvas JSON
-    const newNodeIds: string[] = [];
     for (const [nodeId, rawNode] of Object.entries(data.nodes)) {
       const node = rawNode as Record<string, unknown>;
-      // Ensure parent reference and required fields
-      node.parent = parentId;
       if (!node.linkedNodes) node.linkedNodes = {};
       if (!Array.isArray(node.nodes)) node.nodes = [];
 
@@ -345,20 +347,27 @@ export function applyAddNodes(
         node.isCanvas = canvasComponentNames.has(resolvedName);
       }
 
+      // Only set parent to parentId for root-level nodes of the subtree
+      const originalParent = node.parent as string | undefined;
+      if (!originalParent || !newNodeIdSet.has(originalParent)) {
+        node.parent = parentId;
+        rootNodeIds.push(nodeId);
+      }
+
       currentJson[nodeId] = node;
-      newNodeIds.push(nodeId);
     }
 
-    // Append new node IDs to parent's children
+    // Append only root-level node IDs to parent's children
     const parentNodes = (parent.nodes as string[]) || [];
     if (data.index !== undefined) {
-      parentNodes.splice(data.index, 0, ...newNodeIds);
+      parentNodes.splice(data.index, 0, ...rootNodeIds);
     } else {
-      parentNodes.push(...newNodeIds);
+      parentNodes.push(...rootNodeIds);
     }
     parent.nodes = parentNodes;
 
     const sanitized = sanitizeCraftJson(currentJson);
+    actions.clearEvents();
     actions.deserialize(JSON.stringify(sanitized));
     return { success: true };
   } catch (err) {
@@ -403,6 +412,7 @@ export function applyRemoveNodes(
       }
     }
 
+    actions.clearEvents();
     actions.deserialize(JSON.stringify(currentJson));
     return { success: true };
   } catch (err) {

@@ -158,21 +158,25 @@ function EditorLayout({ event }: { event: Event }) {
 
     if (stored) {
       // We have cached content for this page
+      actions.clearEvents();
       actions.deserialize(stored);
     } else if (newPageId === null) {
       // Home page — use event.page_content
       if (event.page_content) {
-        actions.deserialize(JSON.stringify(event.page_content));
+        actions.clearEvents();
+      actions.deserialize(JSON.stringify(event.page_content));
       }
       // If no page_content, the default content was already loaded on mount
     } else {
       // Sub-page — load from its page_content
       const page = pages.find((p) => p.id === newPageId);
       if (page?.page_content) {
-        actions.deserialize(JSON.stringify(page.page_content));
+        actions.clearEvents();
+      actions.deserialize(JSON.stringify(page.page_content));
       } else {
         // Empty page — deserialize a minimal empty container
-        actions.deserialize(JSON.stringify({
+        actions.clearEvents();
+      actions.deserialize(JSON.stringify({
           ROOT: {
             type: { resolvedName: "CraftContainer" },
             isCanvas: true,

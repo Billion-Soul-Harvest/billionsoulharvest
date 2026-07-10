@@ -247,6 +247,7 @@ export function useBuilderKeyboardShortcuts() {
         const snapshot = undoStack.pop()!;
         try {
           isUndoing = true;
+          actions.clearEvents();
           actions.deserialize(snapshot);
           lastSnapshotRef.current = snapshot;
           toast("Undone", { duration: 1500 });

@@ -278,6 +278,7 @@ export function useAIChat(eventData: EventData) {
 
   const undoLastApply = useCallback(() => {
     if (snapshotRef.current) {
+      actions.clearEvents();
       actions.deserialize(snapshotRef.current);
       snapshotRef.current = null;
     }
