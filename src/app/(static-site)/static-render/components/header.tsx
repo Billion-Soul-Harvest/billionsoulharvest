@@ -6,15 +6,15 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
 const navLinks = [
-  { label: "Home", href: "/" },
   {
     label: "Who We Are",
-    href: "/about",
+    href: "/",
     submenu: [
-      { label: "Our Story", href: "/about#our-story" },
-      { label: "Our Journey", href: "/about#our-journey" },
-      { label: "Our Leadership", href: "/about#our-leadership" },
-      { label: "Advisory Council", href: "/about#advisory-council" },
+      { label: "Our Leadership", href: "/#our-leadership" },
+      { label: "Honorary Chairmen", href: "/#honorary-chairmen" },
+      { label: "Co-Chairs", href: "/#co-chairs" },
+      { label: "Our Story", href: "/#our-story" },
+      { label: "Our Journey", href: "/#our-journey" },
     ],
   },
   { label: "Initiatives", href: "/initiatives" },
@@ -72,9 +72,8 @@ export function StaticHeader() {
         <div className="hidden md:flex items-center gap-8" ref={dropdownRef}>
           {navLinks.map((item) => {
             const isActive =
-              !item.href.startsWith("#") &&
-              (pathname === item.href ||
-                (item.href !== "/" && pathname.startsWith(item.href)));
+              pathname === item.href ||
+              (item.href !== "/" && !item.href.startsWith("/#") && !item.href.startsWith("#") && pathname.startsWith(item.href));
             const hasSubmenu = "submenu" in item && item.submenu;
             const isDropdownOpen = openDropdown === item.label;
 
