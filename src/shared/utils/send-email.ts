@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { recordEmailsSent } from "@/shared/utils/daily-email-quota";
 
 interface EmailPayload {
   to: string;
@@ -35,7 +36,13 @@ export async function sendEmails(
     throw new Error(`Edge function error: ${error.message}`);
   }
 
-  return data.results as EmailResult[];
+  const results = data.results as EmailResult[];
+  const successCount = results.filter((r) => r.success).length;
+  if (successCount > 0) {
+    await recordEmailsSent(supabase, successCount);
+  }
+
+  return results;
 }
 
 export async function sendEmail(

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { createClient as createServerClient } from "@/shared/utils/supabase/server";
 import { getServiceSupabase, prepareCampaignSends, processNextBatch, finalizeCampaign } from "@/features/email/send-campaign";
 
-export const maxDuration = 300;
-
 export async function POST(request: NextRequest) {
   try {
     const authSupabase = await createServerClient();
@@ -116,22 +114,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fire-and-forget: process batches in background after response
+    // Process first batch immediately; cron handles the rest for large campaigns
     after(async () => {
       try {
-        let remaining = 1;
-        while (remaining > 0) {
-          const result = await processNextBatch(supabase, campaign.id);
-          remaining = result.remaining;
-          if (result.processed === 0 && remaining === 0) break;
+        const result = await processNextBatch(supabase, campaign.id);
+        // If first batch finished everything, finalize right away
+        if (result.remaining === 0 && !result.quotaExhausted) {
+          await finalizeCampaign(supabase, campaign.id);
         }
-        await finalizeCampaign(supabase, campaign.id);
       } catch (err) {
-        console.error("Background send error for campaign", campaign.id, err);
-        await supabase
-          .from("campaigns")
-          .update({ status: "failed", completed_at: new Date().toISOString() })
-          .eq("id", campaign.id);
+        console.error("First batch error for campaign", campaign.id, err);
       }
     });
 

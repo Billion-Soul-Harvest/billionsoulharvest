@@ -4,6 +4,7 @@ import { buildSegmentQuery } from "@/shared/utils/segment-query";
 import { buildUnsubscribeUrl } from "@/shared/utils/unsubscribe-token";
 import { CampaignWrapperEmail } from "@/features/email/templates/campaign-wrapper";
 import { sendEmails, getFromAddress } from "@/shared/utils/send-email";
+import { getRemainingQuota } from "@/shared/utils/daily-email-quota";
 
 export function getServiceSupabase() {
   return createClient(
@@ -55,7 +56,20 @@ export async function processNextBatch(
   supabase: ReturnType<typeof getServiceSupabase>,
   campaignId: string,
   batchSize = 50
-): Promise<{ processed: number; remaining: number }> {
+): Promise<{ processed: number; remaining: number; quotaExhausted?: boolean }> {
+  // Check daily quota before processing
+  const remainingQuota = await getRemainingQuota(supabase);
+  if (remainingQuota <= 0) {
+    const { count } = await supabase
+      .from("campaign_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", campaignId)
+      .or("status.eq.queued,and(status.eq.failed,retry_count.lt.3)");
+    return { processed: 0, remaining: count || 0, quotaExhausted: true };
+  }
+
+  const effectiveBatchSize = Math.min(batchSize, remainingQuota);
+
   // Fetch next batch: queued or failed with retries remaining
   const { data: batchSends } = await supabase
     .from("campaign_sends")
@@ -63,7 +77,7 @@ export async function processNextBatch(
     .eq("campaign_id", campaignId)
     .or("status.eq.queued,and(status.eq.failed,retry_count.lt.3)")
     .order("created_at", { ascending: true })
-    .limit(batchSize);
+    .limit(effectiveBatchSize);
 
   if (!batchSends || batchSends.length === 0) {
     return { processed: 0, remaining: 0 };
