@@ -21,6 +21,8 @@ const coreLeaders = [
 ];
 
 const honoraryChairmen: { name: string; org: string; role: string; photo: string }[] = [
+  { name: "Dr. James Hwang", org: "Founder & Visionary", role: "Honorary Chairman", photo: "/leaders/james-hwang.jpg" },
+  { name: "Rev. Dr. Young Cho", org: "Global Director", role: "Honorary Chairman", photo: "/leaders/young-cho.jpg" },
   { name: "Rick Warren", org: "Finishing the Task", role: "Honorary Chairman", photo: "/leaders/rick-warren.jpg" },
   { name: "Sameh Maurice", org: "Kasr El Dobara Evangelical Church", role: "Honorary Chairman", photo: "/leaders/sameh-maurice.jpg" },
   { name: "Dick Eastman", org: "Every Home for Christ", role: "Honorary Chairman", photo: "/leaders/dick-eastman.jpg" },
@@ -222,7 +224,7 @@ export default async function StaticHomePage() {
         </div>
       </header>
 
-      {/* ── 2. Our Leadership (Core) ── */}
+      {/* ── 2. Our Leadership (Core) — temporarily hidden ──
       <section id="our-leadership" className="py-20 md:py-[100px] bg-[#f0f3ff] scroll-mt-20">
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
@@ -274,6 +276,7 @@ export default async function StaticHomePage() {
           </ScrollReveal>
         </div>
       </section>
+      */}
 
       {/* ── 3. Honorary Chairmen & Conveners ── */}
       <section id="honorary-chairmen" className="py-20 md:py-[100px] bg-white scroll-mt-20">

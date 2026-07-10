@@ -10,7 +10,6 @@ const navLinks = [
     label: "Who We Are",
     href: "/",
     submenu: [
-      { label: "Our Leadership", href: "/#our-leadership" },
       { label: "Honorary Chairmen", href: "/#honorary-chairmen" },
       { label: "Our Story", href: "/#our-story" },
       { label: "Our Journey", href: "/#our-journey" },
