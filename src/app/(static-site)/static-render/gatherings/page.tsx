@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/shared/utils/supabase/server";
-import { PastGatherings } from "./past-gatherings";
 import { ScrollReveal } from "../components/scroll-reveal";
 
 export const revalidate = 3600; // re-generate every hour
@@ -180,18 +179,140 @@ export default async function GatheringsPage() {
         </div>
       </section>
 
-      {/* ── Past Gatherings ── */}
+      {/* ── Global Gatherings ── */}
       <section className="py-20 md:py-[100px] bg-white">
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
             <div className="mb-12">
               <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#0d223f] tracking-[-0.02em]">
-                Past Gatherings
+                Global Gatherings
               </h2>
             </div>
           </ScrollReveal>
 
-          <PastGatherings />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: "BSH UK/Europe 2025",
+                location: "United Kingdom",
+                href: "https://sites.google.com/view/bshuk?usp=sharing",
+              },
+              {
+                title: "BSH Global Summit 2025",
+                location: "Jeju, South Korea",
+                href: "https://sites.google.com/view/ghs-2025",
+              },
+              {
+                title: "BSH Global Summit 2024",
+                location: "Pyeongchang, South Korea",
+                href: "https://sites.google.com/view/ghs-2024/home",
+              },
+              {
+                title: "BSH Global Summit 2025",
+                location: "Colorado Springs, USA",
+                href: null,
+              },
+              {
+                title: "BSH Global Summit 2024",
+                location: "Colorado Springs, USA",
+                href: null,
+              },
+            ].map((g, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-[#b4c7ec]/30 overflow-hidden hover:shadow-lg hover:border-[#00b8d4]/30 transition-all duration-300 flex flex-col"
+              >
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="w-10 h-10 rounded-full bg-[#e7f8ff] flex items-center justify-center mb-4">
+                    <svg className="w-5 h-5 text-[#00b8d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5a17.92 17.92 0 01-8.716-2.247m0 0A8.966 8.966 0 013 12c0-1.264.26-2.466.727-3.559" />
+                    </svg>
+                  </div>
+                  <h3 className="font-[family-name:var(--font-jakarta)] text-lg font-bold text-[#0d223f] mb-2">
+                    {g.title}
+                  </h3>
+                  <p className="font-[family-name:var(--font-jakarta)] text-sm text-[#44474d] mb-4">
+                    {g.location}
+                  </p>
+                  <div className="mt-auto">
+                    {g.href ? (
+                      <a
+                        href={g.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[#00b8d4] text-sm font-semibold font-[family-name:var(--font-geist-sans)]"
+                      >
+                        Learn More &rarr;
+                      </a>
+                    ) : (
+                      <span className="text-sm text-[#44474d]/60 italic font-[family-name:var(--font-geist-sans)]">
+                        Details coming soon
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── National Gatherings ── */}
+      <section className="py-20 md:py-[100px] bg-[#f9f9ff]">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-8">
+          <ScrollReveal>
+            <div className="mb-12">
+              <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#0d223f] tracking-[-0.02em]">
+                National Gatherings
+              </h2>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { title: "BSH Taiwan", videoId: "RDEl9j5MdIU" },
+              { title: "BSH Uganda & Ethiopia", videoId: "xYGMfgrbNGY" },
+              { title: "Billion Soul Harvest Next Gen Korea", videoId: "ddZ1bvXAOdg" },
+              { title: "BSH India", videoId: "wM4hzDzHlsw" },
+              { title: "BSH Indonesia", videoId: "hywPfXySUWU" },
+              { title: "BSH WPA Indonesia", videoId: "_9eiWELCE5g" },
+              { title: "BSH Transform World South Asia", videoId: "1B4EAWSJ9o0" },
+              { title: "Billion Soul Harvest Pakistan", videoId: "3UbMmQHQhuY" },
+            ].map((g) => (
+              <a
+                key={g.videoId}
+                href={`https://www.youtube.com/watch?v=${g.videoId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white rounded-2xl border border-[#b4c7ec]/30 overflow-hidden hover:shadow-lg hover:border-[#00b8d4]/30 transition-all duration-300 flex flex-col cursor-pointer"
+              >
+                <div className="relative w-full h-48">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://img.youtube.com/vi/${g.videoId}/hqdefault.jpg`}
+                    alt={g.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-full bg-black/60 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h3 className="font-[family-name:var(--font-jakarta)] text-lg font-bold text-[#0d223f] mb-2">
+                    {g.title}
+                  </h3>
+                  <span className="inline-flex items-center gap-1 text-[#00b8d4] text-sm font-semibold font-[family-name:var(--font-geist-sans)]">
+                    Watch Video &rarr;
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
       </section>
     </div>
