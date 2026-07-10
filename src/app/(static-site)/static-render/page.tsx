@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { createClient } from "@/shared/utils/supabase/server";
 import { VideoDialogButton } from "./components/video-dialog";
 import { ScrollReveal } from "./components/scroll-reveal";
 import { HeroSlideshow } from "./components/hero-slideshow";
@@ -7,17 +6,6 @@ import { HeroSlideshow } from "./components/hero-slideshow";
 export const revalidate = 3600;
 
 export default async function StaticHomePage() {
-  const supabase = await createClient();
-
-  const { data: events } = await supabase
-    .from("events")
-    .select(
-      "id, title, slug, start_date, end_date, city, country, banner_url, status, is_external, external_url"
-    )
-    .eq("status", "published")
-    .order("start_date", { ascending: true })
-    .limit(3);
-
   return (
     <div className="scroll-smooth">
       {/* ── Hero Section ── */}
@@ -30,7 +18,7 @@ export default async function StaticHomePage() {
           className="absolute inset-0 z-[1]"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(13,34,63,0.7), rgba(13,34,63,0.92))",
+              "linear-gradient(to bottom, rgba(13,34,63,0.45), rgba(13,34,63,0.8))",
           }}
         />
         <div className="relative z-10 max-w-[1280px] mx-auto px-4 md:px-8 w-full" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
@@ -59,7 +47,14 @@ export default async function StaticHomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
-              <VideoDialogButton />
+              <Link
+                href="https://www.youtube.com/@ghs2033"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-2 border-white text-white px-10 py-4 rounded-lg text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:bg-white/10 transition-all"
+              >
+                Watch Our Story
+              </Link>
             </div>
           </div>
         </div>
@@ -70,11 +65,8 @@ export default async function StaticHomePage() {
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
             <div className="text-center mb-16">
-              <span className="text-[#00b8d4] text-xs font-semibold font-[family-name:var(--font-geist-sans)] tracking-widest uppercase">
-                Our Core Call
-              </span>
-              <h2 className="font-[family-name:var(--font-jakarta)] text-[28px] md:text-[32px] leading-10 font-semibold text-[#000b20] mt-2">
-                Evangelize, Disciple, Multiply
+              <h2 className="font-[family-name:var(--font-jakarta)] text-[28px] md:text-[32px] leading-10 font-semibold text-[#000b20]">
+                Win, Build, Multiply
               </h2>
             </div>
           </ScrollReveal>
@@ -99,11 +91,11 @@ export default async function StaticHomePage() {
                 </svg>
               </div>
               <h3 className="font-[family-name:var(--font-jakarta)] text-2xl font-semibold text-[#0d223f] mb-4">
-                Evangelize
+                Win
               </h3>
               <p className="font-[family-name:var(--font-geist-sans)] text-base leading-relaxed text-[#44474d]">
-                Proclaim the Gospel so that every person has the opportunity
-                to know Jesus Christ.
+                Win people to Christ so that every person has the opportunity
+                to know Jesus.
               </p>
             </div>
             </ScrollReveal>
@@ -127,11 +119,11 @@ export default async function StaticHomePage() {
                 </svg>
               </div>
               <h3 className="font-[family-name:var(--font-jakarta)] text-2xl font-semibold text-[#0d223f] mb-4">
-                Disciple
+                Build
               </h3>
               <p className="font-[family-name:var(--font-geist-sans)] text-base leading-relaxed text-[#44474d]">
-                Equip believers to grow in Christ, live out their faith, and
-                become faithful followers of Jesus.
+                Build believers up in their faith, equipping them to grow in
+                Christ and become faithful followers.
               </p>
             </div>
             </ScrollReveal>
@@ -176,10 +168,7 @@ export default async function StaticHomePage() {
         <div className="max-w-[1280px] mx-auto px-4 md:px-8 relative z-10">
           <ScrollReveal direction="none">
             <div className="text-center mb-16">
-              <span className="text-[#a9edff] text-xs font-semibold font-[family-name:var(--font-geist-sans)] uppercase tracking-widest">
-                The Core Values
-              </span>
-              <h2 className="font-[family-name:var(--font-jakarta)] text-4xl md:text-[48px] md:leading-[56px] font-bold text-white mt-4 tracking-[-0.02em]">
+              <h2 className="font-[family-name:var(--font-jakarta)] text-4xl md:text-[48px] md:leading-[56px] font-bold text-white tracking-[-0.02em]">
                 Our DNA: Holy, Humble, Hidden
               </h2>
             </div>
@@ -245,11 +234,8 @@ export default async function StaticHomePage() {
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
             <div className="mb-16">
-              <span className="text-[#006879] text-xs font-semibold font-[family-name:var(--font-geist-sans)] tracking-widest uppercase">
-                The Roadmap
-              </span>
-              <h2 className="font-[family-name:var(--font-jakarta)] text-[28px] md:text-[32px] leading-10 font-semibold text-[#0d223f] mt-2">
-                Our Vision: The Four Greats
+              <h2 className="font-[family-name:var(--font-jakarta)] text-[28px] md:text-[32px] leading-10 font-semibold text-[#0d223f]">
+                The Four Greats
               </h2>
             </div>
           </ScrollReveal>
@@ -332,7 +318,7 @@ export default async function StaticHomePage() {
                 The Implementation
               </span>
               <h2 className="font-[family-name:var(--font-jakarta)] text-[28px] md:text-[32px] leading-10 font-semibold text-[#0d223f] mt-2 mb-4">
-                Five Global Initiatives
+                Global Initiatives
               </h2>
               <p className="font-[family-name:var(--font-geist-sans)] text-base text-[#44474d] mb-8 max-w-lg">
                 Through strategic global gatherings, leadership development,
@@ -345,7 +331,7 @@ export default async function StaticHomePage() {
                 {[
                   {
                     num: 1,
-                    title: "Global Harvest Summits",
+                    title: "Harvest Summits",
                     desc: "Gathering and mobilizing leaders.",
                     icon: (
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +362,7 @@ export default async function StaticHomePage() {
                   },
                   {
                     num: 4,
-                    title: "Mercy Ministries",
+                    title: "Billion Soul Care",
                     desc: "Demonstrating Christ\u2019s love through compassionate action.",
                     icon: (
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -456,92 +442,6 @@ export default async function StaticHomePage() {
           </div>
         </div>
       </section>
-
-      {/* ── Upcoming Events ── */}
-      {events && events.length > 0 && (
-        <section className="py-20 md:py-[120px] bg-[#f9f9ff]">
-          <div className="max-w-[1280px] mx-auto px-4 md:px-8">
-            <ScrollReveal>
-              <div className="text-center mb-16">
-                <span className="text-[#00b8d4] text-xs font-semibold font-[family-name:var(--font-geist-sans)] tracking-widest uppercase">
-                  Get Involved
-                </span>
-                <h2 className="font-[family-name:var(--font-jakarta)] text-[28px] md:text-[32px] leading-10 font-semibold text-[#0d223f] mt-2">
-                  Upcoming Events
-                </h2>
-              </div>
-            </ScrollReveal>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event) => {
-                const hasExternalUrl =
-                  event.is_external && !!event.external_url;
-                const href = hasExternalUrl
-                  ? event.external_url
-                  : `/events/${event.slug}`;
-
-                return (
-                  <Link
-                    key={event.id}
-                    href={href}
-                    target={hasExternalUrl ? "_blank" : undefined}
-                    rel={hasExternalUrl ? "noopener noreferrer" : undefined}
-                    className="group bg-white border border-[#c4c6ce] rounded-lg overflow-hidden hover:shadow-xl transition-all"
-                  >
-                    <div className="h-40 bg-gradient-to-br from-[#0d223f] to-[#000b20] flex items-center justify-center">
-                      {event.banner_url ? (
-                        <img
-                          src={event.banner_url}
-                          alt={event.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-[#00b8d4]/30 text-4xl font-bold font-[family-name:var(--font-jakarta)]">
-                          BSH
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <h3 className="font-[family-name:var(--font-jakarta)] text-xl font-semibold text-[#0d223f] group-hover:text-[#006879] transition-colors mb-2">
-                        {event.title}
-                      </h3>
-                      <p className="font-[family-name:var(--font-geist-sans)] text-sm text-[#44474d]">
-                        {event.start_date &&
-                          new Date(
-                            event.start_date + "T00:00:00"
-                          ).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                      </p>
-                      {(event.city || event.country) && (
-                        <p className="font-[family-name:var(--font-geist-sans)] text-sm text-[#74777e] mt-1">
-                          {[event.city, event.country]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="text-center mt-12">
-              <Link
-                href="/gatherings"
-                className="text-[#006879] hover:text-[#00b8d4] font-[family-name:var(--font-geist-sans)] text-sm font-semibold transition-colors inline-flex items-center gap-2"
-              >
-                View All Events
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── Final CTA ── */}
       <section className="py-20 md:py-[120px] bg-[#0d223f] text-white text-center">

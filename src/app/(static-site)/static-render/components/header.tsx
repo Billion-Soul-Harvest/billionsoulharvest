@@ -57,12 +57,12 @@ export function StaticHeader() {
       }`}
     >
       <div className="flex justify-between items-center w-full px-4 md:px-8 py-4 max-w-[1280px] mx-auto">
-        <Link href="/" className="h-12 flex items-center shrink-0">
+        <Link href="/" className="h-14 flex items-center shrink-0">
           <Image
             src="/bsh-logo.webp"
             alt="Billion Soul Harvest"
-            width={180}
-            height={48}
+            width={220}
+            height={56}
             className="h-full w-auto object-contain"
             priority
           />
