@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft, Trash2 } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
+import { SendEmailDialog } from "@/features/emails/send-email-dialog";
 import { toast } from "sonner";
 
 function FilterDropdown({
@@ -111,6 +112,7 @@ function FilterDropdown({
 
 interface Registration {
   id: string;
+  contact_id: string;
   status: string;
   church_name: string | null;
   church_role: string | null;
@@ -426,6 +428,7 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "single"; id: string } | { type: "bulk" } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [bulkStatusSubOpen, setBulkStatusSubOpen] = useState(false);
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -694,6 +697,16 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const allFilteredSelected =
     filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
 
+  // Deduplicated contact IDs from selected registrations (a contact may have multiple registrations)
+  const selectedContactIds = useMemo(() =>
+    Array.from(new Set(
+      filtered
+        .filter((r) => selectedIds.has(r.id) && r.contact_id)
+        .map((r) => r.contact_id)
+    )),
+    [filtered, selectedIds]
+  );
+
   return (
     <div>
       {/* Summary Stat Cards */}
@@ -832,6 +845,14 @@ export function RegistrationsTable({ registrations, events }: Props) {
             </Button>
             {actionsDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                <button
+                  type="button"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => { setSendEmailOpen(true); setActionsDropdownOpen(false); }}
+                >
+                  Send Campaign
+                </button>
+                <div className="h-px bg-gray-100 mx-2" />
                 <div
                   className="relative"
                   onMouseEnter={() => setBulkStatusSubOpen(true)}
@@ -1235,6 +1256,17 @@ export function RegistrationsTable({ registrations, events }: Props) {
           </div>
         </>
       )}
+
+      <SendEmailDialog
+        open={sendEmailOpen}
+        onOpenChange={setSendEmailOpen}
+        contactIds={selectedContactIds}
+        selectAllMode={false}
+        recipientCount={selectedContactIds.length}
+        onSuccess={() => {
+          setSelectedIds(new Set());
+        }}
+      />
     </div>
   );
 }
