@@ -416,7 +416,6 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
     useState<Registration | null>(null);
@@ -426,6 +425,9 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [actionMenuStatusSub, setActionMenuStatusSub] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "single"; id: string } | { type: "bulk" } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
+  const [bulkStatusSubOpen, setBulkStatusSubOpen] = useState(false);
+  const actionsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Unique countries for filter dropdown
   const uniqueCountries = useMemo(() =>
@@ -485,6 +487,17 @@ export function RegistrationsTable({ registrations, events }: Props) {
     setPage(1);
   }, [search, eventFilter, statusFilter, countryFilter]);
 
+  // Close bulk actions dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (actionsDropdownRef.current && !actionsDropdownRef.current.contains(e.target as Node)) {
+        setActionsDropdownOpen(false);
+        setBulkStatusSubOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   async function handleResendEmail(regId: string) {
     setActionMenu(null);
@@ -587,8 +600,8 @@ export function RegistrationsTable({ registrations, events }: Props) {
     exportCSVForRows(selected);
   }
 
-  async function bulkUpdateStatus() {
-    if (!bulkStatus || selectedIds.size === 0) return;
+  async function bulkUpdateStatus(targetStatus: string) {
+    if (!targetStatus || selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
     const count = ids.length;
     setBulkUpdating(true);
@@ -602,19 +615,18 @@ export function RegistrationsTable({ registrations, events }: Props) {
             fetch(`/api/registrations/${id}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "update_status", status: bulkStatus }),
+              body: JSON.stringify({ action: "update_status", status: targetStatus }),
             })
           )
         );
         failed += results.filter((r) => !r.ok).length;
       }
       setSelectedIds(new Set());
-      setBulkStatus("");
       router.refresh();
       if (failed > 0) {
         toast.error(`${failed} of ${count} updates failed`);
       } else {
-        toast.success(`${count} registration${count !== 1 ? "s" : ""} updated to ${bulkStatus}`);
+        toast.success(`${count} registration${count !== 1 ? "s" : ""} updated to ${targetStatus}`);
       }
     } catch {
       toast.error("Bulk update failed");
@@ -799,56 +811,88 @@ export function RegistrationsTable({ registrations, events }: Props) {
         </Button>
       </div>
 
-      {/* Bulk Action Bar */}
+      {/* Selected bar with Actions dropdown */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <span className="text-sm font-medium text-blue-800">
-            {selectedIds.size} selected
-          </span>
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Select
-              value={bulkStatus}
-              onValueChange={(v: string | null) => {
-                if (v) setBulkStatus(v);
-              }}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Pick status..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="waitlisted">Waitlisted</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              onClick={bulkUpdateStatus}
-              disabled={!bulkStatus || bulkUpdating}
-            >
-              {bulkUpdating ? "Updating..." : "Update Status"}
-            </Button>
+            <p className="text-base font-semibold text-gray-900">Selected registrations</p>
+            <span className="text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2.5 py-0.5">
+              {selectedIds.size.toLocaleString()}
+            </span>
           </div>
-          <Button size="sm" variant="outline" onClick={exportSelected}>
-            Export Selected
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-red-600 border-red-200 hover:bg-red-50"
-            onClick={() => setDeleteConfirm({ type: "bulk" })}
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Delete Selected
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
+          <div className="relative" ref={actionsDropdownRef}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setActionsDropdownOpen((prev) => !prev); setBulkStatusSubOpen(false); }}
+              className="gap-1"
+            >
+              Actions
+              <ChevronDown className="w-3.5 h-3.5" />
+            </Button>
+            {actionsDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                <div
+                  className="relative"
+                  onMouseEnter={() => setBulkStatusSubOpen(true)}
+                  onMouseLeave={() => setBulkStatusSubOpen(false)}
+                >
+                  <button
+                    type="button"
+                    className="flex items-center justify-between gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => setBulkStatusSubOpen((prev) => !prev)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <ArrowRightLeft className="w-4 h-4" />
+                      Update Status
+                    </span>
+                    <ChevronRight className="w-3 h-3 text-gray-400" />
+                  </button>
+                  {bulkStatusSubOpen && (
+                    <div className="absolute left-full top-0 ml-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-[80]">
+                      {STATUS_OPTIONS.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 capitalize"
+                          onClick={() => {
+                            bulkUpdateStatus(s);
+                            setActionsDropdownOpen(false);
+                            setBulkStatusSubOpen(false);
+                          }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="h-px bg-gray-100 mx-2" />
+                <button
+                  type="button"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => { exportSelected(); setActionsDropdownOpen(false); }}
+                >
+                  Export selection
+                </button>
+                <div className="h-px bg-gray-100 mx-2" />
+                <button
+                  type="button"
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  onClick={() => { setDeleteConfirm({ type: "bulk" }); setActionsDropdownOpen(false); }}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
             onClick={() => setSelectedIds(new Set())}
+            className="text-sm text-gray-500 hover:text-gray-700"
           >
-            Clear
-          </Button>
+            Clear selection
+          </button>
         </div>
       )}
 
