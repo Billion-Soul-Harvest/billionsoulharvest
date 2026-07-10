@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp } from "lucide-react";
+import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp, Trash2 } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
 import {
   Dialog,
@@ -787,6 +787,8 @@ export function ContactsListClient({
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
 
   const [actionMenu, setActionMenu] = useState<string | null>(null);
+  const [deleteContact, setDeleteContact] = useState<{ id: string; name: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const actionMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -918,6 +920,23 @@ export function ContactsListClient({
       await supabase.from("contacts").delete().gte("created_at", "1970-01-01");
     } else {
       await supabase.from("contacts").delete().in("id", [...selected]);
+    }
+  }
+
+  async function handleDeleteContact() {
+    if (!deleteContact) return;
+    setDeleteLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from("contacts").delete().eq("id", deleteContact.id);
+      if (error) {
+        alert(`Failed to delete: ${error.message}`);
+        return;
+      }
+      setDeleteContact(null);
+      router.refresh();
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -1521,6 +1540,17 @@ export function ContactsListClient({
                             Email
                           </a>
                         )}
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
+                          onClick={() => {
+                            setActionMenu(null);
+                            setDeleteContact({ id: c.id, name: `${c.first_name} ${c.last_name}` });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
                       </ActionMenu>
                     </td>
                   </tr>
@@ -1699,6 +1729,22 @@ export function ContactsListClient({
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
             <Button variant="destructive" onClick={() => executeBulk(bulkDelete)} disabled={bulkLoading}>
               {bulkLoading ? "Deleting..." : `Delete ${selected.size} contacts`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Single Contact Delete Dialog */}
+      <Dialog open={deleteContact !== null} onOpenChange={(open) => { if (!open) setDeleteContact(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {deleteContact?.name}?</DialogTitle>
+            <DialogDescription>This action cannot be undone. This contact and all their associated data (registrations, follow-ups, notes) will be permanently deleted.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button variant="destructive" onClick={handleDeleteContact} disabled={deleteLoading}>
+              {deleteLoading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

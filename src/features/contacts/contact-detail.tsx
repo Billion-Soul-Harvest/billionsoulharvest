@@ -20,6 +20,15 @@ import { createClient } from "@/shared/utils/supabase/client";
 import type { ContactType } from "@/shared/types/database";
 import { toast } from "sonner";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   ChevronDown,
   ChevronUp,
   ArrowLeft,
@@ -326,6 +335,26 @@ export function ContactDetail({
   const [newNote, setNewNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
+  // --- Delete state ---
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDeleteContact() {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("contacts").delete().eq("id", contact.id);
+      if (error) {
+        toast.error(`Failed to delete: ${error.message}`);
+        return;
+      }
+      toast.success("Contact deleted");
+      router.push("/admin/contacts");
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   // --- Save contact fields ---
   async function handleSave() {
     setSaving(true);
@@ -505,6 +534,15 @@ export function ContactDetail({
 
         <div className="flex items-center gap-2 shrink-0">
           {saveError && <span className="text-xs text-red-600">{saveError}</span>}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-500 hover:text-red-700"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Delete
+          </Button>
           <Button
             onClick={handleSave}
             disabled={!isDirty || saving}
@@ -845,6 +883,22 @@ export function ContactDetail({
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Contact Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => { if (!open) setShowDeleteDialog(false); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {contact.first_name} {contact.last_name}?</DialogTitle>
+            <DialogDescription>This action cannot be undone. This contact and all their associated data (registrations, follow-ups, notes) will be permanently deleted.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button variant="destructive" onClick={handleDeleteContact} disabled={deleting}>
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
