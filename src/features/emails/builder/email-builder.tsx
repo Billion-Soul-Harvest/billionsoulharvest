@@ -1,7 +1,7 @@
 "use client";
 
 import { Editor, Frame, Element, useEditor } from "@craftjs/core";
-import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
+import { useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { InsertPanel } from "./insert-panel";
 import { SettingsPanel } from "./settings-panel";
 import { EmailText } from "./blocks/email-text";
@@ -11,6 +11,7 @@ import { EmailDivider } from "./blocks/email-divider";
 import { EmailSpacer } from "./blocks/email-spacer";
 import { EmailColumns, EmailColumnCell } from "./blocks/email-columns";
 import { EmailContainer } from "./blocks/email-container";
+import { EmailHtmlBlock } from "./blocks/email-html-block";
 
 const resolver = {
   EmailText,
@@ -21,6 +22,7 @@ const resolver = {
   EmailColumns,
   EmailColumnCell,
   EmailContainer,
+  EmailHtmlBlock,
 };
 
 export interface EmailBuilderHandle {
@@ -29,11 +31,12 @@ export interface EmailBuilderHandle {
 
 interface EmailBuilderProps {
   initialJson: string | null;
+  initialHtml?: string;
   onJsonChange?: (json: string) => void;
 }
 
 export const EmailBuilder = forwardRef<EmailBuilderHandle, EmailBuilderProps>(
-  function EmailBuilder({ initialJson, onJsonChange }, ref) {
+  function EmailBuilder({ initialJson, initialHtml, onJsonChange }, ref) {
     const onJsonChangeRef = useRef(onJsonChange);
     onJsonChangeRef.current = onJsonChange;
     const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -52,33 +55,20 @@ export const EmailBuilder = forwardRef<EmailBuilderHandle, EmailBuilderProps>(
 
     return (
       <Editor resolver={resolver} enabled onNodesChange={handleNodesChange}>
-        <BuilderLayout initialJson={initialJson} ref={ref} />
+        <BuilderLayout initialJson={initialJson} initialHtml={initialHtml} ref={ref} />
       </Editor>
     );
   }
 );
 
-const BuilderLayout = forwardRef<EmailBuilderHandle, { initialJson: string | null }>(
-  function BuilderLayout({ initialJson }, ref) {
-    const { actions, query } = useEditor();
-    const initializedRef = useRef(false);
+const BuilderLayout = forwardRef<EmailBuilderHandle, { initialJson: string | null; initialHtml?: string }>(
+  function BuilderLayout({ initialJson, initialHtml }, ref) {
+    const { query } = useEditor();
 
     // Expose getJson to parent
     useImperativeHandle(ref, () => ({
       getJson: () => query.serialize(),
     }), [query]);
-
-    // Load initial JSON
-    useEffect(() => {
-      if (initialJson && !initializedRef.current) {
-        try {
-          actions.deserialize(initialJson);
-          initializedRef.current = true;
-        } catch (e) {
-          console.error("Failed to deserialize email builder JSON:", e);
-        }
-      }
-    }, [initialJson, actions]);
 
     return (
       <div className="flex border rounded-lg overflow-hidden bg-white" style={{ minHeight: "600px" }}>
@@ -122,14 +112,18 @@ const BuilderLayout = forwardRef<EmailBuilderHandle, { initialJson: string | nul
 
             {/* Editable Canvas */}
             <div style={{ padding: "40px 20px" }}>
-              <Frame>
+              <Frame data={initialJson || undefined}>
                 <Element
                   is={EmailContainer}
                   canvas
                   backgroundColor="transparent"
                   padding={0}
                 >
-                  <EmailText text="<p>Start building your email by dragging blocks from the left panel.</p>" />
+                  {initialHtml ? (
+                    <EmailHtmlBlock html={initialHtml} />
+                  ) : (
+                    <EmailText text="<p>Start building your email by dragging blocks from the left panel.</p>" />
+                  )}
                 </Element>
               </Frame>
             </div>

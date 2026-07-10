@@ -122,6 +122,9 @@ function renderNode(nodeId: string, nodes: NodeMap): string {
       return `<td style="width:${p.widthPercent || "50%"};vertical-align:top;padding:${p.padding || 8}px;">${childrenHtml}${linkedHtml}</td>`;
     }
 
+    case "EmailHtmlBlock":
+      return String(node.props.html || "");
+
     default:
       return childrenHtml + linkedHtml;
   }

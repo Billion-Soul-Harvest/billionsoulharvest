@@ -508,6 +508,7 @@ export function EmailTemplateEditor({ template: initial }: Props) {
                   <EmailBuilder
                     ref={builderRef}
                     initialJson={bodyJson}
+                    initialHtml={bodyHtml}
                     onJsonChange={setBodyJson}
                   />
                 ) : (
