@@ -17,8 +17,8 @@ const navLinks = [
       { label: "Our Journey", href: "/#our-journey" },
     ],
   },
-  { label: "Initiatives", href: "/initiatives" },
   { label: "Gatherings", href: "/gatherings" },
+  { label: "Initiatives", href: "/initiatives" },
   { label: "Media", href: "/media" },
   { label: "Connect", href: "/connect" },
 ];
@@ -78,12 +78,15 @@ export function StaticHeader() {
             const isDropdownOpen = openDropdown === item.label;
 
             return (
-              <div key={item.href} className="relative">
+              <div
+                key={item.href}
+                className="relative"
+                onMouseEnter={() => hasSubmenu && setOpenDropdown(item.label)}
+                onMouseLeave={() => hasSubmenu && setOpenDropdown(null)}
+              >
                 {hasSubmenu ? (
-                  <button
-                    onClick={() =>
-                      setOpenDropdown(isDropdownOpen ? null : item.label)
-                    }
+                  <Link
+                    href={item.href}
                     className={`flex items-center gap-1 text-sm font-medium tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
                       isActive
                         ? "text-[#006879] font-bold border-b-2 border-[#006879]"
@@ -106,7 +109,7 @@ export function StaticHeader() {
                         d="M19 9l-7 7-7-7"
                       />
                     </svg>
-                  </button>
+                  </Link>
                 ) : (
                   <Link
                     href={item.href}
@@ -122,17 +125,19 @@ export function StaticHeader() {
 
                 {/* Dropdown */}
                 {hasSubmenu && isDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-[#b4c7ec]/20 py-2 min-w-[200px] animate-in fade-in slide-in-from-top-1 duration-150">
-                    {item.submenu!.map((sub) => (
-                      <Link
-                        key={sub.href}
-                        href={sub.href}
-                        onClick={() => setOpenDropdown(null)}
-                        className="block px-4 py-2.5 text-sm font-medium text-[#0a1c34] hover:bg-[#f0f3ff] hover:text-[#00b8d4] transition-colors font-[family-name:var(--font-geist-sans)]"
-                      >
-                        {sub.label}
-                      </Link>
-                    ))}
+                  <div className="absolute top-full left-0 pt-2">
+                    <div className="bg-white rounded-xl shadow-xl border border-[#b4c7ec]/20 py-2 min-w-[200px] animate-in fade-in slide-in-from-top-1 duration-150">
+                      {item.submenu!.map((sub) => (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={() => setOpenDropdown(null)}
+                          className="block px-4 py-2.5 text-sm font-medium text-[#0a1c34] hover:bg-[#f0f3ff] hover:text-[#00b8d4] transition-colors font-[family-name:var(--font-geist-sans)]"
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
