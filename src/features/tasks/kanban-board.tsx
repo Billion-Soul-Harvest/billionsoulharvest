@@ -29,6 +29,7 @@ import type {
   TaskLabel,
   AdminUser,
 } from "./task-types";
+import { createNotification } from "@/features/notifications/create-notification";
 
 type DueDateFilter = "overdue" | "due-week" | "no-date";
 
@@ -227,6 +228,8 @@ export function KanbanBoard({
     const task = tasks.find((t) => t.id === activeId);
     if (!task) return;
 
+    const fromColumnId = task.column_id;
+
     if (activeId !== overId && task.column_id === (tasks.find((t) => t.id === overId)?.column_id ?? overId)) {
       const columnTasks = tasksByColumn(task.column_id);
       const oldIndex = columnTasks.findIndex((t) => t.id === activeId);
@@ -259,6 +262,20 @@ export function KanbanBoard({
 
     if (error) {
       setTasks(tasksSnapshot.current);
+    }
+
+    // Notify assignee about the move (cross-column only)
+    const movedTask = tasks.find((t) => t.id === activeId);
+    if (movedTask?.assigned_to && fromColumnId !== finalTask.column_id) {
+      const fromName = columns.find((c) => c.id === fromColumnId)?.name ?? "";
+      const toName = columns.find((c) => c.id === finalTask.column_id)?.name ?? "";
+      createNotification({
+        recipientId: movedTask.assigned_to,
+        type: "task_moved",
+        title: `Task moved to ${toName}`,
+        body: `"${movedTask.title}" from ${fromName}`,
+        taskId: movedTask.id,
+      });
     }
 
     router.refresh();
