@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createClient } from "@/shared/utils/supabase/client";
+import { createNotification } from "@/features/notifications/create-notification";
 import { LabelManager } from "./label-manager";
 import type {
   Task,
@@ -189,6 +190,9 @@ export function TaskDialog({
     setSaving(true);
 
     const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (task) {
       // Track changes for activity log
@@ -208,6 +212,19 @@ export function TaskDialog({
         const fromName = task.assigned_to ? (adminUsers.find((u) => u.id === task.assigned_to)?.display_name ?? "Someone") : "Unassigned";
         const toName = form.assigned_to ? (adminUsers.find((u) => u.id === form.assigned_to)?.display_name ?? "Someone") : "Unassigned";
         changes.push({ action: "reassigned", details: { from: fromName, to: toName } });
+
+        // Notify new assignee
+        if (form.assigned_to) {
+          const currentUserName =
+            adminUsers.find((u) => u.id === user?.id)?.display_name ?? "Someone";
+          await createNotification({
+            recipientId: form.assigned_to,
+            type: "assigned",
+            title: `${currentUserName} assigned you`,
+            body: `to "${form.title}"`,
+            taskId: task.id,
+          });
+        }
       }
       if ((form.due_date || null) !== (task.due_date || null)) {
         changes.push({ action: "due_date_changed", details: { from: task.due_date ?? "None", to: form.due_date || "None" } });
@@ -255,10 +272,6 @@ export function TaskDialog({
 
       const nextPosition =
         existing && existing.length > 0 ? existing[0].position + 1 : 0;
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
 
       const { data: newTask } = await supabase
         .from("tasks")
@@ -322,6 +335,40 @@ export function TaskDialog({
       .single();
 
     await logActivity(task.id, "commented");
+
+    const currentUserName =
+      adminUsers.find((u) => u.id === user?.id)?.display_name ?? "Someone";
+
+    // Notify mentioned users
+    const mentionMatches = newComment.trim().match(/@([\w\s]+?)(?=\s@|\s*$)/g);
+    if (mentionMatches) {
+      for (const match of mentionMatches) {
+        const name = match.slice(1).trim();
+        const mentionedUser = adminUsers.find(
+          (u) => u.display_name?.toLowerCase() === name.toLowerCase()
+        );
+        if (mentionedUser) {
+          await createNotification({
+            recipientId: mentionedUser.id,
+            type: "mentioned",
+            title: `${currentUserName} mentioned you`,
+            body: `in "${task.title}"`,
+            taskId: task.id,
+          });
+        }
+      }
+    }
+
+    // Notify task assignee about new comment (if not the commenter)
+    if (task.assigned_to) {
+      await createNotification({
+        recipientId: task.assigned_to,
+        type: "comment_on_task",
+        title: `${currentUserName} commented`,
+        body: `on "${task.title}"`,
+        taskId: task.id,
+      });
+    }
 
     // Upload pending files linked to comment
     if (newCommentRow && pendingFiles.length > 0) {
@@ -402,6 +449,19 @@ export function TaskDialog({
       });
 
       await logActivity(task.id, "attached", { file: file.name });
+    }
+
+    // Notify task assignee about new attachment
+    if (task.assigned_to) {
+      const currentUserName =
+        adminUsers.find((u) => u.id === user?.id)?.display_name ?? "Someone";
+      await createNotification({
+        recipientId: task.assigned_to,
+        type: "attachment_added",
+        title: `${currentUserName} attached a file`,
+        body: `on "${task.title}"`,
+        taskId: task.id,
+      });
     }
 
     setUploading(false);
