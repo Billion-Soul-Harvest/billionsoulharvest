@@ -262,11 +262,10 @@ export function KanbanBoard({
 
     if (error) {
       setTasks(tasksSnapshot.current);
-    }
-
-    // Notify assignee about the move (cross-column only)
-    const movedTask = tasks.find((t) => t.id === activeId);
-    if (movedTask?.assigned_to && fromColumnId !== finalTask.column_id) {
+    } else {
+      // Notify assignee about the move (cross-column only)
+      const movedTask = tasks.find((t) => t.id === activeId);
+      if (movedTask?.assigned_to && fromColumnId !== finalTask.column_id) {
       const fromName = columns.find((c) => c.id === fromColumnId)?.name ?? "";
       const toName = columns.find((c) => c.id === finalTask.column_id)?.name ?? "";
       createNotification({
@@ -276,6 +275,7 @@ export function KanbanBoard({
         body: `"${movedTask.title}" from ${fromName}`,
         taskId: movedTask.id,
       });
+      }
     }
 
     router.refresh();

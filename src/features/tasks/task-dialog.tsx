@@ -340,6 +340,7 @@ export function TaskDialog({
       adminUsers.find((u) => u.id === user?.id)?.display_name ?? "Someone";
 
     // Notify mentioned users
+    const mentionedIds = new Set<string>();
     const mentionMatches = newComment.trim().match(/@([\w\s]+?)(?=\s@|\s*$)/g);
     if (mentionMatches) {
       for (const match of mentionMatches) {
@@ -348,6 +349,7 @@ export function TaskDialog({
           (u) => u.display_name?.toLowerCase() === name.toLowerCase()
         );
         if (mentionedUser) {
+          mentionedIds.add(mentionedUser.id);
           await createNotification({
             recipientId: mentionedUser.id,
             type: "mentioned",
@@ -359,8 +361,8 @@ export function TaskDialog({
       }
     }
 
-    // Notify task assignee about new comment (if not the commenter)
-    if (task.assigned_to) {
+    // Notify task assignee about new comment (skip if already mentioned)
+    if (task.assigned_to && !mentionedIds.has(task.assigned_to)) {
       await createNotification({
         recipientId: task.assigned_to,
         type: "comment_on_task",

@@ -24,12 +24,16 @@ export async function createNotification({
   // Never notify yourself
   if (user?.id === recipientId) return;
 
-  await supabase.from("notifications").insert({
-    user_id: recipientId,
-    type,
-    title,
-    body: body ?? null,
-    task_id: taskId ?? null,
-    actor_id: user?.id ?? null,
-  });
+  try {
+    await supabase.from("notifications").insert({
+      user_id: recipientId,
+      type,
+      title,
+      body: body ?? null,
+      task_id: taskId ?? null,
+      actor_id: user?.id ?? null,
+    });
+  } catch {
+    // Notification failure should never break the parent operation
+  }
 }

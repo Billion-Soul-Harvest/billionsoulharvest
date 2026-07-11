@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useId } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { Notification } from "./notification-types";
 
@@ -10,7 +10,7 @@ export function useNotifications(onNewNotification?: (n: Notification) => void) 
   const userIdRef = useRef<string | null>(null);
   const onNewRef = useRef(onNewNotification);
   onNewRef.current = onNewNotification;
-  const channelId = useId();
+  const channelIdRef = useRef(crypto.randomUUID());
 
   const fetchNotifications = useCallback(async () => {
     const supabase = createClient();
@@ -32,30 +32,37 @@ export function useNotifications(onNewNotification?: (n: Notification) => void) 
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
-
+    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null = null;
     const supabase = createClient();
-    const channel = supabase
-      .channel(`notifications-realtime-${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-        },
-        (payload) => {
-          const newNotif = payload.new as Notification;
-          if (newNotif.user_id === userIdRef.current) {
+
+    async function init() {
+      await fetchNotifications();
+      const userId = userIdRef.current;
+      if (!userId) return;
+
+      channel = supabase
+        .channel(`notifications-${channelIdRef.current}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            const newNotif = payload.new as Notification;
             setNotifications((prev) => [newNotif, ...prev]);
             onNewRef.current?.(newNotif);
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
+
+    init();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [fetchNotifications]);
 
