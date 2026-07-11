@@ -27,6 +27,13 @@ export function StaticHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile nav on route change
+  useEffect(() => {
+    setMobileOpen(false);
+    setOpenDropdown(null);
+  }, [pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 100);
@@ -37,9 +44,11 @@ export function StaticHeader() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
+        !dropdownRef.current.contains(target) &&
+        (!mobileNavRef.current || !mobileNavRef.current.contains(target))
       ) {
         setOpenDropdown(null);
       }
@@ -177,7 +186,7 @@ export function StaticHeader() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-[#b4c7ec]/20 bg-[#f9f9ff] px-4 pb-4 pt-3 space-y-1">
+        <div ref={mobileNavRef} className="md:hidden border-t border-[#b4c7ec]/20 bg-[#f9f9ff] px-4 pb-4 pt-3 space-y-1">
           {navLinks.map((item) => {
             const hasSubmenu = "submenu" in item && item.submenu;
             return (
@@ -185,13 +194,7 @@ export function StaticHeader() {
                 {hasSubmenu ? (
                   <>
                     <div className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium text-[#0a1c34] hover:bg-[#e7eeff] transition-colors">
-                      <Link
-                        href={item.href}
-                        onClick={() => {
-                          setMobileOpen(false);
-                          setOpenDropdown(null);
-                        }}
-                      >
+                      <Link href={item.href}>
                         {item.label}
                       </Link>
                       <button
@@ -226,10 +229,6 @@ export function StaticHeader() {
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            onClick={() => {
-                              setMobileOpen(false);
-                              setOpenDropdown(null);
-                            }}
                             className="block px-3 py-2 rounded-lg text-sm text-[#44474d] hover:bg-[#e7eeff] hover:text-[#00b8d4] transition-colors"
                           >
                             {sub.label}
@@ -241,7 +240,6 @@ export function StaticHeader() {
                 ) : (
                   <Link
                     href={item.href}
-                    onClick={() => setMobileOpen(false)}
                     className="block px-3 py-2 rounded-lg text-sm font-medium text-[#0a1c34] hover:bg-[#e7eeff] transition-colors"
                   >
                     {item.label}
