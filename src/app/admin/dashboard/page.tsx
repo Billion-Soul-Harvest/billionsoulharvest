@@ -6,7 +6,7 @@ import ContactTypeChart from "@/features/dashboard/contact-type-chart";
 import RegistrationsTimelineChart from "@/features/dashboard/registrations-timeline-chart";
 import RegistrationStatusChart from "@/features/dashboard/registration-status-chart";
 import FollowupOverviewChart from "@/features/dashboard/followup-overview-chart";
-import { normalizeCountry } from "@/features/dashboard/country-codes";
+import { normalizeCountries } from "@/features/dashboard/country-codes";
 
 export const metadata: Metadata = {
   title: "Dashboard — BSH Admin",
@@ -29,8 +29,10 @@ export default async function DashboardPage() {
 
   const countryData = Object.entries(
     (countriesRes.data ?? []).reduce<Record<string, number>>((acc, row) => {
-      const c = normalizeCountry(row.country as string);
-      acc[c] = (acc[c] ?? 0) + 1;
+      const countries = normalizeCountries(row.country as string);
+      for (const c of countries) {
+        acc[c] = (acc[c] ?? 0) + 1;
+      }
       return acc;
     }, {})
   )
