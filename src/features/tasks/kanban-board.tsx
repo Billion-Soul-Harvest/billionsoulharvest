@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   DndContext,
@@ -78,6 +78,24 @@ export function KanbanBoard({
   const [labelFilter, setLabelFilter] = useState<Set<string>>(new Set());
   const [dueDateFilter, setDueDateFilter] = useState<Set<DueDateFilter>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+
+  const searchParams = useSearchParams();
+
+  // Auto-open task from query param (e.g., from notification click)
+  useEffect(() => {
+    const taskId = searchParams.get("task");
+    if (taskId) {
+      const found = tasks.find((t) => t.id === taskId);
+      if (found) {
+        setEditingTask(found);
+        setTaskDialogOpen(true);
+      }
+      // Clean up the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("task");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams, tasks]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownSearch, setDropdownSearch] = useState("");
   const filterBarRef = useRef<HTMLDivElement>(null);
