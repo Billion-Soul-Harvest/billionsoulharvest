@@ -7,17 +7,17 @@ import { useState, useEffect, useRef } from "react";
 
 const navLinks = [
   {
-    label: "Who We Are",
-    href: "/",
+    label: "About",
+    href: "/about",
     submenu: [
-      { label: "Honorary Chairmen", href: "/#honorary-chairmen" },
-      { label: "Our Story", href: "/#our-story" },
-      { label: "Our Journey", href: "/#our-journey" },
+      { label: "Our Story", href: "/about/our-story" },
+      { label: "Global Leaders", href: "/about/global-leaders" },
+      { label: "2033 Roundtable", href: "/about/2033-roundtable" },
     ],
   },
   { label: "Gatherings", href: "/gatherings" },
   { label: "Initiatives", href: "/initiatives" },
-  { label: "Media", href: "/media" },
+  { label: "Stories", href: "/media" },
   { label: "Connect", href: "/connect" },
 ];
 

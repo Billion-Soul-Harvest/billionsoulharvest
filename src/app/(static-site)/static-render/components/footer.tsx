@@ -62,7 +62,7 @@ export function StaticFooter() {
           </h6>
           <ul className="space-y-4 font-[family-name:var(--font-geist-sans)] text-base text-white/60">
             <li>
-              <Link href="/#our-story" className="hover:text-[#00b8d4] transition-colors">
+              <Link href="/about/our-story" className="hover:text-[#00b8d4] transition-colors">
                 About Us
               </Link>
             </li>

@@ -1,5 +1,6 @@
 import { StaticHeader } from "./components/header";
 import { StaticFooter } from "./components/footer";
+import { FloatingSocials } from "./components/floating-socials";
 
 export default function StaticSiteLayout({
   children,
@@ -10,6 +11,7 @@ export default function StaticSiteLayout({
     <div className="min-h-screen flex flex-col bg-[#f9f9ff] text-[#0a1c34]">
       <StaticHeader />
       <main className="flex-1">{children}</main>
+      <FloatingSocials />
       <StaticFooter />
     </div>
   );
