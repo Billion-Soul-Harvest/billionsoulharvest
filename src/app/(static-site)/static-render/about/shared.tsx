@@ -15,7 +15,6 @@ export const coreLeaders = [
 
 export const honoraryChairmen: { name: string; org: string; role: string; photo: string }[] = [
   { name: "Dr. James Hwang", org: "Founder & Visionary", role: "Honorary Chairman", photo: "/leaders/james-hwang.jpg" },
-  { name: "Rev. Dr. Young Cho", org: "Global Director", role: "Honorary Chairman", photo: "/leaders/young-cho.jpg" },
   { name: "Rick Warren", org: "Finishing the Task", role: "Honorary Chairman", photo: "/leaders/rick-warren.jpg" },
   { name: "Sameh Maurice", org: "Kasr El Dobara Evangelical Church", role: "Honorary Chairman", photo: "/leaders/sameh-maurice.jpg" },
   { name: "Dick Eastman", org: "Every Home for Christ", role: "Honorary Chairman", photo: "/leaders/dick-eastman.jpg" },
@@ -30,6 +29,7 @@ export const honoraryChairmen: { name: string; org: string; role: string; photo:
 ];
 
 export const coChairs: { name: string; org: string; photo: string }[] = [
+  { name: "Rev. Dr. Young Cho", org: "Global Director", photo: "/leaders/young-cho.jpg" },
   { name: "Seongho Chang", org: "King of Kings", photo: "/leaders/seongho-chang.jpg" },
   { name: "Bill Wolfe", org: "Jesus Film Project", photo: "/leaders/bill-wolfe.jpg" },
   { name: "Joseph W Handley, Jr.", org: "A3", photo: "/leaders/joseph-w-handley-jr.jpg" },
