@@ -26,3 +26,8 @@ AS $$
   WHERE is_admin(auth.uid())
   ORDER BY au.created_at ASC;
 $$;
+
+-- Restrict execution to authenticated users only
+REVOKE EXECUTE ON FUNCTION get_admin_users_with_email() FROM anon;
+REVOKE EXECUTE ON FUNCTION get_admin_users_with_email() FROM public;
+GRANT EXECUTE ON FUNCTION get_admin_users_with_email() TO authenticated;

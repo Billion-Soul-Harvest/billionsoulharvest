@@ -17,14 +17,10 @@ interface EmailResult {
   error?: string;
 }
 
-function getServiceClient() {
-  return createServiceClient();
-}
-
 export async function sendEmails(
   emails: EmailPayload[]
 ): Promise<EmailResult[]> {
-  const supabase = getServiceClient();
+  const supabase = createServiceClient();
   const { data, error } = await supabase.functions.invoke("send-email", {
     body: { emails },
   });
