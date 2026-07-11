@@ -65,6 +65,15 @@ export function KanbanBoard({
   const router = useRouter();
   const [columns, setColumns] = useState(initialColumns);
   const [tasks, setTasks] = useState(initialTasks);
+
+  // Sync local state when server data changes (e.g., after router.refresh())
+  useEffect(() => {
+    setColumns(initialColumns);
+  }, [initialColumns]);
+
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
