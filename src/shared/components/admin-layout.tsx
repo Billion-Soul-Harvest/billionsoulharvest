@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/shared/utils/supabase/client";
 
 type NavItem = {
@@ -166,15 +166,40 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [inboxUnseenCount, setInboxUnseenCount] = useState(0);
+
+  // Fetch inbox unseen count for the Mailbox badge
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchUnseenCount() {
+      try {
+        const accountsRes = await fetch("/api/mailbox/accounts");
+        if (!accountsRes.ok) return;
+        const accounts = await accountsRes.json();
+        if (accounts.length === 0 || cancelled) return;
+
+        const foldersRes = await fetch(`/api/mailbox/accounts/${accounts[0].id}/folders`);
+        if (!foldersRes.ok || cancelled) return;
+        const folders = await foldersRes.json();
+        const inbox = folders.find((f: { path: string }) => f.path === "INBOX");
+        if (!cancelled) setInboxUnseenCount(inbox?.unseenCount ?? 0);
+      } catch {
+        // Silently fail — badge just won't show
+      }
+    }
+
+    fetchUnseenCount();
+    const interval = setInterval(fetchUnseenCount, 2 * 60_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
 
   // Auto-expand groups whose children match the current path
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const entry of navItems) {
       if (isNavGroup(entry)) {
-        if (entry.children.some((c) => pathname.startsWith(c.href))) {
-          initial[entry.label] = true;
-        }
+        initial[entry.label] = true;
       }
     }
     return initial;
@@ -283,7 +308,12 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
                             <span className={isActive ? "text-white" : "text-white/70"}>
                               {child.icon}
                             </span>
-                            {child.label}
+                            <span className="flex-1">{child.label}</span>
+                            {child.label === "Mailbox" && inboxUnseenCount > 0 && (
+                              <span className="ml-auto bg-white/25 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                {inboxUnseenCount > 99 ? "99+" : inboxUnseenCount}
+                              </span>
+                            )}
                           </Link>
                         );
                       })}
