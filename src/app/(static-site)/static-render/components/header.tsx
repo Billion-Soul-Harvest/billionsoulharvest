@@ -184,31 +184,42 @@ export function StaticHeader() {
               <div key={item.href}>
                 {hasSubmenu ? (
                   <>
-                    <button
-                      onClick={() =>
-                        setOpenDropdown(
-                          openDropdown === item.label ? null : item.label
-                        )
-                      }
-                      className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium text-[#0a1c34] hover:bg-[#e7eeff] transition-colors"
-                    >
-                      {item.label}
-                      <svg
-                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                          openDropdown === item.label ? "rotate-180" : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <div className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium text-[#0a1c34] hover:bg-[#e7eeff] transition-colors">
+                      <Link
+                        href={item.href}
+                        onClick={() => {
+                          setMobileOpen(false);
+                          setOpenDropdown(null);
+                        }}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
+                        {item.label}
+                      </Link>
+                      <button
+                        onClick={() =>
+                          setOpenDropdown(
+                            openDropdown === item.label ? null : item.label
+                          )
+                        }
+                        className="p-1 -mr-1"
+                        aria-label={`Toggle ${item.label} submenu`}
+                      >
+                        <svg
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                            openDropdown === item.label ? "rotate-180" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                     {openDropdown === item.label && (
                       <div className="ml-4 mt-1 space-y-1 border-l-2 border-[#00b8d4]/30 pl-3">
                         {item.submenu!.map((sub) => (
