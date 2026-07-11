@@ -165,6 +165,10 @@ export interface AdminUser {
   updated_at: string;
 }
 
+export interface AdminUserWithEmail extends AdminUser {
+  email: string;
+}
+
 // Audience types
 export type AudienceType = "list" | "segment";
 
