@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ScrollReveal } from "../components/scroll-reveal";
+import { ContactDialog } from "../components/contact-dialog";
 
 export default function ConnectPage() {
   const sections = [
@@ -114,7 +114,7 @@ export default function ConnectPage() {
         </div>
       </section>
 
-      {/* Ways to Connect */}
+      {/* Ways to Connect — temporarily hidden
       <section className="py-20 md:py-[100px] bg-[#f9f9ff]">
         <div className="max-w-[900px] mx-auto px-4 md:px-8">
           <ScrollReveal>
@@ -155,6 +155,7 @@ export default function ConnectPage() {
           </ScrollReveal>
         </div>
       </section>
+      */}
 
       {/* Contact Us */}
       <section className="py-20 md:py-[100px] bg-white">
@@ -171,22 +172,8 @@ export default function ConnectPage() {
               simply want to learn more about Billion Soul Harvest, our team is
               here to help.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="mailto:info@billionsoulharvest.org"
-                className="inline-flex items-center gap-2 bg-[#0d223f] text-white px-8 py-3 rounded-lg text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:scale-105 transition-transform shadow-lg"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                info@billionsoulharvest.org
-              </a>
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 bg-[#00b8d4] text-white px-8 py-3 rounded-lg text-sm font-semibold font-[family-name:var(--font-geist-sans)] hover:scale-105 transition-transform shadow-lg shadow-[#00b8d4]/20"
-              >
-                Contact Form &rarr;
-              </Link>
+            <div className="mt-8">
+              <ContactDialog />
             </div>
           </ScrollReveal>
         </div>

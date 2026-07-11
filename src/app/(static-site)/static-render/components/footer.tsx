@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ContactDialog } from "./contact-dialog";
 
 export function StaticFooter() {
   return (
@@ -85,9 +86,11 @@ export function StaticFooter() {
           </h6>
           <ul className="space-y-4 font-[family-name:var(--font-geist-sans)] text-base text-white/60">
             <li>
-              <Link href="/contact" className="hover:text-[#00b8d4] transition-colors">
-                Contact Us
-              </Link>
+              <ContactDialog>
+                <span className="hover:text-[#00b8d4] transition-colors">
+                  Contact Us
+                </span>
+              </ContactDialog>
             </li>
           </ul>
         </div>
