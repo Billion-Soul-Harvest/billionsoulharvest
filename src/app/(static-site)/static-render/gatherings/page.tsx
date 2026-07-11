@@ -193,11 +193,6 @@ export default async function GatheringsPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                title: "BSH UK/Europe 2025",
-                location: "United Kingdom",
-                href: "https://sites.google.com/view/bshuk?usp=sharing",
-              },
-              {
                 title: "BSH Global Summit 2025",
                 location: "Jeju, South Korea",
                 href: "https://sites.google.com/view/ghs-2025",
@@ -269,6 +264,34 @@ export default async function GatheringsPage() {
           </ScrollReveal>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* BSH UK/Europe 2025 — link card */}
+            <a
+              href="https://sites.google.com/view/bshuk?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white rounded-2xl border border-[#b4c7ec]/30 overflow-hidden hover:shadow-lg hover:border-[#00b8d4]/30 transition-all duration-300 flex flex-col cursor-pointer"
+            >
+              <div className="p-6 flex flex-col flex-1">
+                <div className="w-10 h-10 rounded-full bg-[#e7f8ff] flex items-center justify-center mb-4">
+                  <svg className="w-5 h-5 text-[#00b8d4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5a17.92 17.92 0 01-8.716-2.247m0 0A8.966 8.966 0 013 12c0-1.264.26-2.466.727-3.559" />
+                  </svg>
+                </div>
+                <h3 className="font-[family-name:var(--font-jakarta)] text-lg font-bold text-[#0d223f] mb-2">
+                  BSH UK/Europe 2025
+                </h3>
+                <p className="font-[family-name:var(--font-jakarta)] text-sm text-[#44474d] mb-4">
+                  United Kingdom
+                </p>
+                <div className="mt-auto">
+                  <span className="inline-flex items-center gap-1 text-[#00b8d4] text-sm font-semibold font-[family-name:var(--font-geist-sans)]">
+                    Learn More &rarr;
+                  </span>
+                </div>
+              </div>
+            </a>
+
+            {/* Video cards */}
             {[
               { title: "BSH Taiwan", videoId: "RDEl9j5MdIU" },
               { title: "BSH Uganda & Ethiopia", videoId: "xYGMfgrbNGY" },
