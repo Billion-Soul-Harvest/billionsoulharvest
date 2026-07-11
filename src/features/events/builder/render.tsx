@@ -5,6 +5,7 @@ import { EventListCards } from "@/features/events/public/event-list-cards";
 import { Star } from "lucide-react";
 import { ICON_MAP } from "./icon-map";
 import { ScrollReveal } from "@/shared/components/scroll-reveal";
+import { RenderDialog } from "./render-dialog";
 
 function colorToRgba(color: string, alpha: number): string {
   if (color === "transparent") return `rgba(0,0,0,${alpha})`;
@@ -507,6 +508,25 @@ function RenderNode({
           }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
+        />
+      );
+    }
+
+    case "CraftDialog": {
+      return (
+        <RenderDialog
+          buttonText={(props.buttonText as string) ?? "Watch Video"}
+          bgColor={(props.bgColor as string) ?? "#29BDD6"}
+          textColor={(props.textColor as string) ?? "#ffffff"}
+          fontSize={(props.fontSize as number) ?? 16}
+          paddingX={(props.paddingX as number) ?? 32}
+          paddingY={(props.paddingY as number) ?? 16}
+          borderRadius={(props.borderRadius as number) ?? 12}
+          buttonWidth={(props.buttonWidth as number) ?? 220}
+          dialogWidth={(props.dialogWidth as number) ?? 700}
+          dialogBgColor={(props.dialogBgColor as string) ?? "#0f2744"}
+          contentType={(props.contentType as "youtube" | "image" | "video") ?? "youtube"}
+          contentUrl={(props.contentUrl as string) ?? ""}
         />
       );
     }
