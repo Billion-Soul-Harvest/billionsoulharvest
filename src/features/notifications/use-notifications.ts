@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { Notification } from "./notification-types";
 
@@ -10,6 +10,7 @@ export function useNotifications(onNewNotification?: (n: Notification) => void) 
   const userIdRef = useRef<string | null>(null);
   const onNewRef = useRef(onNewNotification);
   onNewRef.current = onNewNotification;
+  const channelId = useId();
 
   const fetchNotifications = useCallback(async () => {
     const supabase = createClient();
@@ -35,7 +36,7 @@ export function useNotifications(onNewNotification?: (n: Notification) => void) 
 
     const supabase = createClient();
     const channel = supabase
-      .channel("notifications-realtime")
+      .channel(`notifications-realtime-${channelId}`)
       .on(
         "postgres_changes",
         {
