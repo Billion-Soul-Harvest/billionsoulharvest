@@ -179,13 +179,13 @@ export default async function GatheringsPage() {
         </div>
       </section>
 
-      {/* ── Global Gatherings ── */}
+      {/* ── Past Global Gatherings ── */}
       <section className="py-20 md:py-[100px] bg-white">
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
             <div className="mb-12">
               <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#0d223f] tracking-[-0.02em]">
-                Global Gatherings
+                Past Global Gatherings
               </h2>
             </div>
           </ScrollReveal>
@@ -252,13 +252,13 @@ export default async function GatheringsPage() {
         </div>
       </section>
 
-      {/* ── National Gatherings ── */}
+      {/* ── Past National Gatherings ── */}
       <section className="py-20 md:py-[100px] bg-[#f9f9ff]">
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
             <div className="mb-12">
               <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#0d223f] tracking-[-0.02em]">
-                National Gatherings
+                Past National Gatherings
               </h2>
             </div>
           </ScrollReveal>
