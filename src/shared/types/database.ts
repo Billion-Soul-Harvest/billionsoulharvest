@@ -397,6 +397,23 @@ export interface RegistrationConfig {
   customFields: RegistrationCustomField[];
 }
 
+// Story types
+export type StoryStatus = "draft" | "published";
+
+export interface Story {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  status: StoryStatus;
+  banner_url: string | null;
+  page_content: Record<string, unknown> | null;
+  author: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Page Builder types
 export type BlockType = "rich_text" | "speakers" | "schedule" | "faq" | "hero" | "image" | "video" | "cta";
 

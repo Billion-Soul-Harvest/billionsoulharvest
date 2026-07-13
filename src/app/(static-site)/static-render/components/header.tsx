@@ -18,7 +18,7 @@ const navLinks = [
   },
   { label: "Gatherings", href: "/gatherings" },
   { label: "Initiatives", href: "/initiatives" },
-  { label: "Stories", href: "/media" },
+  { label: "Stories", href: "/stories" },
   { label: "Connect", href: "/connect" },
 ];
 

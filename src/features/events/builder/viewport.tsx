@@ -5,7 +5,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { CraftContainer } from "./components/craft-container";
 import { ElementToolbar } from "./element-toolbar";
 import { defaultContentChildren } from "./default-content";
-import { useEventData } from "./event-context";
+import { useEventData, useOptionalEventData } from "./event-context";
 import { usePageContext } from "./page-context";
 import { AIAssistantDialog } from "./ai/ai-assistant-dialog";
 import { useBuilderKeyboardShortcuts } from "./use-keyboard-shortcuts";
@@ -15,6 +15,7 @@ interface Props {
   initialContent?: string | null;
   canvasWidth: number;
   hideHeader?: boolean;
+  defaultChildren?: React.ReactNode;
 }
 
 function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
@@ -85,11 +86,11 @@ function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
   );
 }
 
-export function Viewport({ initialContent, canvasWidth, hideHeader }: Props) {
+export function Viewport({ initialContent, canvasWidth, hideHeader, defaultChildren }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [aiOpen, setAiOpen] = useState(false);
-  const event = useEventData();
+  const event = useOptionalEventData();
   useBuilderKeyboardShortcuts();
 
   const updateScale = useCallback(() => {
@@ -137,29 +138,33 @@ export function Viewport({ initialContent, canvasWidth, hideHeader }: Props) {
                 alignItems="center"
                 gap={0}
               >
-                {!initialContent && defaultContentChildren}
+                {!initialContent && (defaultChildren ?? defaultContentChildren)}
               </Element>
             </Frame>
           </CanvasWidthProvider>
         </div>
       </div>
 
-      {/* AI Assistant Toggle */}
-      <button
-        onClick={() => setAiOpen(!aiOpen)}
-        className="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-40"
-        title="AI Assistant"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-      </button>
+      {/* AI Assistant Toggle — only show when event context is available */}
+      {event && (
+        <>
+          <button
+            onClick={() => setAiOpen(!aiOpen)}
+            className="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-40"
+            title="AI Assistant"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </button>
 
-      <AIAssistantDialog
-        open={aiOpen}
-        onClose={() => setAiOpen(false)}
-        eventData={event}
-      />
+          <AIAssistantDialog
+            open={aiOpen}
+            onClose={() => setAiOpen(false)}
+            eventData={event}
+          />
+        </>
+      )}
     </div>
   );
 }

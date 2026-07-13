@@ -38,7 +38,7 @@ interface NavPage {
 
 interface Props {
   content: CraftJSON;
-  event: Event;
+  event?: Event;
   pages?: NavPage[];
 }
 
@@ -80,7 +80,7 @@ function RenderNode({
 }: {
   nodeId: string;
   nodes: CraftJSON;
-  event: Event;
+  event?: Event;
   pages?: NavPage[];
 }) {
   const node = nodes[nodeId];
@@ -89,7 +89,7 @@ function RenderNode({
   const { resolvedName } = node.type;
   const props = node.props;
   const children = node.nodes.map((childId) => (
-    <RenderNode key={childId} nodeId={childId} nodes={nodes} event={event} pages={pages} />
+    <RenderNode key={childId} nodeId={childId} nodes={nodes} event={event!} pages={pages} />
   ));
 
   switch (resolvedName) {
@@ -322,6 +322,7 @@ function RenderNode({
       );
 
     case "CraftEventTitle": {
+      if (!event) return null;
       const titleFs = (props.fontSize as number) ?? 48;
       return (
         <div
@@ -340,6 +341,7 @@ function RenderNode({
     }
 
     case "CraftEventDates": {
+      if (!event) return null;
       const datesFs = (props.fontSize as number) ?? 16;
       const formatDate = (date: string) =>
         new Date(date + "T00:00:00").toLocaleDateString("en-US", {
@@ -372,6 +374,7 @@ function RenderNode({
     }
 
     case "CraftEventLocation": {
+      if (!event) return null;
       const locationFs = (props.fontSize as number) ?? 16;
       const location = [event.location, event.city, event.country].filter(Boolean).join(", ");
       return (
@@ -391,6 +394,7 @@ function RenderNode({
     }
 
     case "CraftRegisterButton": {
+      if (!event) return null;
       const regFs = (props.fontSize as number) ?? 18;
       const regPx = (props.paddingX as number) ?? 32;
       const regPy = (props.paddingY as number) ?? 16;
@@ -604,6 +608,7 @@ function RenderNode({
     }
 
     case "CraftRegistrationForm": {
+      if (!event) return null;
       const regConfig = event.registration_config as RegistrationConfig | null;
       if (!regConfig || !regConfig.enabled) return null;
       return (

@@ -12,3 +12,7 @@ export function useEventData(): Event {
   if (!event) throw new Error("useEventData must be used within EventProvider");
   return event;
 }
+
+export function useOptionalEventData(): Event | null {
+  return useContext(EventContext);
+}
