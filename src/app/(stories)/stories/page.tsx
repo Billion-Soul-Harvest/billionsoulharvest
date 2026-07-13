@@ -104,6 +104,60 @@ export default async function StoriesListingPage() {
             )}
           </div>
         </section>
+
+        {/* Resources */}
+        <section className="py-20 md:py-[100px] bg-white">
+          <div className="max-w-6xl mx-auto px-4 md:px-8">
+            <div className="mb-12">
+              <span className="text-[#00b8d4] text-xs font-semibold font-[family-name:var(--font-geist-sans)] uppercase tracking-widest">
+                Downloads, Brochures, Guides &amp; Presentations
+              </span>
+              <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#0d223f] mt-4 tracking-[-0.02em]">
+                Resources
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: "Downloads", icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                )},
+                { label: "Brochures", icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                )},
+                { label: "Guides", icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                )},
+                { label: "Presentations", icon: (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21l5-2.5L17 21M7 3l5 2.5L17 3m-5 2.5V21M3 7h18M3 17h18M3 7v10h18V7" />
+                  </svg>
+                )},
+              ].map((cat) => (
+                <div
+                  key={cat.label}
+                  className="group bg-[#f9f9ff] rounded-2xl border border-[#b4c7ec]/20 p-6 hover:border-[#00b8d4]/30 hover:shadow-md transition-all duration-300 flex flex-col items-center text-center"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-[#0d223f] flex items-center justify-center text-[#a9edff] mb-4">
+                    {cat.icon}
+                  </div>
+                  <h3 className="font-[family-name:var(--font-jakarta)] text-lg font-bold text-[#0d223f] mb-2">
+                    {cat.label}
+                  </h3>
+                  <span className="text-sm text-[#44474d]/60 italic font-[family-name:var(--font-geist-sans)]">
+                    Coming soon
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
       <StaticFooter />
     </div>
