@@ -19,7 +19,7 @@ export default async function OurStoryPage() {
           className="absolute inset-0 z-[1]"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(13,34,63,0.45), rgba(13,34,63,0.85))",
+              "linear-gradient(to bottom, rgba(13,34,63,0.45), rgba(13,34,63,0.8))",
           }}
         />
         <div className="relative z-10 max-w-[1280px] mx-auto px-4 md:px-8 w-full" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
@@ -165,7 +165,7 @@ export default async function OurStoryPage() {
               <p className="font-[family-name:var(--font-geist-sans)] text-base text-[#44474d]">Living with expectancy for Christ&apos;s return.</p>
             </div>
 
-            <div className="md:col-span-2 md:row-span-2 bg-[#0d223f] text-white p-8 rounded-lg flex flex-col justify-end relative overflow-hidden" style={{ backgroundImage: "linear-gradient(to top, rgba(13,34,63,0.9) 20%, rgba(13,34,63,0.4) 100%), url('/great-harvest-bg.webp')", backgroundSize: "cover", backgroundPosition: "center" }}>
+            <div className="md:col-span-2 md:row-span-2 bg-[#0d223f] text-white p-8 rounded-lg flex flex-col justify-end relative overflow-hidden" style={{ backgroundImage: "linear-gradient(to top, rgba(13,34,63,0.8) 20%, rgba(13,34,63,0.45) 100%), url('/great-harvest-bg.webp')", backgroundSize: "cover", backgroundPosition: "center" }}>
               <svg className="w-12 h-12 text-[#a9edff] mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
               </svg>
@@ -319,7 +319,7 @@ export default async function OurStoryPage() {
               <div className="absolute -inset-4 bg-[#b4c7ec]/20 rounded-2xl blur-2xl group-hover:bg-[#00b8d4]/10 transition-all duration-500" />
               <div className="relative rounded-2xl shadow-2xl overflow-hidden border border-[#b4c7ec]/20">
                 <img src="/initiatives-collab.webp" alt="Leaders collaborating together" className="w-full h-[620px] object-cover" />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(13,34,63,0.9) 20%, rgba(13,34,63,0.4) 100%)" }} />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(13,34,63,0.8) 20%, rgba(13,34,63,0.45) 100%)" }} />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/95 backdrop-blur-md p-6 rounded-xl border-l-4 border-[#00b8d4] shadow-lg">
                     <p className="font-[family-name:var(--font-jakarta)] text-[#0d223f] text-lg leading-7 font-semibold">

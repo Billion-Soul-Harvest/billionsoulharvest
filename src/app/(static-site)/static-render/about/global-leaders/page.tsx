@@ -17,7 +17,7 @@ export default async function GlobalLeadersPage() {
           className="absolute inset-0 z-[1]"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(13,34,63,0.45), rgba(13,34,63,0.85))",
+              "linear-gradient(to bottom, rgba(13,34,63,0.45), rgba(13,34,63,0.8))",
           }}
         />
         <div className="relative z-10 max-w-[1280px] mx-auto px-4 md:px-8 w-full" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>

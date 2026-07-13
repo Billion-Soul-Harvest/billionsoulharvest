@@ -15,7 +15,7 @@ export default function HomePage() {
           className="absolute inset-0 z-[1]"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(13,34,63,0.5), rgba(13,34,63,0.85))",
+              "linear-gradient(to bottom, rgba(13,34,63,0.45), rgba(13,34,63,0.8))",
           }}
         />
         <div

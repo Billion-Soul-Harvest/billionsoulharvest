@@ -91,7 +91,7 @@ export default function ConnectPage() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to top, rgba(13,34,63,0.95) 20%, rgba(13,34,63,0.7) 100%)",
+              "linear-gradient(to top, rgba(13,34,63,0.8) 20%, rgba(13,34,63,0.45) 100%)",
           }}
         />
         <div className="max-w-[1280px] mx-auto px-4 md:px-8 relative z-10">
