@@ -10,8 +10,6 @@ export function useNotifications(onNewNotification?: (n: Notification) => void) 
   const userIdRef = useRef<string | null>(null);
   const onNewRef = useRef(onNewNotification);
   onNewRef.current = onNewNotification;
-  const channelIdRef = useRef(crypto.randomUUID());
-
   const fetchNotifications = useCallback(async () => {
     const supabase = createClient();
     const {
@@ -40,8 +38,9 @@ export function useNotifications(onNewNotification?: (n: Notification) => void) 
       const userId = userIdRef.current;
       if (!userId) return;
 
+      const channelId = crypto.randomUUID();
       channel = supabase
-        .channel(`notifications-${channelIdRef.current}`)
+        .channel(`notifications-${channelId}`)
         .on(
           "postgres_changes",
           {
