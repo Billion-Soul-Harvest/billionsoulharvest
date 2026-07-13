@@ -193,22 +193,22 @@ export default async function GatheringsPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                title: "BSH Global Summit 2024",
+                title: "BSH Global Summit 2025",
                 location: "Jeju, South Korea",
                 href: "https://sites.google.com/view/ghs-2025",
               },
               {
-                title: "BSH Global Summit 2023",
+                title: "BSH Global Summit 2024",
                 location: "Pyeongchang, South Korea",
                 href: "https://sites.google.com/view/ghs-2024/home",
               },
               {
-                title: "BSH Global Summit 2024",
+                title: "BSH Global Summit 2023",
                 location: "Colorado Springs, USA",
                 href: null,
               },
               {
-                title: "BSH Global Summit 2023",
+                title: "BSH Global Summit 2022",
                 location: "Colorado Springs, USA",
                 href: null,
               },
