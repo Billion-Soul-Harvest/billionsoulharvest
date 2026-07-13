@@ -9,8 +9,8 @@ export default async function TheBSHLogoPage() {
       {/* ── Section 1: Hero Banner ── */}
       <header className="relative min-h-[400px] md:min-h-[500px] flex items-center overflow-hidden">
         <img
-          src="/hero-harvest.webp"
-          alt="Billion Soul Harvest gathering with flags from many nations"
+          src="/bsh-logo-hero.jpeg"
+          alt="Billion Soul Harvest worship gathering with balloons"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div
