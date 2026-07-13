@@ -6,6 +6,21 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") ?? "";
 
+  // Subdomain routing: jameshwang.billionsoulharvest.org → /james-hwang
+  if (host.startsWith("jameshwang.")) {
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/james-hwang";
+      return NextResponse.rewrite(url);
+    }
+    if (!pathname.startsWith("/james-hwang") && !pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/james-hwang";
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   // Subdomain routing: youngcho.billionsoulharvest.org → /young-cho
   if (host.startsWith("youngcho.")) {
     if (pathname === "/") {
@@ -114,7 +129,9 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/static-render") &&
     !pathname.startsWith("/_next") &&
     !pathname.startsWith("/young-cho") &&
-    !pathname.match(/^\/events\/[^/]/);
+    !pathname.startsWith("/james-hwang") &&
+    !pathname.match(/^\/events\/[^/]/) &&
+    !pathname.startsWith("/stories");
 
   if (isPublicPageRoute) {
     const url = request.nextUrl.clone();
