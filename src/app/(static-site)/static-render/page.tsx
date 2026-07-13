@@ -85,7 +85,7 @@ export default function HomePage() {
 
           <ScrollReveal delay={100}>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-4 mt-12">
-            {[
+            {([
               { name: "Alpha", logo: "/partners/alpha.png" },
               { name: "America Prays", logo: "/partners/america-prays.png" },
               { name: "World Prays", logo: "/partners/world-prays.png" },
@@ -113,8 +113,8 @@ export default function HomePage() {
               { name: "The Park Church", logo: "/partners/the-park-church.jpg" },
               { name: "WEA", logo: "/partners/wea.jpg" },
               { name: "YouVersion", logo: "/partners/youversion.webp" },
-            ].map((partner) => (
-              <PartnerLogo key={partner.name} name={partner.name} logo={partner.logo} dark={"dark" in partner && partner.dark} iconWithText={"iconWithText" in partner && partner.iconWithText} fill={"fill" in partner && partner.fill} />
+            ] as { name: string; logo: string; dark?: boolean; iconWithText?: boolean; fill?: boolean }[]).map((partner) => (
+              <PartnerLogo key={partner.name} name={partner.name} logo={partner.logo} dark={partner.dark} iconWithText={partner.iconWithText} fill={partner.fill} />
             ))}
           </div>
           </ScrollReveal>
