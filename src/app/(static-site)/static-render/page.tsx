@@ -113,6 +113,7 @@ export default function HomePage() {
               { name: "The Park Church", logo: "/partners/the-park-church.jpg" },
               { name: "WEA", logo: "/partners/wea.jpg" },
               { name: "YouVersion", logo: "/partners/youversion.webp" },
+              { name: "Jesus Film Project", logo: "/partners/jesus-film-project.jpeg" },
             ] as { name: string; logo: string; dark?: boolean; iconWithText?: boolean; fill?: boolean }[]).map((partner) => (
               <PartnerLogo key={partner.name} name={partner.name} logo={partner.logo} dark={partner.dark} iconWithText={partner.iconWithText} fill={partner.fill} />
             ))}
