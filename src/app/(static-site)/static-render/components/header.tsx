@@ -11,8 +11,9 @@ const navLinks = [
     href: "/about",
     submenu: [
       { label: "Our Story", href: "/about/our-story" },
+      { label: "The BSH Logo", href: "/about/the-bsh-logo" },
       { label: "Global Leaders", href: "/about/global-leaders" },
-      { label: "2033 Roundtable", href: "/about/2033-roundtable" },
+      // { label: "2033 Roundtable", href: "/about/2033-roundtable" },
     ],
   },
   { label: "Gatherings", href: "/gatherings" },
