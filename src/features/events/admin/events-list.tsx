@@ -177,7 +177,7 @@ export function EventsList({ events, registrationCounts }: Props) {
       )}
 
       {/* Header row with select-all */}
-      <div className="flex items-center gap-3 px-2">
+      <div className="flex items-center gap-3 px-1">
         <input
           ref={selectAllRef}
           type="checkbox"
@@ -189,114 +189,134 @@ export function EventsList({ events, registrationCounts }: Props) {
         <span className="text-xs text-gray-400">Select all</span>
       </div>
 
-      {/* Event rows */}
-      <div className="grid gap-3">
-        {events.map((event) => (
-          <div
-            key={event.id}
-            className={`bg-white rounded-xl border p-5 transition-shadow flex items-start gap-3 ${
-              selected.has(event.id) ? "ring-2 ring-blue-200 border-blue-300" : ""
-            }`}
-          >
-            <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
-              <input
-                type="checkbox"
-                checked={selected.has(event.id)}
-                onChange={() => toggleSelect(event.id)}
-                className="h-4 w-4 rounded border-gray-300 accent-blue-600"
-                aria-label={`Select ${event.title}`}
-              />
-            </div>
-
-            <Link
-              href={`/admin/events/edit/${event.id}`}
-              className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+      {/* Event cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {events.map((event) => {
+          const typeColor = event.event_type
+            ? eventTypeColors[event.event_type as EventType] ?? "#6b7280"
+            : "#6b7280";
+          return (
+            <div
+              key={event.id}
+              className={`bg-white rounded-xl border overflow-hidden transition-shadow hover:shadow-md ${
+                selected.has(event.id) ? "ring-2 ring-blue-200 border-blue-300" : ""
+              }`}
             >
-              <div className="flex items-center gap-3 mb-1">
-                <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
-                {event.event_type && (
-                  <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: eventTypeColors[event.event_type as EventType] ?? "#6b7280" }} />
-                    {eventTypeLabels[event.event_type as EventType] ?? event.event_type}
-                  </span>
-                )}
-                <Badge variant="secondary" className={statusColors[event.status as EventStatus]}>
-                  {statusLabels[event.status as EventStatus]}
-                </Badge>
-              </div>
-              <p className="text-sm text-gray-500 line-clamp-1">{event.description}</p>
-              <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                {event.start_date && (
-                  <span className="flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {new Date(event.start_date + "T00:00:00").toLocaleDateString()}
-                  </span>
-                )}
-                {event.city && (
-                  <span className="flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    </svg>
-                    {event.city}, {event.country}
-                  </span>
-                )}
-                {event.external_url && (
-                  <span className="flex items-center gap-1 text-blue-500">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    External
-                  </span>
-                )}
-              </div>
-            </Link>
-
-            <div className="flex items-center gap-4 shrink-0">
-              <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{registrationCounts[event.id] ?? 0}</p>
-                <p className="text-xs text-gray-400">registrations</p>
-              </div>
-
-              {/* Single delete */}
-              <div onClick={(e) => e.stopPropagation()}>
-                {confirmingId === event.id ? (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(event.id)}
-                      disabled={deleting === event.id}
-                    >
-                      {deleting === event.id ? "..." : "Yes"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setConfirmingId(null)}
-                      disabled={deleting === event.id}
-                    >
-                      No
-                    </Button>
+              {/* Color banner */}
+              <Link href={`/admin/events/edit/${event.id}`} className="block">
+                <div
+                  className="relative w-full h-24 flex items-center justify-center"
+                  style={{ background: `linear-gradient(135deg, ${typeColor}22, ${typeColor}44)` }}
+                >
+                  <svg className="w-10 h-10" style={{ color: typeColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div className="absolute top-2 left-2">
+                    <Badge variant="secondary" className={`${statusColors[event.status as EventStatus]} shadow-sm`}>
+                      {statusLabels[event.status as EventStatus]}
+                    </Badge>
                   </div>
-                ) : (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-gray-400 hover:text-red-500 h-8 w-8"
-                    onClick={() => setConfirmingId(event.id)}
-                    title="Delete event"
+                  <div className="absolute top-2 right-2 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-gray-900 shadow-sm">
+                    {registrationCounts[event.id] ?? 0}
+                    <span className="font-normal text-gray-500 ml-1">reg.</span>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Card body */}
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(event.id)}
+                      onChange={() => toggleSelect(event.id)}
+                      className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+                      aria-label={`Select ${event.title}`}
+                    />
+                  </div>
+
+                  <Link
+                    href={`/admin/events/edit/${event.id}`}
+                    className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </Button>
-                )}
+                    <h3 className="font-semibold text-gray-900 truncate text-sm">{event.title}</h3>
+                    {event.event_type && (
+                      <span className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: typeColor }} />
+                        {eventTypeLabels[event.event_type as EventType] ?? event.event_type}
+                      </span>
+                    )}
+                    {event.description && (
+                      <p className="text-xs text-gray-500 line-clamp-2 mt-1">{event.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                      {event.start_date && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {new Date(event.start_date + "T00:00:00").toLocaleDateString()}
+                        </span>
+                      )}
+                      {event.city && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          </svg>
+                          {event.city}, {event.country}
+                        </span>
+                      )}
+                      {event.external_url && (
+                        <span className="flex items-center gap-1 text-blue-500">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          External
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+
+                  <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {confirmingId === event.id ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(event.id)}
+                          disabled={deleting === event.id}
+                        >
+                          {deleting === event.id ? "..." : "Yes"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setConfirmingId(null)}
+                          disabled={deleting === event.id}
+                        >
+                          No
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-gray-400 hover:text-red-500 h-7 w-7"
+                        onClick={() => setConfirmingId(event.id)}
+                        title="Delete event"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
