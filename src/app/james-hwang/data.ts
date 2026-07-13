@@ -27,6 +27,9 @@ export const publicationLinks: PublicationLink[] = [
   },
 ];
 
+export const videoUrl = "https://www.youtube.com/embed/6VqY-HraU0Q";
+export const videoTitle = "The Decisive Moment That Changed My Life | Dr. Hwang Seong-ju, Chairman of Irom";
+
 export const mediaLinks: MediaLink[] = [
   {
     platform: "MEDIA",

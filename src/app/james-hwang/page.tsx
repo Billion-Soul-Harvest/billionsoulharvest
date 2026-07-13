@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Hero from "./components/Hero";
 import Bio from "./components/Bio";
+import Video from "./components/Video";
 import Publications from "./components/Publications";
 import MediaLinks from "./components/MediaLinks";
 
@@ -10,7 +11,7 @@ export default function JamesHwangPage() {
   const [activeSection, setActiveSection] = useState("hero");
 
   useEffect(() => {
-    const sections = ["hero", "bio", "publications", "media"];
+    const sections = ["hero", "bio", "video", "publications", "media"];
     const observers = sections.map((id) => {
       const el = document.getElementById(id);
       if (!el) return null;
@@ -41,6 +42,7 @@ export default function JamesHwangPage() {
     <div className="bg-[#f9f9ff] min-h-screen text-[#0a1c34] font-[family-name:var(--font-jakarta)] selection:bg-[#00b8d4]/25 selection:text-[#0d223f]">
       <Hero />
       <Bio />
+      <Video />
       <Publications />
       <MediaLinks />
     </div>
