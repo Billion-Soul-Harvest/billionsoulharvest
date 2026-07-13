@@ -15,7 +15,7 @@ export default async function StoriesPage() {
 
   const { data: stories } = await supabase
     .from("stories")
-    .select("id, title, description, slug, status, author, published_at")
+    .select("id, title, description, slug, status, author, published_at, banner_url")
     .order("created_at", { ascending: false });
 
   return (
