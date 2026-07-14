@@ -68,11 +68,10 @@ export async function GET(
 
         const messages: MailboxMessage[] = [];
         for await (const msg of client.fetch(paginatedUids, {
-          uid: true,
           envelope: true,
           flags: true,
           bodyStructure: true,
-        })) {
+        }, { uid: true })) {
           messages.push(parseEnvelope(msg));
         }
 

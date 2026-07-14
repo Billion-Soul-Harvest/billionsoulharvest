@@ -23,46 +23,53 @@ export async function GET(
       const lock = await client.getMailboxLock(folder);
       try {
         // Fetch envelope, flags, structure
+        // uid must be in options (3rd arg) to use UID FETCH, not in query
         let msgData = null;
-        for await (const msg of client.fetch(messageUid, {
-          uid: true,
+        for await (const msg of client.fetch(String(messageUid), {
           envelope: true,
           flags: true,
           bodyStructure: true,
-          source: true,
-        })) {
+        }, { uid: true })) {
           msgData = msg;
         }
 
         if (!msgData) return null;
 
-        // Parse body from the already-fetched source
+        // Download body
         let htmlBody: string | null = null;
         let textBody: string | null = null;
 
-        if (msgData.source) {
-          const raw = Buffer.from(msgData.source).toString("utf8");
+        try {
+          const downloaded = await client.download(messageUid, undefined, { uid: true });
+          if (downloaded?.content) {
+            const chunks: Buffer[] = [];
+            for await (const chunk of downloaded.content) {
+              chunks.push(Buffer.from(chunk));
+            }
+            const raw = Buffer.concat(chunks).toString("utf8");
 
-          // Try to extract HTML from the raw source
-          const htmlMatch = raw.match(/<html[\s\S]*<\/html>/i);
-          if (htmlMatch) {
-            htmlBody = htmlMatch[0];
-          } else {
-            // Look for content after last boundary delimiter
-            const bodyMatch = raw.match(/content-type:\s*text\/html[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
-            if (bodyMatch) {
-              htmlBody = bodyMatch[1].trim();
+            // Try to extract HTML from the raw source
+            const htmlMatch = raw.match(/<html[\s\S]*<\/html>/i);
+            if (htmlMatch) {
+              htmlBody = htmlMatch[0];
+            } else {
+              const bodyMatch = raw.match(/content-type:\s*text\/html[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
+              if (bodyMatch) {
+                htmlBody = bodyMatch[1].trim();
+              }
+            }
+
+            if (!htmlBody) {
+              const textMatch = raw.match(/content-type:\s*text\/plain[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
+              if (textMatch) {
+                textBody = textMatch[1].trim();
+              } else if (!raw.includes("Content-Type:")) {
+                textBody = raw;
+              }
             }
           }
-
-          if (!htmlBody) {
-            const textMatch = raw.match(/content-type:\s*text\/plain[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
-            if (textMatch) {
-              textBody = textMatch[1].trim();
-            } else if (!raw.includes("Content-Type:")) {
-              textBody = raw;
-            }
-          }
+        } catch {
+          // Body download failed, message will still have envelope data
         }
 
         // Mark as read
