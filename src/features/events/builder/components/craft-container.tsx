@@ -74,7 +74,9 @@ export const CraftContainer: UserComponent<ContainerProps> = ({
       style={{
         backgroundColor: backgroundImage ? undefined : backgroundColor,
         backgroundImage: backgroundImage
-          ? `linear-gradient(to bottom, ${colorToRgba(backgroundColor, 0.7)}, ${colorToRgba(backgroundColor, 0.92)}), url(${backgroundImage})`
+          ? (backgroundColor === "transparent"
+            ? `url(${backgroundImage})`
+            : `linear-gradient(to bottom, ${colorToRgba(backgroundColor, 0.7)}, ${colorToRgba(backgroundColor, 0.92)}), url(${backgroundImage})`)
           : undefined,
         backgroundSize: backgroundImage ? "cover" : undefined,
         backgroundPosition: backgroundImage ? "center" : undefined,
