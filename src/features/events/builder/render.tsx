@@ -50,6 +50,7 @@ export function CraftPageRenderer({ content, event, pages = [] }: Props) {
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", boxSizing: "border-box" as const }}>
       <style dangerouslySetInnerHTML={{ __html: `
         @media (max-width: 768px) {
+          .craft-row { flex-direction: column !important; flex-wrap: wrap !important; }
           .craft-col { width: 100% !important; flex: none !important; min-width: 0 !important; }
         }
         .sr-hidden { opacity: 0; }
@@ -183,6 +184,7 @@ function RenderNode({
       const rowPad = (props.padding as number) ?? 0;
       return (
         <div
+          className="craft-row"
           style={{
             display: "flex",
             flexDirection: "row",
