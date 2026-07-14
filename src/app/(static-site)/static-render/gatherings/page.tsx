@@ -264,7 +264,7 @@ export default async function GatheringsPage() {
                         Watch Video &rarr;
                       </a>
                     )}
-                    {g.href && (
+                    {g.href && (!g.videoId || g.href !== `https://youtu.be/${g.videoId}`) && (
                       <a
                         href={g.href}
                         target="_blank"
