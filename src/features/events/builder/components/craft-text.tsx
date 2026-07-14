@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 interface TextProps {
   text?: string;
   fontSize?: number;
-  textAlign?: "left" | "center" | "right";
+  textAlign?: "left" | "center" | "right" | "justify";
   color?: string;
   width?: number;
   height?: number;
@@ -128,7 +128,7 @@ function TextSettings() {
     height,
   } = useNode((node) => ({
     fontSize: node.data.props.fontSize as number,
-    textAlign: node.data.props.textAlign as "left" | "center" | "right",
+    textAlign: node.data.props.textAlign as "left" | "center" | "right" | "justify",
     color: node.data.props.color as string,
     width: node.data.props.width as number,
     height: node.data.props.height as number,
@@ -169,7 +169,7 @@ function TextSettings() {
       <div>
         <Label>Text Alignment</Label>
         <div className="flex gap-1 mt-1">
-          {(["left", "center", "right"] as const).map((align) => (
+          {(["left", "center", "right", "justify"] as const).map((align) => (
             <Button
               key={align}
               variant={textAlign === align ? "default" : "outline"}

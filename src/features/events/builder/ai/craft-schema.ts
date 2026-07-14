@@ -18,7 +18,7 @@ export const componentSchemas: ComponentSchema[] = [
     props: [
       { name: "text", type: "string (HTML)", default: "<p>Edit me</p>" },
       { name: "fontSize", type: "number", default: 16 },
-      { name: "textAlign", type: '"left" | "center" | "right"', default: "left" },
+      { name: "textAlign", type: '"left" | "center" | "right" | "justify"', default: "left" },
       { name: "color", type: "string (hex/rgba)", default: "#ffffff" },
       { name: "width", type: "number", default: 400 },
       { name: "height", type: "number", default: 40 },
@@ -173,7 +173,7 @@ export const componentSchemas: ComponentSchema[] = [
       { name: "iconSize", type: "number", default: 24 },
       { name: "iconColor", type: "string (hex/rgba)", default: "#ffffff" },
       { name: "gap", type: "number", default: 16 },
-      { name: "alignment", type: '"left" | "center" | "right"', default: "center" },
+      { name: "alignment", type: '"left" | "center" | "right" | "justify"', default: "center" },
     ],
   },
   {
@@ -252,7 +252,7 @@ export const componentSchemas: ComponentSchema[] = [
     props: [
       { name: "fontSize", type: "number", default: 48 },
       { name: "color", type: "string (hex/rgba)", default: "#ffffff" },
-      { name: "textAlign", type: '"left" | "center" | "right"', default: "center" },
+      { name: "textAlign", type: '"left" | "center" | "right" | "justify"', default: "center" },
     ],
   },
   {
@@ -262,7 +262,7 @@ export const componentSchemas: ComponentSchema[] = [
     props: [
       { name: "fontSize", type: "number", default: 16 },
       { name: "color", type: "string (hex/rgba)", default: "#d1d5db" },
-      { name: "textAlign", type: '"left" | "center" | "right"', default: "center" },
+      { name: "textAlign", type: '"left" | "center" | "right" | "justify"', default: "center" },
     ],
   },
   {
@@ -272,7 +272,7 @@ export const componentSchemas: ComponentSchema[] = [
     props: [
       { name: "fontSize", type: "number", default: 16 },
       { name: "color", type: "string (hex/rgba)", default: "#d1d5db" },
-      { name: "textAlign", type: '"left" | "center" | "right"', default: "center" },
+      { name: "textAlign", type: '"left" | "center" | "right" | "justify"', default: "center" },
     ],
   },
   {
