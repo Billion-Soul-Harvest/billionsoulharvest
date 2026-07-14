@@ -12,6 +12,7 @@ import { responsiveSize } from "../responsive-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
 
 interface TextProps {
   text?: string;
@@ -169,18 +170,25 @@ function TextSettings() {
       <div>
         <Label>Text Alignment</Label>
         <div className="flex gap-1 mt-1">
-          {(["left", "center", "right", "justify"] as const).map((align) => (
+          {([
+            { value: "left", icon: AlignLeft },
+            { value: "center", icon: AlignCenter },
+            { value: "right", icon: AlignRight },
+            { value: "justify", icon: AlignJustify },
+          ] as const).map(({ value, icon: Icon }) => (
             <Button
-              key={align}
-              variant={textAlign === align ? "default" : "outline"}
+              key={value}
+              variant={textAlign === value ? "default" : "outline"}
               size="sm"
+              className="px-2"
               onClick={() =>
                 setProp((props: TextProps) => {
-                  props.textAlign = align;
+                  props.textAlign = value;
                 })
               }
+              title={value.charAt(0).toUpperCase() + value.slice(1)}
             >
-              {align.charAt(0).toUpperCase() + align.slice(1)}
+              <Icon className="h-4 w-4" />
             </Button>
           ))}
         </div>
