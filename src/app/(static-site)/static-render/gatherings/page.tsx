@@ -11,9 +11,10 @@ export default async function GatheringsPage() {
   const { data: events } = await supabase
     .from("events")
     .select(
-      "id, title, slug, start_date, end_date, city, country, banner_url, status, is_external, external_url"
+      "id, title, slug, start_date, end_date, city, country, banner_url, status, is_external, external_url, display_order"
     )
     .in("status", ["published", "registration_open", "registration_closed"])
+    .order("display_order", { ascending: true, nullsFirst: false })
     .order("start_date", { ascending: true });
 
   return (

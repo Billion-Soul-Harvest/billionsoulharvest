@@ -2,7 +2,7 @@ import { createClient } from "@/shared/utils/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
-import { EventsList } from "@/features/events/admin/events-list";
+import { EventsPageTabs } from "@/features/events/admin/events-page-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,14 @@ export default async function EventsPage() {
     .from("events")
     .select("id, title, description, slug, status, event_type, start_date, city, country, external_url")
     .order("created_at", { ascending: false });
+
+  // Events for display order tab (visible events only)
+  const { data: displayOrderEvents } = await supabase
+    .from("events")
+    .select("id, title, slug, start_date, end_date, city, country, banner_url, status, is_external, external_url, display_order")
+    .in("status", ["published", "registration_open", "registration_closed"])
+    .order("display_order", { ascending: true, nullsFirst: false })
+    .order("start_date", { ascending: true });
 
   // Get registration counts per event
   const { data: regCounts } = await supabase
@@ -43,8 +51,9 @@ export default async function EventsPage() {
         </Link>
       </div>
 
-      <EventsList
+      <EventsPageTabs
         events={events ?? []}
+        displayOrderEvents={displayOrderEvents ?? []}
         registrationCounts={countMap}
       />
     </div>

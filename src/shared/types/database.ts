@@ -112,6 +112,7 @@ export interface Event {
   event_type: EventType;
   is_external: boolean;
   external_url: string | null;
+  display_order: number | null;
   banner_url: string | null;
   page_content: Record<string, unknown> | null;
   max_registrations: number | null;
