@@ -231,6 +231,7 @@ function RenderNode({
       const containerAlignItems = props.alignItems as string | undefined;
       const containerGap = (props.gap as number) ?? 0;
       const containerPad = (props.padding as number) ?? 20;
+      const containerWidth = (props.width as number) ?? 600;
       const animation = (props.animation as string) ?? "none";
       const containerEl = (
         <div
@@ -248,7 +249,7 @@ function RenderNode({
             borderColor: (props.borderColor as string) ?? "transparent",
             borderWidth: `${props.borderWidth ?? 0}px`,
             borderStyle: ((props.borderWidth as number) ?? 0) > 0 ? "solid" : "none",
-            width: "100%",
+            width: `${containerWidth}px`,
             maxWidth: "100%",
             minHeight: `${props.minHeight ?? 200}px`,
             ...(containerAlignItems ? {
