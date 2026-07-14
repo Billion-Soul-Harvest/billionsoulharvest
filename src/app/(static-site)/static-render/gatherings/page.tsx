@@ -196,7 +196,7 @@ export default async function GatheringsPage() {
                 title: "BSH Global Summit 2025",
                 location: "Jeju, South Korea",
                 href: "https://sites.google.com/view/ghs-2025",
-                videoId: null as string | null,
+                videoId: "QxxpfJUkius" as string | null,
               },
               {
                 title: "BSH Global Summit 2024",
@@ -222,7 +222,7 @@ export default async function GatheringsPage() {
                 className="bg-white rounded-2xl border border-[#b4c7ec]/30 overflow-hidden hover:shadow-lg hover:border-[#00b8d4]/30 transition-all duration-300 flex flex-col"
               >
                 {g.videoId && (
-                  <a href={g.href!} target="_blank" rel="noopener noreferrer" className="relative w-full h-48 block">
+                  <a href={`https://youtu.be/${g.videoId}`} target="_blank" rel="noopener noreferrer" className="relative w-full h-48 block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`https://img.youtube.com/vi/${g.videoId}/hqdefault.jpg`}
@@ -253,17 +253,18 @@ export default async function GatheringsPage() {
                   <p className="font-[family-name:var(--font-jakarta)] text-sm text-[#44474d] mb-4">
                     {g.location}
                   </p>
-                  <div className="mt-auto">
-                    {g.videoId ? (
+                  <div className="mt-auto flex items-center gap-4">
+                    {g.videoId && (
                       <a
-                        href={g.href!}
+                        href={`https://youtu.be/${g.videoId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[#00b8d4] text-sm font-semibold font-[family-name:var(--font-geist-sans)]"
                       >
                         Watch Video &rarr;
                       </a>
-                    ) : g.href ? (
+                    )}
+                    {g.href && (
                       <a
                         href={g.href}
                         target="_blank"
@@ -272,7 +273,8 @@ export default async function GatheringsPage() {
                       >
                         Learn More &rarr;
                       </a>
-                    ) : (
+                    )}
+                    {!g.videoId && !g.href && (
                       <span className="text-sm text-[#44474d]/60 italic font-[family-name:var(--font-geist-sans)]">
                         Details coming soon
                       </span>
