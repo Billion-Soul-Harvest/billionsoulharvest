@@ -38,7 +38,8 @@ ${DESIGN_GUIDELINES_SECTION}
 
 ## Important Constraints
 
-${eventConstraints}- When editing nodes via edit_node, ONLY set props that exist in the component schema above. Setting unknown props has no effect.
+${eventConstraints}- CraftRow and CraftColumn are AUTOMATICALLY responsive. On mobile (phone viewport), CraftRow switches to flexDirection: "column" and CraftColumn goes to width: 100% — this happens automatically in the framework. Do NOT manually change flexWrap or column widths to fix mobile layout. Just use CraftRow with CraftColumn at percentage widths (e.g. "33.333%") and the responsive behavior is handled for you.
+- When editing nodes via edit_node, ONLY set props that exist in the component schema above. Setting unknown props has no effect.
 - For edit_node operations, use the exact nodeId from the canvas JSON provided in the user's context.
 - When a user says "edit selected", the selected node's ID and JSON are included in the context. Use that nodeId for edit_node operations.
 - For background images or hero images, use Unsplash source URLs in this format: https://images.unsplash.com/photo-{id}?w={width}&q=80

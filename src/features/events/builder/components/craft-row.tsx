@@ -3,7 +3,7 @@
 import { useNode, UserComponent } from "@craftjs/core";
 import { craftRef } from "../craft-utils";
 import { useCanvasWidth } from "../canvas-width-context";
-import { responsiveSize } from "../responsive-utils";
+import { responsiveSize, isPhone } from "../responsive-utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,18 +43,19 @@ export const CraftRow: UserComponent<RowProps> = ({
   }));
 
   const cw = useCanvasWidth();
+  const phoneMode = isPhone(cw);
 
   return (
     <div
       ref={craftRef(connect, drag)}
       style={{
         display: "flex",
-        flexDirection: "row",
+        flexDirection: phoneMode ? "column" : "row",
         gap: `${responsiveSize(gap, cw, 4)}px`,
         padding: `${responsiveSize(padding, cw, 0)}px`,
         alignItems,
-        justifyContent,
-        flexWrap,
+        justifyContent: phoneMode ? "flex-start" : justifyContent,
+        flexWrap: phoneMode ? "wrap" : flexWrap,
         backgroundColor,
         minHeight: `${minHeight}px`,
         width: "100%",
