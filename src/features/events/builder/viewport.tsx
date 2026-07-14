@@ -10,12 +10,14 @@ import { usePageContext } from "./page-context";
 import { AIAssistantDialog } from "./ai/ai-assistant-dialog";
 import { useBuilderKeyboardShortcuts } from "./use-keyboard-shortcuts";
 import { CanvasWidthProvider } from "./canvas-width-context";
+import type { BuilderData } from "@/shared/utils/ai/types";
 
 interface Props {
   initialContent?: string | null;
   canvasWidth: number;
   hideHeader?: boolean;
   defaultChildren?: React.ReactNode;
+  builderData?: BuilderData;
 }
 
 function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
@@ -86,11 +88,22 @@ function PersistentHeader({ canvasWidth }: { canvasWidth: number }) {
   );
 }
 
-export function Viewport({ initialContent, canvasWidth, hideHeader, defaultChildren }: Props) {
+export function Viewport({ initialContent, canvasWidth, hideHeader, defaultChildren, builderData }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [aiOpen, setAiOpen] = useState(false);
   const event = useOptionalEventData();
+
+  // Use explicit builderData prop, or derive from event context
+  const resolvedBuilderData: BuilderData | null = builderData ?? (event ? {
+    title: event.title,
+    description: event.description,
+    slug: event.slug,
+    type: "event" as const,
+    location: event.location,
+    startDate: event.start_date,
+    endDate: event.end_date,
+  } : null);
   useBuilderKeyboardShortcuts();
 
   const updateScale = useCallback(() => {
@@ -145,8 +158,8 @@ export function Viewport({ initialContent, canvasWidth, hideHeader, defaultChild
         </div>
       </div>
 
-      {/* AI Assistant Toggle — only show when event context is available */}
-      {event && (
+      {/* AI Assistant Toggle — show when builder data is available */}
+      {resolvedBuilderData && (
         <>
           <button
             onClick={() => setAiOpen(!aiOpen)}
@@ -161,7 +174,7 @@ export function Viewport({ initialContent, canvasWidth, hideHeader, defaultChild
           <AIAssistantDialog
             open={aiOpen}
             onClose={() => setAiOpen(false)}
-            eventData={event}
+            builderData={resolvedBuilderData}
           />
         </>
       )}

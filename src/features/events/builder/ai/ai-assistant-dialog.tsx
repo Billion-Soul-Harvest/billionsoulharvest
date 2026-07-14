@@ -3,22 +3,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useEditor } from "@craftjs/core";
 import { useAIChat } from "./ai-chat-state";
-import type { ChatMessage, AIOperation, Attachment } from "@/shared/utils/ai/types";
+import type { ChatMessage, AIOperation, Attachment, BuilderData } from "@/shared/utils/ai/types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  eventData: {
-    title: string;
-    description: string | null;
-    location: string | null;
-    start_date: string | null;
-    end_date: string | null;
-    slug: string;
-  };
+  builderData: BuilderData;
 }
 
-export function AIAssistantDialog({ open, onClose, eventData }: Props) {
+export function AIAssistantDialog({ open, onClose, builderData }: Props) {
   const { query } = useEditor();
   const {
     messages,
@@ -29,7 +22,7 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
     undoLastApply,
     stopStreaming,
     clearChat,
-  } = useAIChat(eventData);
+  } = useAIChat(builderData);
 
   const [input, setInput] = useState("");
   const [appliedOps, setAppliedOps] = useState<Set<string>>(new Set());
@@ -174,7 +167,7 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "generate":
-        setInput("Generate a full page layout for this event");
+        setInput(`Generate a full page layout for this ${builderData.type}`);
         break;
       case "edit": {
         const nodeId = getSelectedNodeId();
@@ -187,7 +180,7 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
         break;
       }
       case "suggest":
-        setInput("Suggest content ideas for this event page");
+        setInput(`Suggest content ideas for this ${builderData.type} page`);
         break;
       case "enhance":
         setInput("Enhance the UI of this page by regenerating it with generate_full_page. CRITICAL: preserve ALL existing headings, section titles, body text, and content EXACTLY as they are — do NOT rename, rephrase, or invent new text. Only restructure the layout: use side-by-side CraftRow layouts for text+image sections, add CraftIcon components above card titles, and improve spacing, typography, colors, and visual hierarchy. Ensure the design is mobile-responsive: use CraftRow with CraftColumn for multi-column sections so they auto-stack on phone, keep text widths under 800px, and use reasonable font sizes (max 48px for hero headings, 24-32px for section titles, 14-16px for body text). Do NOT use edit_node — rebuild the full page.");
@@ -247,7 +240,7 @@ export function AIAssistantDialog({ open, onClose, eventData }: Props) {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
           <div className="text-center text-gray-400 text-sm mt-8">
-            <p className="mb-2">Ask me to help build your event page.</p>
+            <p className="mb-2">Ask me to help build your {builderData.type} page.</p>
             <p className="text-xs text-gray-300">
               I can generate layouts, edit blocks, or suggest content.
             </p>

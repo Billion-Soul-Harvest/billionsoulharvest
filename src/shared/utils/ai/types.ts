@@ -33,13 +33,25 @@ export interface AIOperation {
   explanation: string;
 }
 
+export interface BuilderData {
+  title: string;
+  description: string | null;
+  slug: string;
+  type: "event" | "story";
+  location?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
 export interface AIBuilderRequest {
   messages: Array<{ role: "user" | "assistant"; content: string; attachments?: Attachment[] }>;
   context: {
     currentCanvasJson: string;
     selectedNodeId?: string;
     selectedNodeJson?: string;
-    eventData: {
+    builderData: BuilderData;
+    /** @deprecated Use builderData instead */
+    eventData?: {
       title: string;
       description: string | null;
       location: string | null;

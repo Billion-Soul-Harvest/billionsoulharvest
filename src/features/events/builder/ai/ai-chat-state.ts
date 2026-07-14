@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useEditor } from "@craftjs/core";
-import type { ChatMessage, AIOperation, AIBuilderRequest, Attachment } from "@/shared/utils/ai/types";
+import type { ChatMessage, AIOperation, AIBuilderRequest, Attachment, BuilderData } from "@/shared/utils/ai/types";
 import {
   applyFullPageGeneration,
   applyNodeEdits,
@@ -11,16 +11,7 @@ import {
   getCanvasSnapshot,
 } from "./ai-canvas-bridge";
 
-interface EventData {
-  title: string;
-  description: string | null;
-  location: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  slug: string;
-}
-
-export function useAIChat(eventData: EventData) {
+export function useAIChat(builderData: BuilderData) {
   const { query, actions } = useEditor();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -76,14 +67,7 @@ export function useAIChat(eventData: EventData) {
           currentCanvasJson: getCanvasSnapshot(query),
           selectedNodeId,
           selectedNodeJson,
-          eventData: {
-            title: eventData.title,
-            description: eventData.description,
-            location: eventData.location,
-            startDate: eventData.start_date,
-            endDate: eventData.end_date,
-            slug: eventData.slug,
-          },
+          builderData,
         },
       };
 
@@ -229,7 +213,7 @@ export function useAIChat(eventData: EventData) {
         abortRef.current = null;
       }
     },
-    [messages, query, eventData]
+    [messages, query, builderData]
   );
 
   const applyOperation = useCallback(

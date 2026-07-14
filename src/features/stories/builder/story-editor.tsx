@@ -258,6 +258,12 @@ function StoryEditorLayout({ story }: { story: Story }) {
             canvasWidth={viewports[activeViewport].width}
             hideHeader
             defaultChildren={defaultStoryContentChildren}
+            builderData={{
+              title: story.title,
+              description: story.description,
+              slug: story.slug,
+              type: "story",
+            }}
           />
           <StoryRightPanel />
         </div>

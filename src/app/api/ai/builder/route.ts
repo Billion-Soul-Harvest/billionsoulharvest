@@ -28,7 +28,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = buildSystemPrompt(context.eventData);
+    // Support both builderData (new) and eventData (deprecated)
+    const builderData = context.builderData ?? (context.eventData ? {
+      title: context.eventData.title,
+      description: context.eventData.description,
+      slug: context.eventData.slug,
+      type: "event" as const,
+      location: context.eventData.location,
+      startDate: context.eventData.startDate,
+      endDate: context.eventData.endDate,
+    } : { title: "", description: null, slug: "", type: "event" as const });
+
+    const systemPrompt = buildSystemPrompt(builderData);
 
     // Detect if this is a full-page generation request (needs full canvas JSON)
     const lastUserMsg = messages.filter((m) => m.role === "user").pop();

@@ -1,15 +1,31 @@
 import { buildSchemaReference } from "@/features/events/builder/ai/craft-schema";
+import type { BuilderData } from "./types";
 
-interface EventContext {
-  title: string;
-  description: string | null;
-  location: string | null;
-  startDate: string | null;
-  endDate: string | null;
-  slug: string;
-}
+export function buildSystemPrompt(builderData: BuilderData): string {
+  const isEvent = builderData.type === "event";
 
-export function buildSystemPrompt(eventContext: EventContext): string {
+  const contextSection = isEvent
+    ? `## Current Event Context
+
+- Title: ${builderData.title}
+- Description: ${builderData.description ?? "Not set"}
+- Location: ${builderData.location ?? "Not set"}
+- Start Date: ${builderData.startDate ?? "Not set"}
+- End Date: ${builderData.endDate ?? "Not set"}
+- Slug: ${builderData.slug}`
+    : `## Current Story Context
+
+- Title: ${builderData.title}
+- Description: ${builderData.description ?? "Not set"}
+- Slug: ${builderData.slug}`;
+
+  const eventConstraints = isEvent
+    ? `- CraftEventTitle, CraftEventDates, CraftEventLocation render dynamic data from the event record. You CANNOT change their text content — only style props (color, fontSize, textAlign).
+- To customize text beyond what these event components allow (e.g. partial coloring, custom wording), replace them with CraftText using HTML in the "text" prop.
+`
+    : `- This is a story page — do NOT use event-specific components (CraftEventTitle, CraftEventDates, CraftEventLocation, CraftRegisterButton, CraftRegistrationForm, CraftEventList). Use CraftText for all text content.
+`;
+
   return `${ROLE_SECTION}
 
 ${buildSchemaReference()}
@@ -22,9 +38,7 @@ ${DESIGN_GUIDELINES_SECTION}
 
 ## Important Constraints
 
-- CraftEventTitle, CraftEventDates, CraftEventLocation render dynamic data from the event record. You CANNOT change their text content — only style props (color, fontSize, textAlign).
-- To customize text beyond what these event components allow (e.g. partial coloring, custom wording), replace them with CraftText using HTML in the "text" prop.
-- When editing nodes via edit_node, ONLY set props that exist in the component schema above. Setting unknown props has no effect.
+${eventConstraints}- When editing nodes via edit_node, ONLY set props that exist in the component schema above. Setting unknown props has no effect.
 - For edit_node operations, use the exact nodeId from the canvas JSON provided in the user's context.
 - When a user says "edit selected", the selected node's ID and JSON are included in the context. Use that nodeId for edit_node operations.
 - For background images or hero images, use Unsplash source URLs in this format: https://images.unsplash.com/photo-{id}?w={width}&q=80
@@ -65,14 +79,7 @@ ${DESIGN_GUIDELINES_SECTION}
   IMPORTANT: Match the image to what the section is ABOUT, not just generic aesthetics. A section about "Global Initiatives" needs a global/missions image, not a microphone or random crowd. Always use real Unsplash URLs — never use placeholder URLs.
 - A CraftFooter node already exists in the canvas as the last child of ROOT. To modify the footer, use edit_node on the CraftFooter and its children (footer-brand-title, footer-brand-desc, footer-links-list, footer-connect-email, etc.). Do NOT create new footer sections with CraftContainer — use the existing CraftFooter.
 
-## Current Event Context
-
-- Title: ${eventContext.title}
-- Description: ${eventContext.description ?? "Not set"}
-- Location: ${eventContext.location ?? "Not set"}
-- Start Date: ${eventContext.startDate ?? "Not set"}
-- End Date: ${eventContext.endDate ?? "Not set"}
-- Slug: ${eventContext.slug}
+${contextSection}
 `;
 }
 
