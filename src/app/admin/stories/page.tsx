@@ -2,7 +2,7 @@ import { createClient } from "@/shared/utils/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
-import { StoriesList } from "@/features/stories/admin/stories-list";
+import { StoriesPageTabs } from "@/features/stories/admin/stories-page-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +18,14 @@ export default async function StoriesPage() {
     .select("id, title, description, slug, status, author, published_at, banner_url")
     .order("created_at", { ascending: false });
 
+  // Stories for display order tab (published only)
+  const { data: displayOrderStories } = await supabase
+    .from("stories")
+    .select("id, title, slug, description, author, banner_url, published_at, display_order")
+    .eq("status", "published")
+    .order("display_order", { ascending: true, nullsFirst: false })
+    .order("published_at", { ascending: false });
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -32,7 +40,10 @@ export default async function StoriesPage() {
         </Link>
       </div>
 
-      <StoriesList stories={stories ?? []} />
+      <StoriesPageTabs
+        stories={stories ?? []}
+        displayOrderStories={displayOrderStories ?? []}
+      />
     </div>
   );
 }

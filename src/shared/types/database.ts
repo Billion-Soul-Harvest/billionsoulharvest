@@ -411,6 +411,7 @@ export interface Story {
   page_content: Record<string, unknown> | null;
   author: string | null;
   published_at: string | null;
+  display_order: number | null;
   created_at: string;
   updated_at: string;
 }
