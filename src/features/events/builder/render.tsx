@@ -237,7 +237,9 @@ function RenderNode({
           style={{
             backgroundColor: bgImage ? undefined : bgColor,
             backgroundImage: bgImage
-              ? `linear-gradient(to bottom, ${colorToRgba(bgColor, 0.7)}, ${colorToRgba(bgColor, 0.92)}), url(${bgImage})`
+              ? (bgColor === "transparent"
+                ? `url(${bgImage})`
+                : `linear-gradient(to bottom, ${colorToRgba(bgColor, 0.7)}, ${colorToRgba(bgColor, 0.92)}), url(${bgImage})`)
               : undefined,
             backgroundSize: bgImage ? "cover" : undefined,
             backgroundPosition: bgImage ? "center" : undefined,
