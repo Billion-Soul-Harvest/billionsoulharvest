@@ -36,42 +36,33 @@ export async function GET(
 
         if (!msgData) return null;
 
-        // Download body parts
+        // Parse body from the already-fetched source
         let htmlBody: string | null = null;
         let textBody: string | null = null;
 
-        try {
-          const htmlPart = await client.download(messageUid, undefined, { uid: true });
-          if (htmlPart?.content) {
-            const chunks: Buffer[] = [];
-            for await (const chunk of htmlPart.content) {
-              chunks.push(Buffer.from(chunk));
-            }
-            const raw = Buffer.concat(chunks).toString("utf8");
+        if (msgData.source) {
+          const raw = Buffer.from(msgData.source).toString("utf8");
 
-            // Try to extract HTML from the raw source
-            const htmlMatch = raw.match(/<html[\s\S]*<\/html>/i);
-            if (htmlMatch) {
-              htmlBody = htmlMatch[0];
-            } else {
-              // Look for content after last boundary delimiter
-              const bodyMatch = raw.match(/content-type:\s*text\/html[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
-              if (bodyMatch) {
-                htmlBody = bodyMatch[1].trim();
-              }
-            }
-
-            if (!htmlBody) {
-              const textMatch = raw.match(/content-type:\s*text\/plain[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
-              if (textMatch) {
-                textBody = textMatch[1].trim();
-              } else if (!raw.includes("Content-Type:")) {
-                textBody = raw;
-              }
+          // Try to extract HTML from the raw source
+          const htmlMatch = raw.match(/<html[\s\S]*<\/html>/i);
+          if (htmlMatch) {
+            htmlBody = htmlMatch[0];
+          } else {
+            // Look for content after last boundary delimiter
+            const bodyMatch = raw.match(/content-type:\s*text\/html[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
+            if (bodyMatch) {
+              htmlBody = bodyMatch[1].trim();
             }
           }
-        } catch {
-          // Body download failed, message will still have envelope data
+
+          if (!htmlBody) {
+            const textMatch = raw.match(/content-type:\s*text\/plain[^\r\n]*\r?\n(?:.*\r?\n)*?\r?\n([\s\S]*?)(?:--[\w-]+|$)/i);
+            if (textMatch) {
+              textBody = textMatch[1].trim();
+            } else if (!raw.includes("Content-Type:")) {
+              textBody = raw;
+            }
+          }
         }
 
         // Mark as read
