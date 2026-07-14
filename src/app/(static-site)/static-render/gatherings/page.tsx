@@ -202,7 +202,7 @@ export default async function GatheringsPage() {
                 title: "BSH Global Summit 2024",
                 location: "Pyeongchang, South Korea",
                 href: "https://sites.google.com/view/ghs-2024/home",
-                videoId: null,
+                videoId: "b5fsZIbo1Co",
               },
               {
                 title: "BSH Global Summit 2023",
