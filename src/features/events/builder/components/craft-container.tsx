@@ -155,16 +155,33 @@ function ContainerSettings() {
 
       <div>
         <Label htmlFor="backgroundColor">Background Color</Label>
-        <Input
-          id="backgroundColor"
-          type="color"
-          value={backgroundColor === "transparent" ? "#000000" : backgroundColor}
-          onChange={(e) =>
-            setProp((props: ContainerProps) => {
-              props.backgroundColor = e.target.value;
-            })
-          }
-        />
+        <div className="flex gap-2">
+          <Input
+            id="backgroundColor"
+            type="color"
+            value={backgroundColor === "transparent" ? "#000000" : backgroundColor}
+            onChange={(e) =>
+              setProp((props: ContainerProps) => {
+                props.backgroundColor = e.target.value;
+              })
+            }
+            className="flex-1"
+          />
+          {backgroundColor !== "transparent" && (
+            <button
+              type="button"
+              onClick={() =>
+                setProp((props: ContainerProps) => {
+                  props.backgroundColor = "transparent";
+                })
+              }
+              className="px-2 py-1 text-xs text-gray-500 hover:text-red-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors shrink-0"
+              title="Remove background color"
+            >
+              Remove
+            </button>
+          )}
+        </div>
       </div>
 
       <div>
