@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ImageUpload } from "@/shared/components/image-upload";
 import { StoryContentEditor } from "./editor/story-content-editor";
 import { GalleryEditor, type GalleryImage } from "./editor/gallery-editor";
 import {
@@ -26,7 +25,6 @@ interface StoryData {
   description: string;
   author: string;
   status: StoryStatus;
-  banner_url: string;
   published_at: string;
   content_html: string;
   gallery_images: GalleryImage[];
@@ -52,7 +50,6 @@ export function StoryForm({ story }: Props) {
     description: story?.description ?? "",
     author: story?.author ?? "",
     status: story?.status ?? "draft",
-    banner_url: story?.banner_url ?? "",
     published_at: story?.published_at ?? "",
     content_html: story?.content_html ?? "",
     gallery_images: story?.gallery_images ?? [],
@@ -78,7 +75,6 @@ export function StoryForm({ story }: Props) {
       description: form.description || null,
       author: form.author || null,
       status: form.status,
-      banner_url: form.banner_url || null,
       published_at: form.status === "published" ? (form.published_at || new Date().toISOString()) : null,
       content_html: form.content_html || null,
       gallery_images: form.gallery_images.length > 0 ? form.gallery_images : [],
@@ -141,15 +137,6 @@ export function StoryForm({ story }: Props) {
             <Input value={form.author} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("author", e.target.value)} />
           </div>
         </div>
-      </div>
-
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900">Banner Image</h3>
-        <ImageUpload
-          value={form.banner_url}
-          onChange={(url) => setForm((prev) => ({ ...prev, banner_url: url }))}
-          folder={story?.id ?? "new-story"}
-        />
       </div>
 
       <div className="bg-white rounded-xl border p-6 space-y-4">

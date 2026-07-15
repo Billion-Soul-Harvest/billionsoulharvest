@@ -58,7 +58,6 @@ export default async function StoryDetailPage({ params }: Props) {
           description: story.description ?? "",
           author: story.author ?? "",
           status: story.status as StoryStatus,
-          banner_url: story.banner_url ?? "",
           published_at: story.published_at ?? "",
           content_html: story.content_html ?? "",
           gallery_images: story.gallery_images ?? [],

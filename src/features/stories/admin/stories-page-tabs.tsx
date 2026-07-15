@@ -12,7 +12,6 @@ interface StoryRow {
   status: string;
   author: string | null;
   published_at: string | null;
-  banner_url: string | null;
 }
 
 interface DisplayOrderStory {

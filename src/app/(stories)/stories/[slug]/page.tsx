@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import type { Story } from "@/shared/types/database";
 import { CraftPageRenderer } from "@/features/events/builder/render";
+import { GalleryCarousel } from "@/features/stories/gallery-carousel";
 
 export const dynamic = "force-dynamic";
 
@@ -94,26 +95,9 @@ export default async function StoryPage({ params, searchParams }: Props) {
           />
         </div>
 
-        {/* Gallery */}
+        {/* Gallery Carousel */}
         {galleryImages.length > 0 && (
-          <div className="max-w-[1000px] mx-auto px-4 pb-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {galleryImages.map((img, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="aspect-[4/3] rounded-lg overflow-hidden">
-                    <img
-                      src={img.url}
-                      alt={img.caption || `Gallery image ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {img.caption && (
-                    <p className="text-sm text-gray-500 text-center">{img.caption}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <GalleryCarousel images={galleryImages} />
         )}
       </div>
     );
