@@ -66,7 +66,7 @@ export const defaultGalleryContentChildren = [
   >
     <CraftSpacer height={20} />
     <CraftText
-      text="<h1>Photo Gallery Title</h1>"
+      text="<h1><strong>Photo Gallery Title</strong></h1>"
       fontSize={40}
       color="#0d223f"
       textAlign="center"
@@ -103,7 +103,7 @@ export const defaultGalleryContentChildren = [
   >
     <CraftText
       text="<p>Write the story behind these photos. Describe the event, the location, the people, and the moments captured. Let the images speak, but give your readers the context to truly appreciate what they're seeing.</p>"
-      fontSize={16}
+      fontSize={18}
       color="#44474d"
       textAlign="left"
       width={720}
@@ -248,7 +248,7 @@ export const defaultGalleryContentChildren = [
     <CraftSpacer height={32} />
     <CraftText
       text="<p>Close with final thoughts about the photo collection. Share what these moments mean and how they connect to the larger story.</p>"
-      fontSize={16}
+      fontSize={18}
       color="#44474d"
       textAlign="left"
       width={720}

@@ -49,7 +49,7 @@ export const defaultBlogContentChildren = [
   >
     <CraftSpacer height={20} />
     <CraftText
-      text="<h1>Your Story Title Here</h1>"
+      text="<h1><strong>Your Story Title Here</strong></h1>"
       fontSize={40}
       color="#0d223f"
       textAlign="center"
@@ -122,7 +122,7 @@ export const defaultBlogContentChildren = [
     <CraftSpacer height={16} />
     <CraftText
       text="<p>Continue your story here with the first major section. Describe the setting, the people involved, and the circumstances that brought everything together. Use concrete details and let the narrative unfold naturally.</p>"
-      fontSize={16}
+      fontSize={18}
       color="#44474d"
       textAlign="left"
       width={720}
@@ -131,7 +131,7 @@ export const defaultBlogContentChildren = [
     <CraftSpacer height={12} />
     <CraftText
       text="<p>Add another paragraph to develop this section further. Good storytelling builds momentum — each paragraph should pull the reader forward into the next.</p>"
-      fontSize={16}
+      fontSize={18}
       color="#44474d"
       textAlign="left"
       width={720}
@@ -185,7 +185,7 @@ export const defaultBlogContentChildren = [
     <CraftSpacer height={16} />
     <CraftText
       text="<p>This section covers the heart of the story — the turning point, the key moments, the transformation. Write with specificity: names, places, dialogue, and sensory details make stories come alive.</p>"
-      fontSize={16}
+      fontSize={18}
       color="#44474d"
       textAlign="left"
       width={720}
@@ -194,7 +194,7 @@ export const defaultBlogContentChildren = [
     <CraftSpacer height={12} />
     <CraftText
       text="<p>Continue building the narrative. What challenges were faced? What breakthroughs occurred? Let the reader experience the journey alongside the people in the story.</p>"
-      fontSize={16}
+      fontSize={18}
       color="#44474d"
       textAlign="left"
       width={720}
@@ -227,7 +227,7 @@ export const defaultBlogContentChildren = [
     <CraftSpacer height={32} />
     <CraftText
       text="<p>Close the story with reflection and forward-looking thoughts. What was the lasting impact? What does this mean for the future? Leave the reader with something to carry with them.</p>"
-      fontSize={16}
+      fontSize={18}
       color="#44474d"
       textAlign="left"
       width={720}
