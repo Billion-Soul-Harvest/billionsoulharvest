@@ -6,6 +6,7 @@ interface EmailPayload {
   subject: string;
   html: string;
   from?: string;
+  cc?: string;
   replyTo?: string;
   headers?: Record<string, string>;
 }
@@ -86,6 +87,7 @@ serve(async (req) => {
         const info = await transport.sendMail({
           from: email.from || defaultFrom,
           to: email.to,
+          cc: email.cc,
           subject: email.subject,
           html: email.html,
           replyTo: email.replyTo,

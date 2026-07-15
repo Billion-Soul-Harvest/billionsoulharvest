@@ -6,6 +6,7 @@ interface EmailPayload {
   subject: string;
   html: string;
   from?: string;
+  cc?: string;
   replyTo?: string;
   headers?: Record<string, string>;
 }
