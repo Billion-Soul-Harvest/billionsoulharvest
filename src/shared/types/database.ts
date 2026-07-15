@@ -409,6 +409,8 @@ export interface Story {
   status: StoryStatus;
   banner_url: string | null;
   page_content: Record<string, unknown> | null;
+  content_html: string | null;
+  gallery_images: { url: string; caption?: string }[] | null;
   author: string | null;
   published_at: string | null;
   display_order: number | null;

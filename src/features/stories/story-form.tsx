@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TemplateSelectionDialog } from "./template-selection-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/shared/components/image-upload";
+import { StoryContentEditor } from "./editor/story-content-editor";
+import { GalleryEditor, type GalleryImage } from "./editor/gallery-editor";
 import {
   Select,
   SelectContent,
@@ -27,6 +28,8 @@ interface StoryData {
   status: StoryStatus;
   banner_url: string;
   published_at: string;
+  content_html: string;
+  gallery_images: GalleryImage[];
 }
 
 interface Props {
@@ -42,7 +45,6 @@ export function StoryForm({ story }: Props) {
   const isEditing = !!story?.id;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newStoryId, setNewStoryId] = useState<string | null>(null);
 
   const [form, setForm] = useState<StoryData>({
     title: story?.title ?? "",
@@ -52,6 +54,8 @@ export function StoryForm({ story }: Props) {
     status: story?.status ?? "draft",
     banner_url: story?.banner_url ?? "",
     published_at: story?.published_at ?? "",
+    content_html: story?.content_html ?? "",
+    gallery_images: story?.gallery_images ?? [],
   });
 
   function updateField(field: keyof StoryData, value: string) {
@@ -76,6 +80,8 @@ export function StoryForm({ story }: Props) {
       status: form.status,
       banner_url: form.banner_url || null,
       published_at: form.status === "published" ? (form.published_at || new Date().toISOString()) : null,
+      content_html: form.content_html || null,
+      gallery_images: form.gallery_images.length > 0 ? form.gallery_images : [],
     };
 
     if (isEditing) {
@@ -92,7 +98,8 @@ export function StoryForm({ story }: Props) {
         .single();
       if (err || !newStory) { setError(err?.message ?? "Failed to create story"); setSaving(false); return; }
       setSaving(false);
-      setNewStoryId(newStory.id);
+      router.push(`/admin/stories/edit/${newStory.id}`);
+      router.refresh();
     }
   }
 
@@ -102,7 +109,7 @@ export function StoryForm({ story }: Props) {
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
           {error}
@@ -146,6 +153,26 @@ export function StoryForm({ story }: Props) {
       </div>
 
       <div className="bg-white rounded-xl border p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900">Story Content</h3>
+        <p className="text-sm text-gray-500">Write your story using the editor below. You can add text, headings, images, and YouTube videos.</p>
+        <StoryContentEditor
+          value={form.content_html}
+          onChange={(html) => setForm((prev) => ({ ...prev, content_html: html }))}
+          storyId={story?.id ?? "new-story"}
+        />
+      </div>
+
+      <div className="bg-white rounded-xl border p-6 space-y-4">
+        <h3 className="font-semibold text-gray-900">Gallery Images</h3>
+        <p className="text-sm text-gray-500">Add photos to display in a gallery grid below the story content. Drag to reorder.</p>
+        <GalleryEditor
+          images={form.gallery_images}
+          onChange={(images) => setForm((prev) => ({ ...prev, gallery_images: images }))}
+          storyId={story?.id ?? "new-story"}
+        />
+      </div>
+
+      <div className="bg-white rounded-xl border p-6 space-y-4">
         <h3 className="font-semibold text-gray-900">Settings</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -177,9 +204,6 @@ export function StoryForm({ story }: Props) {
           Cancel
         </Button>
       </div>
-      {newStoryId && (
-        <TemplateSelectionDialog open={!!newStoryId} storyId={newStoryId} />
-      )}
     </form>
   );
 }

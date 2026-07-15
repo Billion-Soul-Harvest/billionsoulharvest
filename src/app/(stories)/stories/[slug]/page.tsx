@@ -47,6 +47,79 @@ export default async function StoryPage({ params, searchParams }: Props) {
   // Only show published stories unless preview mode
   if (typedStory.status !== "published" && !isPreview) notFound();
 
+  const galleryImages = (typedStory.gallery_images ?? []) as { url: string; caption?: string }[];
+
+  // New WYSIWYG content
+  if (typedStory.content_html) {
+    return (
+      <div>
+        {isPreview && (
+          <div className="bg-amber-500 text-amber-950 text-center text-sm font-medium py-2 px-4">
+            Preview Mode — This story is not yet published.
+            <Link href="/admin/stories" className="underline ml-2">Back to Admin</Link>
+          </div>
+        )}
+
+        {/* Banner */}
+        {typedStory.banner_url && (
+          <div className="w-full max-h-[500px] overflow-hidden">
+            <img
+              src={typedStory.banner_url}
+              alt={typedStory.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="max-w-[720px] mx-auto px-4 py-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">{typedStory.title}</h1>
+          <div className="flex items-center gap-3 text-sm text-gray-500 mb-8">
+            {typedStory.author && <span>{typedStory.author}</span>}
+            {typedStory.author && typedStory.published_at && <span>&middot;</span>}
+            {typedStory.published_at && (
+              <time dateTime={typedStory.published_at}>
+                {new Date(typedStory.published_at).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </time>
+            )}
+          </div>
+
+          <div
+            className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-[#29BDD6] prose-img:rounded-lg"
+            dangerouslySetInnerHTML={{ __html: typedStory.content_html }}
+          />
+        </div>
+
+        {/* Gallery */}
+        {galleryImages.length > 0 && (
+          <div className="max-w-[1000px] mx-auto px-4 pb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {galleryImages.map((img, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="aspect-[4/3] rounded-lg overflow-hidden">
+                    <img
+                      src={img.url}
+                      alt={img.caption || `Gallery image ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {img.caption && (
+                    <p className="text-sm text-gray-500 text-center">{img.caption}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback: Craft.js page builder content
   if (typedStory.page_content) {
     return (
       <div>
@@ -64,7 +137,7 @@ export default async function StoryPage({ params, searchParams }: Props) {
     );
   }
 
-  // No page content yet
+  // No content yet
   return (
     <div className="min-h-[400px] flex items-center justify-center">
       <p className="text-gray-400 text-lg">This story is under construction.</p>
