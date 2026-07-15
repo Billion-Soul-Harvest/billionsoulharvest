@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import TextAlign from "@tiptap/extension-text-align";
 import Youtube from "@tiptap/extension-youtube";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,9 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
         heading: { levels: [1, 2, 3] },
       }),
       Underline,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
       Youtube.configure({
         HTMLAttributes: {
           class: "rounded-lg",
@@ -211,6 +215,45 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6h11M10 12h11M10 18h11M4 6h1M4 12h1M4 18h1" />
+            </svg>
+          </ToolbarBtn>
+
+          <Divider />
+
+          <ToolbarBtn
+            active={editor.isActive({ textAlign: "left" })}
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            title="Align Left"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeWidth={2} d="M3 6h18M3 12h12M3 18h18" />
+            </svg>
+          </ToolbarBtn>
+          <ToolbarBtn
+            active={editor.isActive({ textAlign: "center" })}
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            title="Align Center"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeWidth={2} d="M3 6h18M6 12h12M3 18h18" />
+            </svg>
+          </ToolbarBtn>
+          <ToolbarBtn
+            active={editor.isActive({ textAlign: "right" })}
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            title="Align Right"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeWidth={2} d="M3 6h18M9 12h12M3 18h18" />
+            </svg>
+          </ToolbarBtn>
+          <ToolbarBtn
+            active={editor.isActive({ textAlign: "justify" })}
+            onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+            title="Justify"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeWidth={2} d="M3 6h18M3 12h18M3 18h18" />
             </svg>
           </ToolbarBtn>
 
