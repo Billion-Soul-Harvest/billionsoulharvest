@@ -7,10 +7,12 @@ export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ template?: string }>;
 }
 
-export default async function StoryBuilderPage({ params }: Props) {
+export default async function StoryBuilderPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { template } = await searchParams;
   const supabase = await createClient();
 
   const { data: story, error } = await supabase
@@ -21,5 +23,5 @@ export default async function StoryBuilderPage({ params }: Props) {
 
   if (error || !story) notFound();
 
-  return <StoryPageBuilder story={story as unknown as Story} />;
+  return <StoryPageBuilder story={story as unknown as Story} template={template} />;
 }

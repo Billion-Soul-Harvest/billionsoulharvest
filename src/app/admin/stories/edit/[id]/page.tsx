@@ -8,6 +8,7 @@ import { DeleteStoryButton } from "@/features/stories/admin/delete-story-button"
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ template?: string }>;
 }
 
 const statusColors: Record<StoryStatus, string> = {
@@ -17,8 +18,9 @@ const statusColors: Record<StoryStatus, string> = {
 
 export const dynamic = "force-dynamic";
 
-export default async function StoryDetailPage({ params }: Props) {
+export default async function StoryDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { template } = await searchParams;
   const supabase = await createClient();
 
   const { data: story, error } = await supabase.from("stories").select("*").eq("id", id).single();
@@ -65,7 +67,7 @@ export default async function StoryDetailPage({ params }: Props) {
             Preview
           </Link>
           <Link
-            href={`/admin/stories/edit/${story.id}/builder`}
+            href={`/admin/stories/edit/${story.id}/builder${template ? `?template=${template}` : ""}`}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#29BDD6] rounded-lg hover:bg-[#29BDD6]/90 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

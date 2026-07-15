@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TemplateSelectionDialog } from "./template-selection-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export function StoryForm({ story }: Props) {
   const isEditing = !!story?.id;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [newStoryId, setNewStoryId] = useState<string | null>(null);
 
   const [form, setForm] = useState<StoryData>({
     title: story?.title ?? "",
@@ -90,8 +92,7 @@ export function StoryForm({ story }: Props) {
         .single();
       if (err || !newStory) { setError(err?.message ?? "Failed to create story"); setSaving(false); return; }
       setSaving(false);
-      router.push(`/admin/stories/edit/${newStory.id}`);
-      router.refresh();
+      setNewStoryId(newStory.id);
     }
   }
 
@@ -176,6 +177,9 @@ export function StoryForm({ story }: Props) {
           Cancel
         </Button>
       </div>
+      {newStoryId && (
+        <TemplateSelectionDialog open={!!newStoryId} storyId={newStoryId} />
+      )}
     </form>
   );
 }

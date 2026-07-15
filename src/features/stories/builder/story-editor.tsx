@@ -31,9 +31,12 @@ import { CraftCarousel } from "@/features/events/builder/components/craft-carous
 import { CraftIcon } from "@/features/events/builder/components/craft-icon";
 import { CraftDialog } from "@/features/events/builder/components/craft-dialog";
 import { defaultStoryContentChildren } from "./default-story-content";
+import { defaultBlogContentChildren } from "./default-blog-content";
+import { defaultGalleryContentChildren } from "./default-gallery-content";
 
 interface Props {
   story: Story;
+  template?: string;
 }
 
 const resolver = {
@@ -58,10 +61,24 @@ const resolver = {
 };
 
 
-export function StoryPageBuilder({ story }: Props) {
+function getDefaultChildren(template?: string): React.ReactNode {
+  switch (template) {
+    case "blog":
+      return defaultBlogContentChildren;
+    case "gallery":
+      return defaultGalleryContentChildren;
+    case "blank":
+      return [];
+    case "visual":
+    default:
+      return defaultStoryContentChildren;
+  }
+}
+
+export function StoryPageBuilder({ story, template }: Props) {
   return (
     <Editor resolver={resolver}>
-      <StoryEditorLayout story={story} />
+      <StoryEditorLayout story={story} template={template} />
     </Editor>
   );
 }
@@ -89,7 +106,7 @@ const statusOptions = [
   { value: "published", label: "Published", color: "bg-blue-100 text-blue-700" },
 ];
 
-function StoryEditorLayout({ story }: { story: Story }) {
+function StoryEditorLayout({ story, template }: { story: Story; template?: string }) {
   const { query } = useEditor();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -257,7 +274,7 @@ function StoryEditorLayout({ story }: { story: Story }) {
             initialContent={story.page_content ? JSON.stringify(story.page_content) : null}
             canvasWidth={viewports[activeViewport].width}
             hideHeader
-            defaultChildren={defaultStoryContentChildren}
+            defaultChildren={getDefaultChildren(template)}
             builderData={{
               title: story.title,
               description: story.description,
