@@ -77,6 +77,11 @@ export function StaticFooter() {
                 Initiatives
               </Link>
             </li>
+            <li>
+              <Link href="/stories" className="hover:text-[#00b8d4] transition-colors">
+                Stories
+              </Link>
+            </li>
           </ul>
         </div>
 
