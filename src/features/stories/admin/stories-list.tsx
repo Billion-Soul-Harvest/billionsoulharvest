@@ -41,6 +41,16 @@ function extractFirstImage(contentHtml: string | null, galleryImages: { url: str
   return null;
 }
 
+function extractTextSnippet(contentHtml: string | null, maxLength = 120): string | null {
+  if (!contentHtml) return null;
+  const text = contentHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  if (text.length <= maxLength) return text;
+  const truncated = text.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return (lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated) + "...";
+}
+
 interface Props {
   stories: StoryRow[];
 }
@@ -214,9 +224,12 @@ export function StoriesList({ stories }: Props) {
                   className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
                 >
                   <h3 className="font-semibold text-gray-900 truncate text-sm">{story.title}</h3>
-                  {story.description && (
-                    <p className="text-xs text-gray-500 line-clamp-2 mt-1">{story.description}</p>
-                  )}
+                  {(() => {
+                    const snippet = extractTextSnippet(story.content_html) || story.description;
+                    return snippet ? (
+                      <p className="text-xs text-gray-500 line-clamp-2 mt-1">{snippet}</p>
+                    ) : null;
+                  })()}
                   <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                     {story.author && (
                       <span className="flex items-center gap-1">
