@@ -21,7 +21,7 @@ export default async function StoriesPage() {
   // Stories for display order tab (published only)
   const { data: displayOrderStories } = await supabase
     .from("stories")
-    .select("id, title, slug, description, author, banner_url, published_at, display_order")
+    .select("id, title, slug, description, author, published_at, display_order, content_html, gallery_images")
     .eq("status", "published")
     .order("display_order", { ascending: true, nullsFirst: false })
     .order("published_at", { ascending: false });

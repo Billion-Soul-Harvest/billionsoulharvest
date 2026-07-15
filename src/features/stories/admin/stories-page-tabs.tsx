@@ -22,9 +22,10 @@ interface DisplayOrderStory {
   slug: string;
   description: string | null;
   author: string | null;
-  banner_url: string | null;
   published_at: string | null;
   display_order: number | null;
+  content_html: string | null;
+  gallery_images: { url: string }[] | null;
 }
 
 interface Props {
