@@ -12,6 +12,8 @@ interface StoryRow {
   status: string;
   author: string | null;
   published_at: string | null;
+  content_html: string | null;
+  gallery_images: { url: string }[] | null;
 }
 
 interface DisplayOrderStory {
