@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSerwist } from "@serwist/turbopack";
 
 const nextConfig: NextConfig = {
   env: {
@@ -22,6 +23,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/sw.js",
+        destination: "/api/serwist/sw.js",
+      },
+      {
+        source: "/sw.js.map",
+        destination: "/api/serwist/sw.js.map",
+      },
+    ];
+  },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

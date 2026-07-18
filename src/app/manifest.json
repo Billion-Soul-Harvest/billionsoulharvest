@@ -1,0 +1,16 @@
+{
+  "name": "Billion Soul Harvest Admin",
+  "short_name": "BSH Admin",
+  "description": "Admin dashboard for Billion Soul Harvest Ministry",
+  "icons": [
+    { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "theme_color": "#0e7490",
+  "background_color": "#f9fafb",
+  "start_url": "/admin/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any"
+}

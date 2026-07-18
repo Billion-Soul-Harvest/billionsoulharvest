@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Lora, JetBrains_Mono, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
+import { SerwistProvider } from "@serwist/turbopack/react";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/shared/providers/query-provider";
 import "./globals.css";
@@ -36,6 +37,18 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Billion Soul Harvest",
   description: "Billion Soul Harvest Ministry — Reaching the nations for Christ",
+  themeColor: "#0e7490",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "BSH Admin",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -49,10 +62,12 @@ export default function RootLayout({
       className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable} ${newsreader.variable} ${plusJakarta.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <QueryProvider>
-          {children}
-          <Toaster />
-        </QueryProvider>
+        <SerwistProvider swUrl="/sw.js">
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
+        </SerwistProvider>
       </body>
     </html>
   );
