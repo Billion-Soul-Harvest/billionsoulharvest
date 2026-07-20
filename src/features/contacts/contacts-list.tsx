@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp, Trash2 } from "lucide-react";
+import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp, Trash2, Loader2 } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
 import {
   Dialog,
@@ -523,6 +523,7 @@ function TagFilterDropdown({
     if (!open) return;
     clearTimeout(debounceRef.current);
     const delay = query ? 300 : 0;
+    if (delay > 0) setLoading(true);
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       const supabase = createClient();
@@ -602,7 +603,11 @@ function TagFilterDropdown({
           {/* Search */}
           <div className="p-2 border-b">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              {loading ? (
+                <Loader2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500 animate-spin" />
+              ) : (
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              )}
               <input
                 type="text"
                 value={query}
@@ -615,7 +620,7 @@ function TagFilterDropdown({
           </div>
           {/* Tag list */}
           <div className="max-h-64 overflow-y-auto py-1">
-            {filtered.map((tag) => {
+            {!loading && filtered.map((tag) => {
               const isSelected = selectedTags.includes(tag);
               return (
                 <button
