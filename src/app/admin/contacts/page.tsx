@@ -79,10 +79,22 @@ export default async function ContactsPage({ searchParams }: Props) {
       case "country":
         query = query.ilike("country", `%${s}%`);
         break;
-      default:
-        query = query.or(
-          `first_name.ilike.%${s}%,last_name.ilike.%${s}%,email.ilike.%${s}%`
-        );
+      default: {
+        const parts = s.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          // Full name search: match first part against first_name AND last part against last_name
+          const first = parts.slice(0, -1).join(" ");
+          const last = parts[parts.length - 1];
+          query = query.or(
+            `first_name.ilike.%${s}%,last_name.ilike.%${s}%,email.ilike.%${s}%,and(first_name.ilike.%${first}%,last_name.ilike.%${last}%)`
+          );
+        } else {
+          query = query.or(
+            `first_name.ilike.%${s}%,last_name.ilike.%${s}%,email.ilike.%${s}%`
+          );
+        }
+        break;
+      }
     }
   }
 
