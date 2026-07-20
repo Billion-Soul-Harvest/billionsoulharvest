@@ -52,8 +52,16 @@ export default async function StoriesListingPage() {
       <StaticHeader />
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-br from-[#0d223f] to-[#1a3a5c] py-20 px-4">
-          <div className="max-w-4xl mx-auto text-center">
+        <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
+          <Image
+            src="/media-hero-bg.webp"
+            alt=""
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(13,34,63,0.8) 20%, rgba(13,34,63,0.45) 100%)" }} />
+          <div className="max-w-4xl mx-auto text-center relative z-10 px-4">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 font-[family-name:var(--font-jakarta)]">
               Stories
             </h1>

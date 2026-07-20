@@ -131,19 +131,16 @@ export default async function ContactsPage({ searchParams }: Props) {
     { data: positions },
     { data: languageRows },
     { data: audienceLists },
-    { data: tagRows },
   ] = await Promise.all([
     query.order(sort, { ascending: dir === "asc" }).range(from, to),
     supabase.from("ministry_regions").select("id, name, color").order("name"),
     supabase.from("positions").select("id, name").order("name"),
     supabase.from("contacts").select("language").not("language", "is", null).not("language", "eq", "").order("language"),
     supabase.from("audiences").select("name").eq("type", "list").order("name"),
-    supabase.from("contacts").select("tags").not("tags", "eq", "{}"),
   ]);
 
   const languages = [...new Set((languageRows ?? []).map((r) => r.language as string))];
   const listNames = (audienceLists ?? []).map((a) => a.name);
-  const allTags = [...new Set((tagRows ?? []).flatMap((r) => (r.tags as string[]) ?? []))].sort();
 
   return (
     <div>
@@ -165,7 +162,6 @@ export default async function ContactsPage({ searchParams }: Props) {
         tagMode={tagMode}
         languages={languages}
         listNames={listNames}
-        allTags={allTags}
         sort={sort}
         dir={dir}
       />

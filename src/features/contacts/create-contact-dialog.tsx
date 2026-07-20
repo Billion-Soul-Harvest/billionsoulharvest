@@ -18,7 +18,6 @@ import type { ContactType } from "@/shared/types/database";
 
 interface CreateContactDialogProps {
   listNames: string[];
-  allTags: string[];
   onSuccess: () => void;
 }
 
@@ -52,7 +51,7 @@ const FIELD_GROUPS = ["Basic fields", "Location"] as const;
 const AGE_GROUP_OPTIONS = ["Under 18", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
 const GENDER_OPTIONS = ["male", "female"];
 
-export function CreateContactDialog({ listNames, allTags, onSuccess }: CreateContactDialogProps) {
+export function CreateContactDialog({ listNames, onSuccess }: CreateContactDialogProps) {
   const [open, setOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -96,7 +95,6 @@ export function CreateContactDialog({ listNames, allTags, onSuccess }: CreateCon
           <AddContactForm
             key={String(open)}
             listNames={listNames}
-            allTags={allTags}
             onSuccess={onSuccess}
             onClose={() => setOpen(false)}
           />
@@ -108,12 +106,10 @@ export function CreateContactDialog({ listNames, allTags, onSuccess }: CreateCon
 
 function AddContactForm({
   listNames,
-  allTags,
   onSuccess,
   onClose,
 }: {
   listNames: string[];
-  allTags: string[];
   onSuccess: () => void;
   onClose: () => void;
 }) {
@@ -233,9 +229,24 @@ function AddContactForm({
     ? OPTIONAL_FIELD_DEFS.filter((f) => f.label.toLowerCase().includes(manageQuery.toLowerCase()))
     : OPTIONAL_FIELD_DEFS;
 
-  const tagSuggestions = allTags.filter(
-    (t) => !selectedTags.includes(t) && t.toLowerCase().includes(tagQuery.toLowerCase())
-  );
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const tagDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    if (!tagDropdownOpen) return;
+    clearTimeout(tagDebounceRef.current);
+    const delay = tagQuery ? 300 : 0;
+    tagDebounceRef.current = setTimeout(async () => {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("search_contact_tags", {
+        p_query: tagQuery,
+        p_limit: 50,
+      });
+      const results = (data ?? []).map((r: { name: string }) => r.name);
+      setTagSuggestions(results.filter((t: string) => !selectedTags.includes(t)));
+    }, delay);
+    return () => clearTimeout(tagDebounceRef.current);
+  }, [tagDropdownOpen, tagQuery, selectedTags]);
 
   function addTag(tag: string) {
     const trimmed = tag.trim();

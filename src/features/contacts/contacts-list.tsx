@@ -96,7 +96,6 @@ interface Props {
   tagMode: string;
   languages: string[];
   listNames: string[];
-  allTags: string[];
   sort: string;
   dir: string;
 }
@@ -491,13 +490,11 @@ function SearchableFilterDropdown({
 }
 
 function TagFilterDropdown({
-  allTags,
   selectedTags,
   mode,
   onChangeSelection,
   onChangeMode,
 }: {
-  allTags: string[];
   selectedTags: string[];
   mode: "and" | "or";
   onChangeSelection: (tags: string[]) => void;
@@ -505,7 +502,10 @@ function TagFilterDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [filtered, setFiltered] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -518,9 +518,23 @@ function TagFilterDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const filtered = query
-    ? allTags.filter((t) => t.toLowerCase().includes(query.toLowerCase()))
-    : allTags;
+  // Fetch tags from server when dropdown opens or query changes
+  useEffect(() => {
+    if (!open) return;
+    clearTimeout(debounceRef.current);
+    const delay = query ? 300 : 0;
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      const supabase = createClient();
+      const { data } = await supabase.rpc("search_contact_tags", {
+        p_query: query,
+        p_limit: 50,
+      });
+      setFiltered((data ?? []).map((r: { name: string }) => r.name));
+      setLoading(false);
+    }, delay);
+    return () => clearTimeout(debounceRef.current);
+  }, [open, query]);
 
   const hasSelection = selectedTags.length > 0;
   const label = hasSelection
@@ -628,7 +642,10 @@ function TagFilterDropdown({
                 </button>
               );
             })}
-            {filtered.length === 0 && (
+            {loading && (
+              <p className="px-4 py-3 text-sm text-gray-400">Searching...</p>
+            )}
+            {!loading && filtered.length === 0 && (
               <p className="px-4 py-3 text-sm text-gray-400">No tags found</p>
             )}
           </div>
@@ -644,20 +661,38 @@ function SearchableMultiSelect({
   onToggle,
   placeholder = "Search...",
   onCreate,
+  onSearch,
 }: {
-  options: string[];
+  options?: string[];
   selected: Set<string>;
   onToggle: (item: string) => void;
   placeholder?: string;
   onCreate?: (name: string) => void;
+  onSearch?: (query: string) => Promise<string[]>;
 }) {
   const [search, setSearch] = useState("");
-  const filtered = search
-    ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase()))
-    : options;
+  const [asyncResults, setAsyncResults] = useState<string[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    if (!onSearch) return;
+    clearTimeout(debounceRef.current);
+    const delay = search ? 300 : 0;
+    debounceRef.current = setTimeout(async () => {
+      const results = await onSearch(search);
+      setAsyncResults(results);
+    }, delay);
+    return () => clearTimeout(debounceRef.current);
+  }, [search, onSearch]);
+
+  const filtered = onSearch
+    ? asyncResults
+    : search
+      ? (options ?? []).filter((o) => o.toLowerCase().includes(search.toLowerCase()))
+      : (options ?? []);
 
   const exactMatch = search
-    ? options.some((o) => o.toLowerCase() === search.trim().toLowerCase())
+    ? filtered.some((o) => o.toLowerCase() === search.trim().toLowerCase())
     : true;
 
   return (
@@ -747,7 +782,6 @@ export function ContactsListClient({
   tagMode,
   languages,
   listNames,
-  allTags,
   sort,
   dir,
 }: Props) {
@@ -1129,7 +1163,6 @@ export function ContactsListClient({
         <div className="flex items-center gap-2">
           <CreateContactDialog
             listNames={listNames}
-            allTags={allTags}
             onSuccess={() => router.refresh()}
           />
           <Button variant="outline" onClick={exportCSV}>
@@ -1167,7 +1200,6 @@ export function ContactsListClient({
         />
 
         <TagFilterDropdown
-          allTags={allTags}
           selectedTags={tagFilter ? tagFilter.split(",").filter(Boolean) : []}
           mode={tagMode as "and" | "or"}
           onChangeSelection={(tags) => navigate({ tag: tags.join(","), page: "1" })}
@@ -1847,7 +1879,11 @@ export function ContactsListClient({
             <DialogDescription>Search and select tags to remove.</DialogDescription>
           </DialogHeader>
           <SearchableMultiSelect
-            options={allTags}
+            onSearch={async (q) => {
+              const supabase = createClient();
+              const { data } = await supabase.rpc("search_contact_tags", { p_query: q, p_limit: 50 });
+              return (data ?? []).map((r: { name: string }) => r.name);
+            }}
             selected={bulkSelectedTags}
             onToggle={(tag) => {
               setBulkSelectedTags((prev) => {
