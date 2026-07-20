@@ -526,11 +526,10 @@ function TagFilterDropdown({
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       const supabase = createClient();
-      const { data } = await supabase.rpc("search_contact_tags", {
-        p_query: query,
-        p_limit: 50,
-      });
-      setFiltered((data ?? []).map((r: { name: string }) => r.name));
+      let q = supabase.from("tags").select("name").order("name").limit(50);
+      if (query) q = q.ilike("name", `%${query}%`);
+      const { data } = await q;
+      setFiltered((data ?? []).map((r) => r.name));
       setLoading(false);
     }, delay);
     return () => clearTimeout(debounceRef.current);
@@ -1881,8 +1880,10 @@ export function ContactsListClient({
           <SearchableMultiSelect
             onSearch={async (q) => {
               const supabase = createClient();
-              const { data } = await supabase.rpc("search_contact_tags", { p_query: q, p_limit: 50 });
-              return (data ?? []).map((r: { name: string }) => r.name);
+              let query = supabase.from("tags").select("name").order("name").limit(50);
+              if (q) query = query.ilike("name", `%${q}%`);
+              const { data } = await query;
+              return (data ?? []).map((r) => r.name);
             }}
             selected={bulkSelectedTags}
             onToggle={(tag) => {

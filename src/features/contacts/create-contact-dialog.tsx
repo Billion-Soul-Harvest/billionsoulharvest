@@ -238,11 +238,10 @@ function AddContactForm({
     const delay = tagQuery ? 300 : 0;
     tagDebounceRef.current = setTimeout(async () => {
       const supabase = createClient();
-      const { data } = await supabase.rpc("search_contact_tags", {
-        p_query: tagQuery,
-        p_limit: 50,
-      });
-      const results = (data ?? []).map((r: { name: string }) => r.name);
+      let q = supabase.from("tags").select("name").order("name").limit(50);
+      if (tagQuery) q = q.ilike("name", `%${tagQuery}%`);
+      const { data } = await q;
+      const results = (data ?? []).map((r) => r.name);
       setTagSuggestions(results.filter((t: string) => !selectedTags.includes(t)));
     }, delay);
     return () => clearTimeout(tagDebounceRef.current);
