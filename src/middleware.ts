@@ -21,6 +21,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  // Subdomain routing: 2023.billionsoulharvest.org → /2023
+  if (host.startsWith("2023.")) {
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/2023";
+      return NextResponse.rewrite(url);
+    }
+    if (!pathname.startsWith("/2023") && !pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/2023";
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   // Subdomain routing: youngcho.billionsoulharvest.org → /young-cho
   if (host.startsWith("youngcho.")) {
     if (pathname === "/") {
@@ -128,6 +143,7 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/static-render") &&
     !pathname.startsWith("/_next") &&
+    !pathname.startsWith("/2023") &&
     !pathname.startsWith("/young-cho") &&
     !pathname.startsWith("/james-hwang") &&
     !pathname.match(/^\/events\/[^/]/) &&
