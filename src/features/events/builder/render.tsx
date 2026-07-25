@@ -99,7 +99,7 @@ function RenderNode({
       return (
         <div
           style={{
-            fontSize: `clamp(${Math.max(12, Math.round(fs * 0.5))}px, ${(fs / 12).toFixed(1)}vw, ${fs}px)`,
+            fontSize: `clamp(${Math.max(14, Math.round(fs * 0.85))}px, ${(fs / 4).toFixed(2)}vw, ${fs}px)`,
             fontFamily: "var(--font-jakarta), ui-sans-serif, system-ui, sans-serif",
             lineHeight: 1.7,
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "left",
@@ -148,7 +148,7 @@ function RenderNode({
             backgroundColor: (props.bgColor as string) ?? "#29BDD6",
             color: (props.textColor as string) ?? "#ffffff",
             fontFamily: "var(--font-jakarta), ui-sans-serif, system-ui, sans-serif",
-            fontSize: `clamp(${Math.max(12, Math.round(btnFs * 0.5))}px, ${(btnFs / 12).toFixed(1)}vw, ${btnFs}px)`,
+            fontSize: `clamp(${Math.max(14, Math.round(btnFs * 0.85))}px, ${(btnFs / 4).toFixed(2)}vw, ${btnFs}px)`,
             paddingLeft: `clamp(8px, 2vw, ${btnPx}px)`,
             paddingRight: `clamp(8px, 2vw, ${btnPx}px)`,
             paddingTop: `clamp(6px, 1.5vw, ${btnPy}px)`,
@@ -331,7 +331,7 @@ function RenderNode({
       return (
         <div
           style={{
-            fontSize: `clamp(${Math.max(16, Math.round(titleFs * 0.5))}px, ${(titleFs / 12).toFixed(1)}vw, ${titleFs}px)`,
+            fontSize: `clamp(${Math.max(16, Math.round(titleFs * 0.85))}px, ${(titleFs / 4).toFixed(2)}vw, ${titleFs}px)`,
             color: (props.color as string) ?? "#ffffff",
             textAlign: (props.textAlign as React.CSSProperties["textAlign"]) ?? "center",
             maxWidth: "100%",
@@ -357,7 +357,7 @@ function RenderNode({
       return (
         <div
           style={{
-            fontSize: `clamp(${Math.max(12, Math.round(datesFs * 0.5))}px, ${(datesFs / 12).toFixed(1)}vw, ${datesFs}px)`,
+            fontSize: `clamp(${Math.max(14, Math.round(datesFs * 0.85))}px, ${(datesFs / 4).toFixed(2)}vw, ${datesFs}px)`,
             fontFamily: "var(--font-jakarta), ui-sans-serif, system-ui, sans-serif",
             lineHeight: 1.5,
             color: (props.color as string) ?? "#d1d5db",
@@ -384,7 +384,7 @@ function RenderNode({
       return (
         <div
           style={{
-            fontSize: `clamp(${Math.max(12, Math.round(locationFs * 0.5))}px, ${(locationFs / 12).toFixed(1)}vw, ${locationFs}px)`,
+            fontSize: `clamp(${Math.max(14, Math.round(locationFs * 0.85))}px, ${(locationFs / 4).toFixed(2)}vw, ${locationFs}px)`,
             fontFamily: "var(--font-jakarta), ui-sans-serif, system-ui, sans-serif",
             lineHeight: 1.5,
             color: (props.color as string) ?? "#d1d5db",
@@ -410,7 +410,7 @@ function RenderNode({
             backgroundColor: (props.bgColor as string) ?? "#29BDD6",
             color: (props.textColor as string) ?? "#ffffff",
             fontFamily: "var(--font-jakarta), ui-sans-serif, system-ui, sans-serif",
-            fontSize: `clamp(${Math.max(12, Math.round(regFs * 0.5))}px, ${(regFs / 12).toFixed(1)}vw, ${regFs}px)`,
+            fontSize: `clamp(${Math.max(14, Math.round(regFs * 0.85))}px, ${(regFs / 4).toFixed(2)}vw, ${regFs}px)`,
             padding: `clamp(6px, 1.5vw, ${regPy}px) clamp(8px, 2vw, ${regPx}px)`,
             borderRadius: `${props.borderRadius ?? 12}px`,
             fontWeight: 600,
