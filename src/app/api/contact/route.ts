@@ -30,7 +30,6 @@ export async function POST(request: Request) {
 
     const result = await sendEmail({
       to: "info@billionsoulharvest.org",
-      cc: "billionsoulharvest@gmail.com",
       from: getFromAddress(),
       replyTo: email,
       subject: `Contact Form: ${escapeHtml(name)}`,
