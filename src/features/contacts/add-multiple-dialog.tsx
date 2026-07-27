@@ -121,6 +121,7 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
         setActiveCell({ row: rowIdx - 1, col: colIdx });
       }
     } else if (e.key === "Escape") {
+      e.stopPropagation();
       setActiveCell(null);
       (e.target as HTMLElement).blur();
     }
