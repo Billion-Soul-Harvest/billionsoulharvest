@@ -1,24 +1,23 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { X, Plus, ChevronDown, Check, Search } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { createClient } from "@/shared/utils/supabase/client";
 import { SharedContactOptions } from "./shared-contact-options";
 import { CONTACT_FIELDS } from "./csv-column-mappings";
 import type { ContactType } from "@/shared/types/database";
 
 interface Column {
-  key: string;      // e.g. "email", "first_name", or "custom:Ministry"
-  label: string;    // display label
+  key: string;
+  label: string;
   placeholder: string;
   removable: boolean;
 }
@@ -50,16 +49,28 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Active cell tracking for spreadsheet behavior
+  const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+
   function updateRow(index: number, key: string, value: string) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
   }
 
   function deleteRow(index: number) {
-    setRows((prev) => prev.filter((_, i) => i !== index));
+    setRows((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length === 0 ? [{}] : next;
+    });
+    setActiveCell(null);
   }
 
   function addRow() {
     setRows((prev) => [...prev, {}]);
+    // Focus first cell of new row
+    setTimeout(() => {
+      setActiveCell({ row: rows.length, col: 0 });
+    }, 0);
   }
 
   function addColumn(key: string, label: string) {
@@ -69,29 +80,63 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
 
   function removeColumn(key: string) {
     setColumns((prev) => prev.filter((c) => c.key !== key));
-    // Clean up row data for this column
     setRows((prev) => prev.map((r) => {
       const { [key]: _, ...rest } = r;
       return rest;
     }));
   }
 
+  // Keyboard navigation
+  function handleCellKeyDown(e: React.KeyboardEvent, rowIdx: number, colIdx: number) {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const nextCol = e.shiftKey ? colIdx - 1 : colIdx + 1;
+      if (nextCol >= 0 && nextCol < columns.length) {
+        setActiveCell({ row: rowIdx, col: nextCol });
+      } else if (!e.shiftKey && nextCol >= columns.length) {
+        // Tab past last column → next row first column, add row if last
+        if (rowIdx < rows.length - 1) {
+          setActiveCell({ row: rowIdx + 1, col: 0 });
+        } else {
+          addRow();
+        }
+      } else if (e.shiftKey && nextCol < 0 && rowIdx > 0) {
+        setActiveCell({ row: rowIdx - 1, col: columns.length - 1 });
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (rowIdx < rows.length - 1) {
+        setActiveCell({ row: rowIdx + 1, col: colIdx });
+      } else {
+        addRow();
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (rowIdx < rows.length - 1) {
+        setActiveCell({ row: rowIdx + 1, col: colIdx });
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (rowIdx > 0) {
+        setActiveCell({ row: rowIdx - 1, col: colIdx });
+      }
+    } else if (e.key === "Escape") {
+      setActiveCell(null);
+      (e.target as HTMLElement).blur();
+    }
+  }
+
   async function handleSave() {
     setError(null);
-
     const validRows = rows.filter(
       (r) => (r.email?.trim()) || (r.first_name?.trim()) || (r.last_name?.trim()),
     );
-
     if (validRows.length === 0) {
       setError("Please fill in at least one row with a name or email.");
       return;
     }
-
     setSaving(true);
-
     const standardKeys = new Set(CONTACT_FIELDS.map((f) => f.key));
-
     const payloads = validRows.map((r) => {
       const payload: Record<string, unknown> = {
         contact_type: "subscriber" as ContactType,
@@ -99,11 +144,9 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
         email_lists: selectedLists.length > 0 ? selectedLists : null,
       };
       const customFields: Record<string, string> = {};
-
       for (const col of columns) {
         const val = r[col.key]?.trim();
         if (!val) continue;
-
         if (col.key.startsWith("custom:")) {
           customFields[col.key.slice(7)] = val;
         } else if (col.key === "email") {
@@ -114,29 +157,23 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
           payload[col.key] = val;
         }
       }
-
       if (Object.keys(customFields).length > 0) {
         payload.custom_fields = customFields;
       }
-
       return payload;
     });
-
     const supabase = createClient();
     const { error: err } = await supabase.from("contacts").insert(payloads);
     setSaving(false);
-
-    if (err) {
-      setError(err.message);
-      return;
-    }
-
+    if (err) { setError(err.message); return; }
     onSuccess();
     onClose();
   }
 
-  // Fields already used as columns
   const usedKeys = new Set(columns.map((c) => c.key));
+  const filledCount = rows.filter(
+    (r) => (r.email?.trim()) || (r.first_name?.trim()) || (r.last_name?.trim()),
+  ).length;
 
   return (
     <>
@@ -144,70 +181,103 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
         <DialogTitle>Add multiple contacts</DialogTitle>
       </DialogHeader>
 
-      <div className="space-y-4 py-2">
+      <div className="space-y-3 py-2">
+        {/* Spreadsheet grid */}
         <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.key} className="text-left font-medium text-gray-600 pb-2 pr-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <span>{col.label}</span>
-                      {col.removable && (
-                        <button
-                          type="button"
-                          onClick={() => removeColumn(col.key)}
-                          className="p-0.5 text-gray-300 hover:text-red-500 transition-colors"
-                          title={`Remove ${col.label} column`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
+          <div className="border rounded-lg overflow-hidden">
+            <table ref={tableRef} className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  {/* Row number header */}
+                  <th className="w-10 px-2 py-2 text-center text-xs font-medium text-gray-400 border-b border-r bg-gray-50 sticky left-0">
+                    #
                   </th>
-                ))}
-                <th className="pb-2 pr-2">
-                  <AddColumnButton
-                    usedKeys={usedKeys}
-                    onAdd={addColumn}
-                  />
-                </th>
-                <th className="w-8" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => (
-                <tr key={i}>
                   {columns.map((col) => (
-                    <td key={col.key} className="pr-1.5 pb-1.5">
-                      <Input
-                        value={row[col.key] ?? ""}
-                        onChange={(e) => updateRow(i, col.key, e.target.value)}
-                        placeholder={col.placeholder}
-                        className="h-9 text-sm min-w-[100px]"
-                      />
-                    </td>
-                  ))}
-                  <td className="pr-1.5 pb-1.5" /> {/* spacer for add column */}
-                  <td className="pb-1.5">
-                    <button
-                      type="button"
-                      onClick={() => deleteRow(i)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                      title="Remove row"
+                    <th
+                      key={col.key}
+                      className="px-3 py-2 text-left text-xs font-semibold text-gray-600 border-b border-r whitespace-nowrap select-none group"
                     >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </td>
+                      <div className="flex items-center justify-between gap-1">
+                        <span>{col.label}</span>
+                        {col.removable && (
+                          <button
+                            type="button"
+                            onClick={() => removeColumn(col.key)}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-300 hover:text-red-500 transition-all"
+                            title={`Remove ${col.label}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                  {/* Add column header */}
+                  <th className="w-20 px-2 py-2 border-b text-center">
+                    <AddColumnButton usedKeys={usedKeys} onAdd={addColumn} />
+                  </th>
+                  {/* Delete row header */}
+                  <th className="w-8 border-b" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row, rowIdx) => (
+                  <tr
+                    key={rowIdx}
+                    className="group/row hover:bg-blue-50/30 transition-colors"
+                  >
+                    {/* Row number */}
+                    <td className="px-2 py-0 text-center text-xs text-gray-400 border-r bg-gray-50 sticky left-0 select-none">
+                      {rowIdx + 1}
+                    </td>
+                    {columns.map((col, colIdx) => {
+                      const isActive = activeCell?.row === rowIdx && activeCell?.col === colIdx;
+                      return (
+                        <EditableCell
+                          key={col.key}
+                          value={row[col.key] ?? ""}
+                          placeholder={col.placeholder}
+                          isActive={isActive}
+                          onActivate={() => setActiveCell({ row: rowIdx, col: colIdx })}
+                          onChange={(val) => updateRow(rowIdx, col.key, val)}
+                          onKeyDown={(e) => handleCellKeyDown(e, rowIdx, colIdx)}
+                        />
+                      );
+                    })}
+                    {/* Spacer for add-column */}
+                    <td className="border-r" />
+                    {/* Delete row */}
+                    <td className="px-1 py-0">
+                      <button
+                        type="button"
+                        onClick={() => deleteRow(rowIdx)}
+                        className="p-1 text-gray-300 opacity-0 group-hover/row:opacity-100 hover:text-red-500 transition-all"
+                        title="Remove row"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <Button type="button" variant="outline" size="sm" onClick={addRow}>
-          + Add row
-        </Button>
+        {/* Footer row controls */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={addRow}
+            className="flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 font-medium"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add row
+          </button>
+          <span className="text-xs text-gray-400">
+            {filledCount} contact{filledCount !== 1 ? "s" : ""} filled
+          </span>
+        </div>
 
         <div className="border-t pt-4">
           <SharedContactOptions
@@ -231,10 +301,68 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
           disabled={saving}
           className="bg-cyan-600 hover:bg-cyan-700 text-white"
         >
-          {saving ? "Saving..." : "Save contacts"}
+          {saving ? "Saving..." : `Save ${filledCount > 0 ? filledCount + " " : ""}contact${filledCount !== 1 ? "s" : ""}`}
         </Button>
       </DialogFooter>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Editable Cell — click to edit, shows text when idle
+// ---------------------------------------------------------------------------
+
+function EditableCell({
+  value,
+  placeholder,
+  isActive,
+  onActivate,
+  onChange,
+  onKeyDown,
+}: {
+  value: string;
+  placeholder: string;
+  isActive: boolean;
+  onActivate: () => void;
+  onChange: (val: string) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isActive && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isActive]);
+
+  if (isActive) {
+    return (
+      <td className="p-0 border-r">
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          onBlur={() => {/* keep value, just lose active state handled by parent */}}
+          placeholder={placeholder}
+          className="w-full h-8 px-3 text-sm bg-white outline-none ring-2 ring-inset ring-cyan-500 min-w-[100px]"
+        />
+      </td>
+    );
+  }
+
+  return (
+    <td
+      className="px-3 py-0 border-r cursor-cell min-w-[100px] h-8"
+      onClick={onActivate}
+    >
+      {value ? (
+        <span className="text-sm text-gray-900 truncate block leading-8">{value}</span>
+      ) : (
+        <span className="text-sm text-gray-300 truncate block leading-8">{placeholder}</span>
+      )}
+    </td>
   );
 }
 
@@ -277,13 +405,12 @@ function AddColumnButton({
   function openDropdown() {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 220) });
+      setPos({ top: rect.bottom + 4, left: rect.right - 220, width: 220 });
     }
     setOpen(true);
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  // Available fields (not already used)
   const available = CONTACT_FIELDS.filter((f) => !usedKeys.has(f.key));
   const filtered = query
     ? available.filter((f) => f.label.toLowerCase().includes(query.toLowerCase()))
@@ -313,7 +440,7 @@ function AddColumnButton({
         ref={buttonRef}
         type="button"
         onClick={() => { if (open) { setOpen(false); setQuery(""); setCustomEditing(false); } else openDropdown(); }}
-        className="flex items-center gap-1 text-xs text-cyan-600 hover:text-cyan-700 font-medium whitespace-nowrap"
+        className="flex items-center gap-1 text-xs text-cyan-600 hover:text-cyan-700 font-medium whitespace-nowrap mx-auto"
         title="Add column"
       >
         <Plus className="w-3.5 h-3.5" />
@@ -343,7 +470,6 @@ function AddColumnButton({
             />
           </div>
           <div className="max-h-52 overflow-y-auto py-1">
-            {/* Custom field inline creator */}
             {!query && !customEditing && (
               <button
                 type="button"
@@ -388,7 +514,6 @@ function AddColumnButton({
                 </button>
               </div>
             )}
-
             {filtered.map((f) => (
               <button
                 key={f.key}
