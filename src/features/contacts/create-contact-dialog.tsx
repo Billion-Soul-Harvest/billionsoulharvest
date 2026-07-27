@@ -13,6 +13,9 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { ChevronDown, X, Search, Check } from "lucide-react";
+import { AddMultipleDialog } from "./add-multiple-dialog";
+import { ImportCSVDialog } from "./import-csv-dialog";
+import { SharedContactOptions } from "./shared-contact-options";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { ContactType } from "@/shared/types/database";
 
@@ -53,6 +56,8 @@ const GENDER_OPTIONS = ["male", "female"];
 
 export function CreateContactDialog({ listNames, onSuccess }: CreateContactDialogProps) {
   const [open, setOpen] = useState(false);
+  const [multipleOpen, setMultipleOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -88,6 +93,26 @@ export function CreateContactDialog({ listNames, onSuccess }: CreateContactDialo
           >
             Add a single contact
           </button>
+          <button
+            type="button"
+            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+            onClick={() => {
+              setDropdownOpen(false);
+              setMultipleOpen(true);
+            }}
+          >
+            Add multiple contacts
+          </button>
+          <button
+            type="button"
+            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+            onClick={() => {
+              setDropdownOpen(false);
+              setImportOpen(true);
+            }}
+          >
+            Import contacts
+          </button>
         </div>
       )}
       <Dialog open={open} onOpenChange={(o) => { if (!o) setOpen(false); }}>
@@ -97,6 +122,26 @@ export function CreateContactDialog({ listNames, onSuccess }: CreateContactDialo
             listNames={listNames}
             onSuccess={onSuccess}
             onClose={() => setOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={multipleOpen} onOpenChange={(o) => { if (!o) setMultipleOpen(false); }}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <AddMultipleDialog
+            key={String(multipleOpen)}
+            listNames={listNames}
+            onSuccess={onSuccess}
+            onClose={() => setMultipleOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={importOpen} onOpenChange={(o) => { if (!o) setImportOpen(false); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <ImportCSVDialog
+            key={String(importOpen)}
+            listNames={listNames}
+            onSuccess={onSuccess}
+            onClose={() => setImportOpen(false)}
           />
         </DialogContent>
       </Dialog>
@@ -129,24 +174,10 @@ function AddContactForm({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [tagQuery, setTagQuery] = useState("");
-  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
-  const tagRef = useRef<HTMLDivElement>(null);
 
   // Save state
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!tagDropdownOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (tagRef.current && !tagRef.current.contains(e.target as Node)) {
-        setTagDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [tagDropdownOpen]);
 
   function resetForm() {
     setEmail("");
@@ -159,7 +190,6 @@ function AddContactForm({
     setAdvancedOpen(false);
     setSelectedLists([]);
     setSelectedTags([]);
-    setTagQuery("");
     setError(null);
   }
 
@@ -228,32 +258,6 @@ function AddContactForm({
   const filteredManageFields = manageQuery
     ? OPTIONAL_FIELD_DEFS.filter((f) => f.label.toLowerCase().includes(manageQuery.toLowerCase()))
     : OPTIONAL_FIELD_DEFS;
-
-  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
-  const tagDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    if (!tagDropdownOpen) return;
-    clearTimeout(tagDebounceRef.current);
-    const delay = tagQuery ? 300 : 0;
-    tagDebounceRef.current = setTimeout(async () => {
-      const supabase = createClient();
-      let q = supabase.from("tags").select("name").order("name").limit(50);
-      if (tagQuery) q = q.ilike("name", `%${tagQuery}%`);
-      const { data } = await q;
-      const results = (data ?? []).map((r) => r.name);
-      setTagSuggestions(results.filter((t: string) => !selectedTags.includes(t)));
-    }, delay);
-    return () => clearTimeout(tagDebounceRef.current);
-  }, [tagDropdownOpen, tagQuery, selectedTags]);
-
-  function addTag(tag: string) {
-    const trimmed = tag.trim();
-    if (trimmed && !selectedTags.includes(trimmed)) {
-      setSelectedTags((prev) => [...prev, trimmed]);
-    }
-    setTagQuery("");
-  }
 
   return (
     <>
@@ -407,98 +411,14 @@ function AddContactForm({
 
         {/* Advanced settings section */}
         {advancedOpen && (
-          <div className="space-y-4 border-t pt-4">
-            {/* Add to list */}
-            <div className="space-y-1.5">
-              <Label>Add to list</Label>
-              <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border rounded-md bg-white">
-                {selectedLists.map((list) => (
-                  <span
-                    key={list}
-                    className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-sm"
-                  >
-                    {list}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLists((prev) => prev.filter((l) => l !== list))}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {listNames
-                  .filter((l) => !selectedLists.includes(l))
-                  .map((list) => (
-                    <button
-                      key={list}
-                      type="button"
-                      onClick={() => setSelectedLists((prev) => [...prev, list])}
-                      className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-cyan-300 hover:text-cyan-700 transition-colors"
-                    >
-                      + {list}
-                    </button>
-                  ))}
-              </div>
-            </div>
-
-            {/* Add tags */}
-            <div className="space-y-1.5" ref={tagRef}>
-              <Label>Add tags</Label>
-              <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 border rounded-md bg-white">
-                {selectedTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-sm"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTags((prev) => prev.filter((t) => t !== tag))}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={tagQuery}
-                  onChange={(e) => {
-                    setTagQuery(e.target.value);
-                    setTagDropdownOpen(true);
-                  }}
-                  onFocus={() => setTagDropdownOpen(true)}
-                  onKeyDown={(e) => {
-                    if ((e.key === "Enter" || e.key === ",") && tagQuery.trim()) {
-                      e.preventDefault();
-                      addTag(tagQuery);
-                    }
-                  }}
-                  placeholder={selectedTags.length === 0 ? "Start typing to find tags" : ""}
-                  className="flex-1 min-w-[120px] text-sm outline-none bg-transparent py-0.5"
-                />
-              </div>
-              {tagDropdownOpen && tagQuery && tagSuggestions.length > 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 shadow-lg max-h-48 overflow-y-auto py-1">
-                  {tagSuggestions.slice(0, 10).map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        addTag(tag);
-                        setTagDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="border-t pt-4">
+            <SharedContactOptions
+              listNames={listNames}
+              selectedLists={selectedLists}
+              setSelectedLists={setSelectedLists}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+            />
           </div>
         )}
 

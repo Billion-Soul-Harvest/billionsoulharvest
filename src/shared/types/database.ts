@@ -65,7 +65,7 @@ export interface Contact {
   street_address: string | null;
   email_status: string | null;
   email_permission: string | null;
-  alternative_email: string | null;
+  alternative_email: string[] | null;
   birthday: string | null;
   gender: string | null;
   age_group: string | null;
@@ -81,6 +81,7 @@ export interface Contact {
   zip_code: string | null;
   address_line_2: string | null;
   phone_other: string | null;
+  custom_fields: Record<string, string> | null;
   created_at: string;
   updated_at: string;
 }

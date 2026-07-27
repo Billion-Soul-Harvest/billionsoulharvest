@@ -9,6 +9,7 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
+import { parseCSV } from "../src/shared/utils/csv-parser";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -20,60 +21,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-// ---------------------------------------------------------------------------
-// CSV Parser (handles quoted fields with commas/newlines)
-// ---------------------------------------------------------------------------
-function parseCSV(text: string): Record<string, string>[] {
-  const lines: string[][] = [];
-  let current: string[] = [];
-  let field = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        current.push(field.trim());
-        field = "";
-      } else if (ch === "\n" || (ch === "\r" && text[i + 1] === "\n")) {
-        current.push(field.trim());
-        if (current.some((f) => f)) lines.push(current);
-        current = [];
-        field = "";
-        if (ch === "\r") i++;
-      } else {
-        field += ch;
-      }
-    }
-  }
-  current.push(field.trim());
-  if (current.some((f) => f)) lines.push(current);
-
-  if (lines.length < 2) return [];
-
-  const headers = lines[0].map((h) => h.toLowerCase().trim());
-  return lines.slice(1).map((row) => {
-    const obj: Record<string, string> = {};
-    headers.forEach((h, i) => {
-      obj[h] = row[i] ?? "";
-    });
-    return obj;
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Mapping logic for CC export format
@@ -251,7 +198,7 @@ async function main() {
       street_address: row["street address line 1 - home"] || null,
       email_status: row["email status"] || null,
       email_permission: row["email permission status"] || null,
-      alternative_email: row["alternative email"] || null,
+      alternative_email: row["alternative email"] ? [row["alternative email"]] : null,
       birthday: parseBirthday(row["birthday"] ?? ""),
       gender: row["gender"] || null,
       age_group: row["age group"] || null,

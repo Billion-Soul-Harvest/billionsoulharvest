@@ -64,7 +64,7 @@ interface ContactData {
   notes: string | null;
   email_status: string | null;
   email_permission: string | null;
-  alternative_email: string | null;
+  alternative_email: string[] | null;
   birthday: string | null;
   anniversary: string | null;
   gender: string | null;
@@ -77,6 +77,7 @@ interface ContactData {
   source: string | null;
   cc_region: string | null;
   email_lists: string[] | null;
+  custom_fields: Record<string, string> | null;
   region: { id: string; name: string; color: string } | null;
   position: { id: string; name: string } | null;
   created_at: string;
@@ -291,7 +292,7 @@ export function ContactDetail({
     position_id: contact.position_id ?? "",
     email_status: contact.email_status ?? "",
     email_permission: contact.email_permission ?? "",
-    alternative_email: contact.alternative_email ?? "",
+    alternative_email: (contact.alternative_email ?? []).join(", "),
     birthday: contact.birthday ?? "",
     anniversary: contact.anniversary ?? "",
     gender: contact.gender ?? "",
@@ -306,6 +307,7 @@ export function ContactDetail({
     phone_mobile: contact.phone_mobile ?? "",
     phone_work: contact.phone_work ?? "",
     phone_other: contact.phone_other ?? "",
+    custom_fields: contact.custom_fields ?? {},
   }), [contact]);
 
   const [form, setForm] = useState(buildFormState);
@@ -379,7 +381,9 @@ export function ContactDetail({
         position_id: form.position_id || null,
         email_status: form.email_status || null,
         email_permission: form.email_permission || null,
-        alternative_email: form.alternative_email || null,
+        alternative_email: form.alternative_email
+          ? form.alternative_email.split(/[,;\n]+/).map((e) => e.trim().toLowerCase()).filter(Boolean)
+          : null,
         birthday: form.birthday || null,
         anniversary: form.anniversary || null,
         gender: form.gender || null,
@@ -394,6 +398,7 @@ export function ContactDetail({
         phone_mobile: form.phone_mobile || null,
         phone_work: form.phone_work || null,
         phone_other: form.phone_other || null,
+        custom_fields: Object.keys(form.custom_fields).length > 0 ? form.custom_fields : null,
       })
       .eq("id", contact.id);
 
@@ -601,7 +606,7 @@ export function ContactDetail({
               <CollapsibleSection title="Custom fields">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                   <FormField label="Age group" value={form.age_group} onChange={(v) => updateField("age_group", v)} />
-                  <FormField label="Alternative email" value={form.alternative_email} onChange={(v) => updateField("alternative_email", v)} type="email" />
+                  <FormField label="Other emails" value={form.alternative_email} onChange={(v) => updateField("alternative_email", v)} placeholder="Comma-separated" />
                   <FormField label="Country" value={form.country} onChange={(v) => updateField("country", v)} />
                   <FormSelect
                     label="Gender"
@@ -642,6 +647,25 @@ export function ContactDetail({
                     placeholder="Select type"
                   />
                 </div>
+                {/* Dynamic custom fields from CSV import */}
+                {Object.keys(form.custom_fields).length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Imported fields</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                      {Object.entries(form.custom_fields).map(([key, value]) => (
+                        <FormField
+                          key={key}
+                          label={key}
+                          value={value}
+                          onChange={(v) => {
+                            const updated = { ...form.custom_fields, [key]: v };
+                            updateField("custom_fields", updated as unknown as string);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CollapsibleSection>
 
               {/* Street addresses */}

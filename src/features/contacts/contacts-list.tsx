@@ -51,7 +51,7 @@ interface ContactRow {
   church_role: string | null;
   birthday: string | null;
   age_group: string | null;
-  alternative_email: string | null;
+  alternative_email: string[] | null;
   referred_by: string | null;
   interests: string | null;
   expectations: string | null;
@@ -1514,7 +1514,7 @@ export function ContactsListClient({
                       </td>
                     )}
                     {isCol("age_group") && <td className="px-4 py-3 text-gray-600">{c.age_group ?? "—"}</td>}
-                    {isCol("alternative_email") && <td className="px-4 py-3 text-gray-600">{c.alternative_email ?? "—"}</td>}
+                    {isCol("alternative_email") && <td className="px-4 py-3 text-gray-600">{c.alternative_email?.join(", ") ?? "—"}</td>}
                     {isCol("referred_by") && <td className="px-4 py-3 text-gray-600">{c.referred_by ?? "—"}</td>}
                     {isCol("interests") && <td className="px-4 py-3 text-gray-600">{c.interests ?? "—"}</td>}
                     {isCol("expectations") && <td className="px-4 py-3 text-gray-600">{c.expectations ?? "—"}</td>}
