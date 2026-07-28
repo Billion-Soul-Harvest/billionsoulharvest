@@ -146,11 +146,74 @@ export function ImportCSVDialog({ listNames, existingCustomFields, onSuccess, on
       return !email || seen.get(email) === i;
     });
 
-    for (let i = 0; i < allPayloads.length; i += BATCH_SIZE) {
-      const batch = allPayloads.slice(i, i + BATCH_SIZE);
+    // Look up all existing contacts by email to separate inserts from updates
+    const allEmails = allPayloads.map((p) => p.email as string).filter(Boolean);
+    const existingMap = new Map<string, {
+      tags: string[];
+      email_lists: string[];
+      alternative_email: string[];
+      custom_fields: Record<string, unknown> | null;
+    }>();
+
+    // Fetch in chunks of 500 (Supabase .in() limit)
+    for (let i = 0; i < allEmails.length; i += 500) {
+      const chunk = allEmails.slice(i, i + 500);
+      const { data: existing } = await supabase
+        .from("contacts")
+        .select("email, tags, email_lists, alternative_email, custom_fields")
+        .in("email", chunk);
+      (existing ?? []).forEach((c) => {
+        if (c.email) {
+          existingMap.set(c.email, {
+            tags: (c.tags as string[]) ?? [],
+            email_lists: (c.email_lists as string[]) ?? [],
+            alternative_email: (c.alternative_email as string[]) ?? [],
+            custom_fields: (c.custom_fields as Record<string, unknown>) ?? null,
+          });
+        }
+      });
+    }
+
+    // Split into new contacts (insert) and existing contacts (update individually)
+    const newPayloads: Record<string, unknown>[] = [];
+    const updatePayloads: { email: string; data: Record<string, unknown> }[] = [];
+
+    for (const payload of allPayloads) {
+      const email = payload.email as string | null;
+      const prev = email ? existingMap.get(email) : undefined;
+
+      if (!prev) {
+        newPayloads.push(payload);
+      } else {
+        // Merge arrays — add new values without removing existing ones
+        const merged = { ...payload };
+
+        const mergedTags = [...new Set([...prev.tags, ...((payload.tags as string[]) ?? [])])];
+        if (mergedTags.length > 0) merged.tags = mergedTags; else delete merged.tags;
+
+        const mergedLists = [...new Set([...prev.email_lists, ...((payload.email_lists as string[]) ?? [])])];
+        if (mergedLists.length > 0) merged.email_lists = mergedLists; else delete merged.email_lists;
+
+        const mergedAltEmail = [...new Set([...prev.alternative_email, ...((payload.alternative_email as string[]) ?? [])])];
+        if (mergedAltEmail.length > 0) merged.alternative_email = mergedAltEmail; else delete merged.alternative_email;
+
+        if (payload.custom_fields || prev.custom_fields) {
+          merged.custom_fields = {
+            ...(prev.custom_fields ?? {}),
+            ...((payload.custom_fields as Record<string, unknown>) ?? {}),
+          };
+        }
+
+        updatePayloads.push({ email: email!, data: merged });
+      }
+    }
+
+    // Insert new contacts in batches
+    for (let i = 0; i < newPayloads.length; i += BATCH_SIZE) {
+      const batch = newPayloads.slice(i, i + BATCH_SIZE);
       const { data, error: err } = await supabase
         .from("contacts")
-        .upsert(batch, { onConflict: "email", ignoreDuplicates: false })
+        .insert(batch)
         .select("id");
 
       if (err) {
@@ -159,9 +222,43 @@ export function ImportCSVDialog({ listNames, existingCustomFields, onSuccess, on
         totalSuccess += data?.length ?? 0;
       }
 
-      setProgress(Math.min(i + BATCH_SIZE, allPayloads.length));
+      setProgress(Math.min(updatePayloads.length + i + BATCH_SIZE, allPayloads.length));
       setSuccessCount(totalSuccess);
       setErrorCount(totalError);
+    }
+
+    // Update existing contacts individually (only send fields that have values)
+    for (let i = 0; i < updatePayloads.length; i++) {
+      const { email, data: merged } = updatePayloads[i];
+      // Remove undefined/null scalar fields so we don't overwrite existing data
+      const updateData: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(merged)) {
+        if (key === "email") continue; // don't update email itself
+        if (value !== undefined && value !== null) {
+          updateData[key] = value;
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        totalSuccess++;
+      } else {
+        const { error: err } = await supabase
+          .from("contacts")
+          .update(updateData)
+          .eq("email", email);
+
+        if (err) {
+          totalError++;
+        } else {
+          totalSuccess++;
+        }
+      }
+
+      if ((i + 1) % 10 === 0 || i === updatePayloads.length - 1) {
+        setProgress(Math.min(i + 1 + newPayloads.length, allPayloads.length));
+        setSuccessCount(totalSuccess);
+        setErrorCount(totalError);
+      }
     }
 
     setImportDone(true);
@@ -243,7 +340,7 @@ export function ImportCSVDialog({ listNames, existingCustomFields, onSuccess, on
               <span className="font-medium">{csvRows.length}</span> contacts will be imported. Showing first 5 rows.
             </p>
             <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-md">
-              Contacts with matching emails will be updated (upsert).
+              Contacts with matching emails will be updated. Existing lists, tags, and custom fields will be preserved and merged.
             </p>
 
             <div className="overflow-x-auto -mx-6 px-6">
