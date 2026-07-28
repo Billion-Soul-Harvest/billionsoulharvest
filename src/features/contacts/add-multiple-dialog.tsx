@@ -35,11 +35,12 @@ function buildColumn(key: string, label: string): Column {
 
 interface AddMultipleDialogProps {
   listNames: string[];
+  existingCustomFields: string[];
   onSuccess: () => void;
   onClose: () => void;
 }
 
-export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultipleDialogProps) {
+export function AddMultipleDialog({ listNames, existingCustomFields, onSuccess, onClose }: AddMultipleDialogProps) {
   const [columns, setColumns] = useState<Column[]>(DEFAULT_COLUMNS);
   const [rows, setRows] = useState<Record<string, string>[]>(() =>
     Array.from({ length: 5 }, () => ({})),
@@ -215,7 +216,7 @@ export function AddMultipleDialog({ listNames, onSuccess, onClose }: AddMultiple
                   ))}
                   {/* Add column header */}
                   <th className="w-20 px-2 py-2 border-b text-center">
-                    <AddColumnButton usedKeys={usedKeys} onAdd={addColumn} />
+                    <AddColumnButton usedKeys={usedKeys} onAdd={addColumn} existingCustomFields={existingCustomFields} />
                   </th>
                   {/* Delete row header */}
                   <th className="w-8 border-b" />
@@ -374,9 +375,11 @@ function EditableCell({
 function AddColumnButton({
   usedKeys,
   onAdd,
+  existingCustomFields,
 }: {
   usedKeys: Set<string>;
   onAdd: (key: string, label: string) => void;
+  existingCustomFields: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -412,14 +415,22 @@ function AddColumnButton({
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  const available = CONTACT_FIELDS.filter((f) => !usedKeys.has(f.key));
-  const filtered = query
-    ? available.filter((f) => f.label.toLowerCase().includes(query.toLowerCase()))
-    : available;
+  const availableStandard = CONTACT_FIELDS.filter((f) => !usedKeys.has(f.key));
+  const availableCustom = existingCustomFields
+    .filter((k) => !usedKeys.has(`custom:${k}`))
+    .map((k) => ({ key: `custom:${k}`, label: k }));
+
+  const filteredStandard = query
+    ? availableStandard.filter((f) => f.label.toLowerCase().includes(query.toLowerCase()))
+    : availableStandard;
+  const filteredCustom = query
+    ? availableCustom.filter((f) => f.label.toLowerCase().includes(query.toLowerCase()))
+    : availableCustom;
 
   const trimmedQuery = query.trim();
+  const allLabels = [...CONTACT_FIELDS.map((f) => f.label), ...existingCustomFields];
   const showCreateCustom = trimmedQuery.length > 0 &&
-    !CONTACT_FIELDS.some((f) => f.label.toLowerCase() === trimmedQuery.toLowerCase());
+    !allLabels.some((l) => l.toLowerCase() === trimmedQuery.toLowerCase());
 
   function selectField(key: string, label: string) {
     onAdd(key, label);
@@ -515,7 +526,7 @@ function AddColumnButton({
                 </button>
               </div>
             )}
-            {filtered.map((f) => (
+            {filteredStandard.map((f) => (
               <button
                 key={f.key}
                 type="button"
@@ -526,7 +537,25 @@ function AddColumnButton({
                 {f.label}
               </button>
             ))}
-            {filtered.length === 0 && !showCreateCustom && (
+            {filteredCustom.length > 0 && (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-t mt-1 pt-2">
+                  Custom Fields
+                </div>
+                {filteredCustom.map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => selectField(f.key, f.label)}
+                    className="w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 text-gray-700 hover:bg-gray-50"
+                  >
+                    <span className="w-3.5 shrink-0" />
+                    {f.label}
+                  </button>
+                ))}
+              </>
+            )}
+            {filteredStandard.length === 0 && filteredCustom.length === 0 && !showCreateCustom && (
               <p className="px-3 py-2 text-sm text-gray-400">No fields match</p>
             )}
             {showCreateCustom && (

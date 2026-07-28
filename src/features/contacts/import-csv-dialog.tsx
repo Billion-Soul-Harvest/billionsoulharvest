@@ -21,13 +21,14 @@ type Step = "upload" | "mapping" | "preview" | "importing";
 
 interface ImportCSVDialogProps {
   listNames: string[];
+  existingCustomFields: string[];
   onSuccess: () => void;
   onClose: () => void;
 }
 
 const BATCH_SIZE = 100;
 
-export function ImportCSVDialog({ listNames, onSuccess, onClose }: ImportCSVDialogProps) {
+export function ImportCSVDialog({ listNames, existingCustomFields, onSuccess, onClose }: ImportCSVDialogProps) {
   const [step, setStep] = useState<Step>("upload");
   const [fileName, setFileName] = useState("");
   const [csvRows, setCsvRows] = useState<Record<string, string>[]>([]);
@@ -168,9 +169,16 @@ export function ImportCSVDialog({ listNames, onSuccess, onClose }: ImportCSVDial
   }
 
   const mappedFieldKeys = Object.values(mappings).filter((v) => v !== "skip");
+  // Collect custom field keys from mappings too (newly created during this session)
+  const sessionCustomKeys = Object.values(mappings)
+    .filter((v) => v.startsWith("custom:"))
+    .map((v) => v.slice(7));
+  const allCustomKeys = [...new Set([...existingCustomFields, ...sessionCustomKeys])].sort();
+
   const fieldOptions = [
     { key: "skip", label: "-- Skip --" },
     ...CONTACT_FIELDS,
+    ...allCustomKeys.map((k) => ({ key: `custom:${k}`, label: `Custom: ${k}` })),
   ];
 
   return (
@@ -377,6 +385,34 @@ export function ImportCSVDialog({ listNames, onSuccess, onClose }: ImportCSVDial
   );
 }
 
+// --- Shared field option button ---
+
+function FieldOption({ label, isSelected, isDisabled, onClick }: {
+  label: string;
+  isSelected: boolean;
+  isDisabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={isDisabled}
+      onClick={onClick}
+      className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 ${
+        isDisabled
+          ? "text-gray-300 cursor-not-allowed"
+          : isSelected
+            ? "bg-cyan-50 text-cyan-700"
+            : "text-gray-700 hover:bg-gray-50"
+      }`}
+    >
+      {isSelected && <Check className="w-3.5 h-3.5 text-cyan-600 shrink-0" />}
+      {!isSelected && <span className="w-3.5 shrink-0" />}
+      {label}
+    </button>
+  );
+}
+
 // --- Searchable dropdown for column mapping ---
 
 function SearchableFieldSelect({
@@ -431,9 +467,11 @@ function SearchableFieldSelect({
     ? `Custom: "${value.slice(7)}"`
     : (options.find((o) => o.key === value)?.label ?? value);
 
-  const filtered = query
+  const allFiltered = query
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
+  const filteredStandard = allFiltered.filter((o) => !o.key.startsWith("custom:"));
+  const filteredCustom = allFiltered.filter((o) => o.key.startsWith("custom:"));
 
   // Show "Create custom field" when query doesn't exactly match an existing option
   const trimmedQuery = query.trim();
@@ -481,33 +519,18 @@ function SearchableFieldSelect({
             />
           </div>
           <div className="max-h-52 overflow-y-auto py-1">
-            {filtered.map((o, idx) => {
+            {filteredStandard.map((o, idx) => {
               const isDisabled = o.key !== "skip" && o.key !== value && disabledKeys.includes(o.key);
               const isSelected = o.key === value;
-              // Show "Custom field" button right after Skip (first item)
               const showCustomAfter = idx === 0 && o.key === "skip" && !query;
               return (
                 <Fragment key={o.key}>
-                  <button
-                    type="button"
-                    disabled={isDisabled}
-                    onClick={() => {
-                      onChange(o.key);
-                      setOpen(false);
-                      setQuery("");
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 ${
-                      isDisabled
-                        ? "text-gray-300 cursor-not-allowed"
-                        : isSelected
-                          ? "bg-cyan-50 text-cyan-700"
-                          : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {isSelected && <Check className="w-3.5 h-3.5 text-cyan-600 shrink-0" />}
-                    {!isSelected && <span className="w-3.5 shrink-0" />}
-                    {o.label}
-                  </button>
+                  <FieldOption
+                    label={o.label}
+                    isSelected={isSelected}
+                    isDisabled={isDisabled}
+                    onClick={() => { onChange(o.key); setOpen(false); setQuery(""); }}
+                  />
                   {showCustomAfter && !customEditing && (
                     <button
                       type="button"
@@ -564,7 +587,27 @@ function SearchableFieldSelect({
                 </Fragment>
               );
             })}
-            {filtered.length === 0 && !showCreateCustom && (
+            {filteredCustom.length > 0 && (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-t mt-1 pt-2">
+                  Custom Fields
+                </div>
+                {filteredCustom.map((o) => {
+                  const isDisabled = o.key !== value && disabledKeys.includes(o.key);
+                  const isSelected = o.key === value;
+                  return (
+                    <FieldOption
+                      key={o.key}
+                      label={o.label}
+                      isSelected={isSelected}
+                      isDisabled={isDisabled}
+                      onClick={() => { onChange(o.key); setOpen(false); setQuery(""); }}
+                    />
+                  );
+                })}
+              </>
+            )}
+            {filteredStandard.length === 0 && filteredCustom.length === 0 && !showCreateCustom && (
               <p className="px-3 py-2 text-sm text-gray-400">No fields match</p>
             )}
             {showCreateCustom && (

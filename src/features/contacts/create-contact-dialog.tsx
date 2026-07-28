@@ -21,6 +21,7 @@ import type { ContactType } from "@/shared/types/database";
 
 interface CreateContactDialogProps {
   listNames: string[];
+  existingCustomFields: string[];
   onSuccess: () => void;
 }
 
@@ -54,7 +55,7 @@ const FIELD_GROUPS = ["Basic fields", "Location"] as const;
 const AGE_GROUP_OPTIONS = ["Under 18", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
 const GENDER_OPTIONS = ["male", "female"];
 
-export function CreateContactDialog({ listNames, onSuccess }: CreateContactDialogProps) {
+export function CreateContactDialog({ listNames, existingCustomFields, onSuccess }: CreateContactDialogProps) {
   const [open, setOpen] = useState(false);
   const [multipleOpen, setMultipleOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -130,6 +131,7 @@ export function CreateContactDialog({ listNames, onSuccess }: CreateContactDialo
           <AddMultipleDialog
             key={String(multipleOpen)}
             listNames={listNames}
+            existingCustomFields={existingCustomFields}
             onSuccess={onSuccess}
             onClose={() => setMultipleOpen(false)}
           />
@@ -140,6 +142,7 @@ export function CreateContactDialog({ listNames, onSuccess }: CreateContactDialo
           <ImportCSVDialog
             key={String(importOpen)}
             listNames={listNames}
+            existingCustomFields={existingCustomFields}
             onSuccess={onSuccess}
             onClose={() => setImportOpen(false)}
           />

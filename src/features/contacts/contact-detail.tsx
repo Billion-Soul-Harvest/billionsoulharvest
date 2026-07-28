@@ -602,8 +602,8 @@ export function ContactDetail({
                 </div>
               </CollapsibleSection>
 
-              {/* Custom fields */}
-              <CollapsibleSection title="Custom fields">
+              {/* Additional details */}
+              <CollapsibleSection title="Additional details">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                   <FormField label="Age group" value={form.age_group} onChange={(v) => updateField("age_group", v)} />
                   <FormField label="Other emails" value={form.alternative_email} onChange={(v) => updateField("alternative_email", v)} placeholder="Comma-separated" />
@@ -650,7 +650,7 @@ export function ContactDetail({
                 {/* Dynamic custom fields from CSV import */}
                 {Object.keys(form.custom_fields).length > 0 && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Imported fields</p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Custom fields</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                       {Object.entries(form.custom_fields).map(([key, value]) => (
                         <FormField

@@ -143,16 +143,27 @@ export default async function ContactsPage({ searchParams }: Props) {
     { data: positions },
     { data: languageRows },
     { data: audienceLists },
+    { data: customFieldRows },
   ] = await Promise.all([
     query.order(sort, { ascending: dir === "asc" }).range(from, to),
     supabase.from("ministry_regions").select("id, name, color").order("name"),
     supabase.from("positions").select("id, name").order("name"),
     supabase.from("contacts").select("language").not("language", "is", null).not("language", "eq", "").order("language"),
     supabase.from("audiences").select("name").eq("type", "list").order("name"),
+    supabase.from("contacts").select("custom_fields").not("custom_fields", "is", null).limit(500),
   ]);
 
   const languages = [...new Set((languageRows ?? []).map((r) => r.language as string))];
   const listNames = (audienceLists ?? []).map((a) => a.name);
+
+  // Extract distinct custom field keys from existing contacts
+  const customFieldKeys = new Set<string>();
+  (customFieldRows ?? []).forEach((row) => {
+    if (row.custom_fields && typeof row.custom_fields === "object") {
+      Object.keys(row.custom_fields as Record<string, unknown>).forEach((k) => customFieldKeys.add(k));
+    }
+  });
+  const existingCustomFields = [...customFieldKeys].sort();
 
   return (
     <div>
@@ -174,6 +185,7 @@ export default async function ContactsPage({ searchParams }: Props) {
         tagMode={tagMode}
         languages={languages}
         listNames={listNames}
+        existingCustomFields={existingCustomFields}
         sort={sort}
         dir={dir}
       />

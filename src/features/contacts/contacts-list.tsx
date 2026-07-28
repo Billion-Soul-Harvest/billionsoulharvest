@@ -96,6 +96,7 @@ interface Props {
   tagMode: string;
   languages: string[];
   listNames: string[];
+  existingCustomFields: string[];
   sort: string;
   dir: string;
 }
@@ -786,6 +787,7 @@ export function ContactsListClient({
   tagMode,
   languages,
   listNames,
+  existingCustomFields,
   sort,
   dir,
 }: Props) {
@@ -1167,6 +1169,7 @@ export function ContactsListClient({
         <div className="flex items-center gap-2">
           <CreateContactDialog
             listNames={listNames}
+            existingCustomFields={existingCustomFields}
             onSuccess={() => router.refresh()}
           />
           <Button variant="outline" onClick={exportCSV}>
