@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { createClient } from "@/shared/utils/supabase/client";
 
 interface SharedContactOptionsProps {
@@ -14,12 +14,16 @@ interface SharedContactOptionsProps {
 }
 
 export function SharedContactOptions({
-  listNames,
+  listNames: initialListNames,
   selectedLists,
   setSelectedLists,
   selectedTags,
   setSelectedTags,
 }: SharedContactOptionsProps) {
+  const [listQuery, setListQuery] = useState("");
+  const [localListNames, setLocalListNames] = useState(initialListNames);
+  useEffect(() => { setLocalListNames(initialListNames); }, [initialListNames]);
+
   const [tagQuery, setTagQuery] = useState("");
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
@@ -52,13 +56,48 @@ export function SharedContactOptions({
     return () => clearTimeout(tagDebounceRef.current);
   }, [tagDropdownOpen, tagQuery, selectedTags]);
 
-  function addTag(tag: string) {
+  async function addTag(tag: string, isNew?: boolean) {
     const trimmed = tag.trim();
-    if (trimmed && !selectedTags.includes(trimmed)) {
+    if (!trimmed) return;
+    if (isNew) {
+      const supabase = createClient();
+      await supabase.from("tags").insert({ name: trimmed });
+    }
+    if (!selectedTags.includes(trimmed)) {
       setSelectedTags([...selectedTags, trimmed]);
     }
     setTagQuery("");
   }
+
+  async function addNewList(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const isNew = !localListNames.includes(trimmed);
+    if (isNew) {
+      // Create audience record in the database
+      const supabase = createClient();
+      await supabase.from("audiences").insert({ name: trimmed, type: "list" });
+      setLocalListNames([...localListNames, trimmed].sort((a, b) => a.localeCompare(b)));
+    }
+    if (!selectedLists.includes(trimmed)) {
+      setSelectedLists([...selectedLists, trimmed]);
+    }
+    setListQuery("");
+  }
+
+  const filteredLists = localListNames
+    .filter((l) => !selectedLists.includes(l))
+    .filter((l) => !listQuery || l.toLowerCase().includes(listQuery.toLowerCase()));
+
+  const listQueryTrimmed = listQuery.trim();
+  const showCreateList = listQueryTrimmed &&
+    !localListNames.some((l) => l.toLowerCase() === listQueryTrimmed.toLowerCase()) &&
+    !selectedLists.some((l) => l.toLowerCase() === listQueryTrimmed.toLowerCase());
+
+  const tagQueryTrimmed = tagQuery.trim();
+  const showCreateTag = tagQueryTrimmed &&
+    !tagSuggestions.some((t) => t.toLowerCase() === tagQueryTrimmed.toLowerCase()) &&
+    !selectedTags.some((t) => t.toLowerCase() === tagQueryTrimmed.toLowerCase());
 
   return (
     <div className="space-y-4">
@@ -81,20 +120,44 @@ export function SharedContactOptions({
               </button>
             </span>
           ))}
+          <input
+            type="text"
+            value={listQuery}
+            onChange={(e) => setListQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && listQueryTrimmed) {
+                e.preventDefault();
+                addNewList(listQueryTrimmed);
+              }
+            }}
+            placeholder={selectedLists.length === 0 ? "Search or create a list..." : ""}
+            className="flex-1 min-w-[120px] text-sm outline-none bg-transparent py-0.5"
+          />
         </div>
+        {showCreateList && (
+          <button
+            type="button"
+            onClick={() => addNewList(listQueryTrimmed)}
+            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-cyan-300 text-cyan-700 bg-cyan-50 hover:bg-cyan-100 transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Create &ldquo;{listQueryTrimmed}&rdquo;
+          </button>
+        )}
         <div className="flex flex-wrap gap-1.5 mt-1">
-          {listNames
-            .filter((l) => !selectedLists.includes(l))
-            .map((list) => (
-              <button
-                key={list}
-                type="button"
-                onClick={() => setSelectedLists([...selectedLists, list])}
-                className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-cyan-300 hover:text-cyan-700 transition-colors"
-              >
-                + {list}
-              </button>
-            ))}
+          {filteredLists.map((list) => (
+            <button
+              key={list}
+              type="button"
+              onClick={() => {
+                setSelectedLists([...selectedLists, list]);
+                setListQuery("");
+              }}
+              className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-cyan-300 hover:text-cyan-700 transition-colors"
+            >
+              + {list}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -126,16 +189,18 @@ export function SharedContactOptions({
             }}
             onFocus={() => setTagDropdownOpen(true)}
             onKeyDown={(e) => {
-              if ((e.key === "Enter" || e.key === ",") && tagQuery.trim()) {
+              if ((e.key === "Enter" || e.key === ",") && tagQueryTrimmed) {
                 e.preventDefault();
-                addTag(tagQuery);
+                const match = tagSuggestions.find((t) => t.toLowerCase() === tagQueryTrimmed.toLowerCase());
+                addTag(match ?? tagQueryTrimmed, !match);
+                setTagDropdownOpen(false);
               }
             }}
-            placeholder={selectedTags.length === 0 ? "Start typing to find tags" : ""}
+            placeholder={selectedTags.length === 0 ? "Search or create a tag..." : ""}
             className="flex-1 min-w-[120px] text-sm outline-none bg-transparent py-0.5"
           />
         </div>
-        {tagDropdownOpen && tagQuery && tagSuggestions.length > 0 && (
+        {tagDropdownOpen && tagQuery && (
           <div className="bg-white rounded-lg border border-gray-200 shadow-lg max-h-48 overflow-y-auto py-1">
             {tagSuggestions.slice(0, 10).map((tag) => (
               <button
@@ -150,6 +215,19 @@ export function SharedContactOptions({
                 {tag}
               </button>
             ))}
+            {showCreateTag && (
+              <button
+                type="button"
+                onClick={() => {
+                  addTag(tagQueryTrimmed, true);
+                  setTagDropdownOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-cyan-700 hover:bg-cyan-50 flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Create &ldquo;{tagQueryTrimmed}&rdquo;
+              </button>
+            )}
           </div>
         )}
       </div>
