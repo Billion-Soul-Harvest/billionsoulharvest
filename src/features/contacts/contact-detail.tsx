@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -327,6 +327,44 @@ export function ContactDetail({
   // --- Tags state (saves immediately) ---
   const [tags, setTags] = useState<string[]>(contact.tags ?? []);
   const [tagInput, setTagInput] = useState("");
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!tagInput.trim()) {
+      setTagSuggestions([]);
+      setShowTagDropdown(false);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      const escaped = tagInput.trim().replace(/[%_\\]/g, "\\$&");
+      const { data } = await supabase
+        .from("tags")
+        .select("name")
+        .ilike("name", `%${escaped}%`)
+        .limit(20);
+      if (data) {
+        const filtered = data
+          .map((t) => t.name)
+          .filter((name) => !tags.includes(name));
+        setTagSuggestions(filtered);
+        setShowTagDropdown(filtered.length > 0);
+      }
+    }, 200);
+    return () => clearTimeout(timeout);
+  }, [tagInput, tags, supabase]);
+
+  useEffect(() => {
+    if (!showTagDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setShowTagDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showTagDropdown]);
 
   // --- Lists state (saves immediately) ---
   const [lists, setLists] = useState<string[]>(contact.email_lists ?? []);
@@ -779,23 +817,44 @@ export function ContactDetail({
                     <span className="text-sm text-gray-400">No tags</span>
                   )}
                 </div>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    addTag(tagInput);
-                  }}
-                  className="flex gap-1.5"
-                >
-                  <Input
-                    value={tagInput}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
-                    placeholder="Add tag..."
-                    className="h-8 text-sm flex-1"
-                  />
-                  <Button type="submit" variant="outline" size="sm" disabled={!tagInput.trim()}>
-                    <Plus className="size-3" />
-                  </Button>
-                </form>
+                <div className="relative" ref={tagDropdownRef}>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      addTag(tagInput);
+                      setShowTagDropdown(false);
+                    }}
+                    className="flex gap-1.5"
+                  >
+                    <Input
+                      value={tagInput}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                      onFocus={() => { if (tagSuggestions.length > 0) setShowTagDropdown(true); }}
+                      placeholder="Add tag..."
+                      className="h-8 text-sm flex-1"
+                    />
+                    <Button type="submit" variant="outline" size="sm" disabled={!tagInput.trim()}>
+                      <Plus className="size-3" />
+                    </Button>
+                  </form>
+                  {showTagDropdown && tagSuggestions.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg py-1 max-h-48 overflow-y-auto">
+                      {tagSuggestions.map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => {
+                            addTag(name);
+                            setShowTagDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors"
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
