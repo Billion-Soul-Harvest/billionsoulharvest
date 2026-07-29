@@ -92,7 +92,7 @@ export function EventForm({ event }: Props) {
     status: event?.status ?? "draft",
     max_registrations: event?.max_registrations ?? "",
     banner_url: event?.banner_url ?? "",
-    is_external: event?.is_external ?? false,
+    is_external: event?.is_external ?? true,
     external_url: event?.external_url ?? "",
   });
 
@@ -142,9 +142,11 @@ export function EventForm({ event }: Props) {
       status: form.status,
       max_registrations: form.max_registrations ? parseInt(form.max_registrations) : null,
       banner_url: form.banner_url || null,
-      is_external: form.is_external,
-      external_url: form.is_external ? (form.external_url || null) : null,
-      registration_config: form.is_external ? null : regConfig,
+      ...(!isEditing && {
+        is_external: form.is_external,
+        external_url: form.external_url || null,
+      }),
+      registration_config: regConfig,
     };
 
     if (isEditing) {
@@ -307,39 +309,16 @@ export function EventForm({ event }: Props) {
               </SelectContent>
             </Select>
           </div>
-          {!form.is_external && (
-            <div className="space-y-1.5">
-              <Label>Max Registrations</Label>
-              <Input type="number" value={form.max_registrations}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("max_registrations", e.target.value)}
-                placeholder="Unlimited" />
-            </div>
-          )}
-          <div className="sm:col-span-2 space-y-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.is_external}
-                onChange={(e) => setForm((prev) => ({ ...prev, is_external: e.target.checked }))}
-                className="h-4 w-4 rounded border-gray-300 accent-blue-600"
-              />
-              <span className="text-sm font-medium text-gray-700">External / Legacy event</span>
-            </label>
-            <p className="text-xs text-gray-400">Mark this if the event is hosted externally or is a past event without a built-in page.</p>
-            {form.is_external && (
-              <div className="space-y-1.5">
-                <Label>External Event Link <span className="text-gray-400 font-normal">(optional)</span></Label>
-                <Input type="text" value={form.external_url}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("external_url", e.target.value)}
-                  placeholder="https://sites.google.com/..." />
-                <p className="text-xs text-gray-400">If set, visitors will be redirected to this URL.</p>
-              </div>
-            )}
+          <div className="space-y-1.5">
+            <Label>Max Registrations</Label>
+            <Input type="number" value={form.max_registrations}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("max_registrations", e.target.value)}
+              placeholder="Unlimited" />
           </div>
         </div>
       </div>
 
-      {!form.is_external && <div className="bg-white rounded-xl border p-6 space-y-4">
+      <div className="bg-white rounded-xl border p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-900">Registration</h3>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -550,9 +529,9 @@ export function EventForm({ event }: Props) {
             </div>
           </div>
         )}
-      </div>}
+      </div>
 
-      {!isEditing && !form.is_external && (
+      {!isEditing && (
         <div className="bg-white rounded-xl border p-6 space-y-4">
           <h3 className="font-semibold text-gray-900">Page Template</h3>
           <p className="text-sm text-gray-500">Choose a starting layout for your event pages. You can customize everything later.</p>

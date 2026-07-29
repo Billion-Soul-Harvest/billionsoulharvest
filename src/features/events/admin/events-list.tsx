@@ -61,6 +61,7 @@ interface EventRow {
   city: string | null;
   country: string | null;
   external_url: string | null;
+  banner_url: string | null;
 }
 
 interface Props {
@@ -202,15 +203,19 @@ export function EventsList({ events, registrationCounts }: Props) {
                 selected.has(event.id) ? "ring-2 ring-blue-200 border-blue-300" : ""
               }`}
             >
-              {/* Color banner */}
+              {/* Color banner / image */}
               <Link href={`/admin/events/edit/${event.id}`} className="block">
                 <div
-                  className="relative w-full h-24 flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, ${typeColor}22, ${typeColor}44)` }}
+                  className="relative w-full h-24 flex items-center justify-center overflow-hidden"
+                  style={event.banner_url ? undefined : { background: `linear-gradient(135deg, ${typeColor}22, ${typeColor}44)` }}
                 >
-                  <svg className="w-10 h-10" style={{ color: typeColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                  {event.banner_url ? (
+                    <img src={event.banner_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <svg className="w-10 h-10" style={{ color: typeColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
                   <div className="absolute top-2 left-2">
                     <Badge variant="secondary" className={`${statusColors[event.status as EventStatus]} shadow-sm`}>
                       {statusLabels[event.status as EventStatus]}

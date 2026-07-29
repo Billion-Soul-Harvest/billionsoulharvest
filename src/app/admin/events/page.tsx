@@ -15,7 +15,7 @@ export default async function EventsPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, title, description, slug, status, event_type, start_date, city, country, external_url")
+    .select("id, title, description, slug, status, event_type, start_date, city, country, external_url, banner_url")
     .order("created_at", { ascending: false });
 
   // Events for display order tab (visible events only)

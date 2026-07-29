@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import type { EventStatus, RegistrationConfig } from "@/shared/types/database";
 import { DeleteEventButton } from "@/features/events/admin/delete-event-button";
+import { EventPageCard } from "./event-page-card";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -84,72 +85,8 @@ export default async function EventDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* Page Builder CTA — hide if event uses external URL */}
-      {event.is_external ? (
-        <div className="bg-white rounded-xl border p-6 mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">External / Legacy Event</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {event.external_url
-                ? "This event links to an external page. Visitors will be redirected there."
-                : "This event is marked as external. No built-in event page is used."}
-            </p>
-            {event.external_url && (
-              <p className="text-xs text-gray-400 mt-2">
-                URL: <code className="bg-gray-50 px-2 py-0.5 rounded border text-blue-700 break-all">{event.external_url}</code>
-              </p>
-            )}
-          </div>
-          {event.external_url && (
-            <Link
-              href={event.external_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-lg hover:bg-gray-50 transition-colors shrink-0"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              Visit Page
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border p-6 mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Event Page</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Design your event&apos;s public page with the drag-and-drop builder.
-            </p>
-            <div className="flex gap-4 mt-2">
-              <p className="text-xs text-gray-400">
-                Public page: <code className="bg-gray-50 px-2 py-0.5 rounded border text-blue-700">/events/{event.slug}</code>
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href={`/events/${event.slug}`}
-              target="_blank"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              Preview
-            </Link>
-            <Link
-              href={`/admin/events/edit/${event.id}/builder`}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#29BDD6] rounded-lg hover:bg-[#29BDD6]/90 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Open Page Builder
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* Event Page — Google Sites integration */}
+      <EventPageCard eventId={event.id} externalUrl={event.external_url} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Event Details Form */}

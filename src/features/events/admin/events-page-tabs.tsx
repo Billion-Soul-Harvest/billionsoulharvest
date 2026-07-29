@@ -15,6 +15,7 @@ interface EventRow {
   city: string | null;
   country: string | null;
   external_url: string | null;
+  banner_url: string | null;
 }
 
 interface DisplayOrderEvent {
