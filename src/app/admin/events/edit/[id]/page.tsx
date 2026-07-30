@@ -75,7 +75,7 @@ export default async function EventDetailPage({ params }: Props) {
             </div>
           </div>
         )}
-        {event.status === "registration_open" && (
+        {((event.registration_config as RegistrationConfig | null)?.enabled || event.status === "registration_open") && (
           <div className="ml-auto">
             <p className="text-xs text-gray-400 mb-1">Public registration link:</p>
             <code className="text-sm bg-gray-50 px-3 py-1 rounded border text-cyan-700">

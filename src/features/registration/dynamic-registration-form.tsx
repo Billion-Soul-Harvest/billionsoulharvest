@@ -71,7 +71,7 @@ export function DynamicRegistrationForm({
   eventStatus,
   inline = false,
 }: DynamicRegistrationFormProps) {
-  const isRegistrationOpen = !eventStatus || eventStatus === "registration_open";
+  const isRegistrationOpen = true;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -166,8 +166,8 @@ export function DynamicRegistrationForm({
 
   const inputClass = inline
     ? "border-gray-300 bg-white"
-    : "border-amber-200 focus:border-amber-500 focus:ring-amber-500/20 bg-white/80";
-  const labelClass = inline ? "text-gray-700 font-medium" : "text-amber-900 font-medium";
+    : "border-[#b4c7ec]/40 focus:border-[#00b8d4] focus:ring-[#00b8d4]/20 bg-white";
+  const labelClass = inline ? "text-gray-700 font-medium" : "text-[#0d223f] font-medium";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -419,7 +419,7 @@ export function DynamicRegistrationForm({
       ))}
 
       {!isRegistrationOpen && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm text-center">
+        <div className="bg-[#0d223f]/5 border border-[#b4c7ec]/30 text-[#0d223f] px-4 py-3 rounded-lg text-sm text-center">
           Registration is not currently open for this event.
         </div>
       )}
@@ -429,7 +429,7 @@ export function DynamicRegistrationForm({
         disabled={isSubmitting || !isRegistrationOpen}
         className={inline
           ? "w-full font-semibold py-5"
-          : "w-full bg-amber-700 hover:bg-amber-800 text-white font-semibold py-6 text-lg rounded-xl shadow-lg shadow-amber-700/25 transition-all duration-200 hover:shadow-xl hover:shadow-amber-700/30 disabled:opacity-50"
+          : "w-full bg-[#0d223f] hover:bg-[#1a3a5c] text-white font-semibold py-6 text-lg rounded-xl shadow-lg shadow-[#0d223f]/25 transition-all duration-200 hover:shadow-xl hover:shadow-[#0d223f]/30 disabled:opacity-50"
         }
       >
         {isSubmitting ? (

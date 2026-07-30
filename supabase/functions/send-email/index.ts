@@ -1,6 +1,14 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import nodemailer from "npm:nodemailer@6";
 
+interface EmailAttachment {
+  filename: string;
+  content: string; // base64 encoded
+  encoding: "base64";
+  cid: string;
+  contentType?: string;
+}
+
 interface EmailPayload {
   to: string;
   subject: string;
@@ -9,6 +17,7 @@ interface EmailPayload {
   cc?: string;
   replyTo?: string;
   headers?: Record<string, string>;
+  attachments?: EmailAttachment[];
 }
 
 interface EmailResult {
@@ -92,6 +101,7 @@ serve(async (req) => {
           html: email.html,
           replyTo: email.replyTo,
           headers: email.headers,
+          attachments: email.attachments,
         });
         results.push({
           to: email.to,
