@@ -63,8 +63,8 @@ export default async function RegisterPage({ params }: Props) {
       <header className="relative">
         {showBanner && event.banner_url && !showHeroContent ? (
           /* Banner-only mode: viewport height with full image visible */
-          <div className="relative h-[60vh] bg-[#0d223f]">
-            <img src={event.banner_url} alt="" className="w-full h-full object-contain" />
+          <div className="relative h-[40vh] sm:h-[60vh] bg-[#0d223f]">
+            <img src={event.banner_url} alt="" className="w-full h-full object-cover sm:object-contain" />
             <div className="absolute inset-0 bg-[#0d223f]/10" />
           </div>
         ) : (
