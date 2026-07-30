@@ -382,6 +382,8 @@ export interface RegistrationCustomField {
 
 export interface RegistrationConfig {
   enabled: boolean;
+  showBanner?: boolean;
+  showHeroContent?: boolean;
   fields: {
     region: RegistrationFieldConfig;
     country: RegistrationFieldConfig;

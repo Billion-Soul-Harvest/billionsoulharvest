@@ -59,6 +59,8 @@ export function EventForm({ event }: Props) {
 
   const defaultRegConfig: RegistrationConfig = {
     enabled: false,
+    showBanner: false,
+    showHeroContent: true,
     fields: {
       region: { visible: true, required: true },
       country: { visible: true, required: true },
@@ -118,6 +120,12 @@ export function EventForm({ event }: Props) {
       country: place.country,
       postal_code: place.postalCode,
     }));
+  }
+
+  async function autoSaveRegConfig(updated: RegistrationConfig) {
+    if (!isEditing) return;
+    const supabase = createClient();
+    await supabase.from("events").update({ registration_config: updated }).eq("id", event.id!);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -341,7 +349,11 @@ export function EventForm({ event }: Props) {
             <input
               type="checkbox"
               checked={regConfig.enabled}
-              onChange={(e) => setRegConfig((prev) => ({ ...prev, enabled: e.target.checked }))}
+              onChange={(e) => {
+                const updated = { ...regConfig, enabled: e.target.checked };
+                setRegConfig(updated);
+                autoSaveRegConfig(updated);
+              }}
               className="sr-only peer"
             />
             <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#29BDD6]" />
@@ -350,6 +362,45 @@ export function EventForm({ event }: Props) {
 
         {regConfig.enabled && (
           <div className="space-y-4">
+            {/* Page Display toggles */}
+            <div className="border-b pb-4 mb-4 space-y-3">
+              <p className="text-sm font-medium text-gray-700">Page Display</p>
+              {form.banner_url && (
+                <label className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Use banner as hero background</span>
+                  <div className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={regConfig.showBanner === true}
+                      onChange={(e) => {
+                        const updated = { ...regConfig, showBanner: e.target.checked };
+                        setRegConfig(updated);
+                        autoSaveRegConfig(updated);
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#29BDD6]" />
+                  </div>
+                </label>
+              )}
+              <label className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Show event details in hero</span>
+                <div className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={regConfig.showHeroContent !== false}
+                    onChange={(e) => {
+                      const updated = { ...regConfig, showHeroContent: e.target.checked };
+                      setRegConfig(updated);
+                      autoSaveRegConfig(updated);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#29BDD6]" />
+                </div>
+              </label>
+            </div>
+
             {/* Default fields */}
             <div>
               <p className="text-sm text-gray-500 mb-3">Configure which fields appear on the registration form.</p>
