@@ -1,6 +1,14 @@
 import { createServiceClient } from "@/shared/utils/supabase/service";
 import { recordEmailsSent } from "@/shared/utils/daily-email-quota";
 
+interface EmailAttachment {
+  filename: string;
+  content: string; // base64 encoded
+  encoding: "base64";
+  cid: string;
+  contentType?: string;
+}
+
 interface EmailPayload {
   to: string;
   subject: string;
@@ -9,6 +17,7 @@ interface EmailPayload {
   cc?: string;
   replyTo?: string;
   headers?: Record<string, string>;
+  attachments?: EmailAttachment[];
 }
 
 interface EmailResult {

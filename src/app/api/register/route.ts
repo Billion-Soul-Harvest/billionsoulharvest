@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    if (event.status !== "registration_open") {
+    const regConfig = event.registration_config as RegistrationConfig | null;
+    if (event.status !== "registration_open" && !regConfig?.enabled) {
       return NextResponse.json(
         { error: "Registration is not open for this event" },
         { status: 400 }
@@ -71,7 +72,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Use dynamic schema if registration_config exists, otherwise use static schema
-    const regConfig = event.registration_config as RegistrationConfig | null;
     const validationSchema = regConfig ? buildDynamicSchema(regConfig) : registrationSchema;
 
     const result = validationSchema.safeParse(formData);
@@ -179,14 +179,21 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email
     try {
-      const siteUrl =
-        process.env.NEXT_PUBLIC_SITE_URL || "https://billionsoulharvest.org";
-      const checkInUrl = `${siteUrl}/check-in/${registration.id}`;
-      const qrCodeUrl = await QRCode.toDataURL(checkInUrl, {
+      const checkInData = JSON.stringify({
+        id: contact.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+      });
+      const qrBuffer = await QRCode.toBuffer(checkInData, {
         width: 200,
         margin: 2,
         color: { dark: "#1a3a2a" },
+        type: "png",
       });
+
+      const qrBase64 = Buffer.from(qrBuffer).toString("base64");
+      const qrCodeUrl = "cid:qr-code";
 
       const html = await render(
         RegistrationConfirmationEmail({
@@ -204,6 +211,15 @@ export async function POST(request: NextRequest) {
         to: data.email as string,
         subject: `Registration Confirmed — ${event.title}`,
         html,
+        attachments: [
+          {
+            filename: "qr-code.png",
+            content: qrBase64,
+            encoding: "base64",
+            cid: "qr-code",
+            contentType: "image/png",
+          },
+        ],
       });
       if (!result.success) {
         console.error("Email send failed:", result.error);
