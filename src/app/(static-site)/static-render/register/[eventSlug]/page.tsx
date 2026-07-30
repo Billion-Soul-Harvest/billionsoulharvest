@@ -175,6 +175,22 @@ export default async function RegisterPage({ params }: Props) {
           )}
         </div>
 
+        {event.external_url && (
+          <div className="mt-6 text-center">
+            <a
+              href={event.external_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-[#00b8d4] hover:text-[#0d223f] font-medium transition-colors"
+            >
+              View Event Page
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="mt-12 text-center">
           <p className="text-[#0d223f]/30 text-sm font-medium tracking-wider uppercase">
