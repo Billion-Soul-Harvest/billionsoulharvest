@@ -17,7 +17,7 @@ export default async function SuccessPage({ params }: Props) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("title, start_date, end_date, location, city, country")
+    .select("title, start_date, end_date, location, city, country, external_url, slug")
     .eq("slug", eventSlug)
     .single();
 
@@ -79,6 +79,20 @@ export default async function SuccessPage({ params }: Props) {
             </div>
           </div>
         </div>
+
+        {event.external_url && (
+          <a
+            href={event.external_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-[#00b8d4] hover:bg-[#00a3bc] text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-colors mb-4"
+          >
+            View Event Page
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        )}
 
         <Link
           href="/"
