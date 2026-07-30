@@ -18,6 +18,7 @@ interface Props {
     position?: string;
     language?: string;
     list?: string;
+    event?: string;
     tag?: string;
     tagMode?: string;
     sort?: string;
@@ -40,6 +41,7 @@ export default async function ContactsPage({ searchParams }: Props) {
   const positionFilter = params.position ?? "all";
   const languageFilter = params.language ?? "all";
   const listFilter = params.list ?? "all";
+  const eventFilter = params.event ?? "";
   const tagFilter = params.tag ?? "";
   const tagMode = params.tagMode === "or" ? "or" : "and";
 
@@ -123,6 +125,25 @@ export default async function ContactsPage({ searchParams }: Props) {
     }
   }
 
+  if (eventFilter) {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const selectedEventIds = eventFilter.split(",").map((e) => e.trim()).filter((e) => UUID_RE.test(e));
+    if (selectedEventIds.length > 0) {
+      const { data: regRows } = await supabase
+        .from("registrations")
+        .select("contact_id")
+        .in("event_id", selectedEventIds)
+        .neq("status", "cancelled");
+      const contactIds = [...new Set((regRows ?? []).map((r) => r.contact_id))];
+      if (contactIds.length > 0) {
+        query = query.in("id", contactIds);
+      } else {
+        // No contacts match — force empty result
+        query = query.eq("id", "00000000-0000-0000-0000-000000000000");
+      }
+    }
+  }
+
   if (tagFilter) {
     const selectedTags = tagFilter.split(",").map((t) => t.trim()).filter(Boolean);
     if (selectedTags.length > 0) {
@@ -144,6 +165,7 @@ export default async function ContactsPage({ searchParams }: Props) {
     { data: languageRows },
     { data: audienceLists },
     { data: customFieldRows },
+    { data: eventRows },
   ] = await Promise.all([
     query.order(sort, { ascending: dir === "asc" }).range(from, to),
     supabase.from("ministry_regions").select("id, name, color").order("name"),
@@ -151,6 +173,7 @@ export default async function ContactsPage({ searchParams }: Props) {
     supabase.from("contacts").select("language").not("language", "is", null).not("language", "eq", "").order("language"),
     supabase.from("audiences").select("name").eq("type", "list").order("name"),
     supabase.from("contacts").select("custom_fields").not("custom_fields", "is", null).limit(500),
+    supabase.from("events").select("id, title").order("start_date", { ascending: false }),
   ]);
 
   const languages = [...new Set((languageRows ?? []).map((r) => r.language as string))];
@@ -181,6 +204,8 @@ export default async function ContactsPage({ searchParams }: Props) {
         positionFilter={positionFilter}
         languageFilter={languageFilter}
         listFilter={listFilter}
+        eventFilter={eventFilter}
+        events={eventRows ?? []}
         tagFilter={tagFilter}
         tagMode={tagMode}
         languages={languages}

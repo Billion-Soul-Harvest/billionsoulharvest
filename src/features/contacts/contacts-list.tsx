@@ -92,6 +92,8 @@ interface Props {
   positionFilter: string;
   languageFilter: string;
   listFilter: string;
+  eventFilter: string;
+  events: { id: string; title: string }[];
   tagFilter: string;
   tagMode: string;
   languages: string[];
@@ -365,11 +367,15 @@ function SearchableFilterDropdown({
   label,
   options,
   onChange,
+  searchPlaceholder,
+  countLabel,
 }: {
   selectedValues: string[];
   label: string;
   options: { value: string; label: string }[];
   onChange: (values: string[]) => void;
+  searchPlaceholder?: string;
+  countLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -392,7 +398,7 @@ function SearchableFilterDropdown({
     ? label
     : selectedValues.length === 1
       ? (options.find((o) => o.value === selectedValues[0])?.label ?? label)
-      : `${selectedValues.length} lists`;
+      : `${selectedValues.length} ${countLabel ?? "lists"}`;
 
   const filtered = query
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
@@ -436,7 +442,7 @@ function SearchableFilterDropdown({
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search lists"
+                placeholder={searchPlaceholder ?? "Search lists"}
                 className="w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
                 autoFocus
               />
@@ -481,7 +487,7 @@ function SearchableFilterDropdown({
               );
             })}
             {filtered.length === 0 && (
-              <p className="px-4 py-3 text-sm text-gray-400">No lists found</p>
+              <p className="px-4 py-3 text-sm text-gray-400">No {countLabel ?? "lists"} found</p>
             )}
           </div>
         </div>
@@ -783,6 +789,8 @@ export function ContactsListClient({
   positionFilter,
   languageFilter,
   listFilter,
+  eventFilter,
+  events,
   tagFilter,
   tagMode,
   languages,
@@ -1102,7 +1110,7 @@ export function ContactsListClient({
   const navigate = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams();
-      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, list: listFilter, tag: tagFilter, tagMode, sort, dir, ...updates };
+      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, list: listFilter, event: eventFilter, tag: tagFilter, tagMode, sort, dir, ...updates };
       for (const [k, v] of Object.entries(merged)) {
         if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc") && !(k === "searchField" && v === "name_email") && !(k === "tagMode" && v === "and")) {
           params.set(k, v);
@@ -1113,7 +1121,7 @@ export function ContactsListClient({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, tagFilter, tagMode, sort, dir, startTransition]
+    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, eventFilter, tagFilter, tagMode, sort, dir, startTransition]
   );
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -1211,6 +1219,15 @@ export function ContactsListClient({
           mode={tagMode as "and" | "or"}
           onChangeSelection={(tags) => navigate({ tag: tags.join(","), page: "1" })}
           onChangeMode={(mode) => navigate({ tagMode: mode, page: "1" })}
+        />
+
+        <SearchableFilterDropdown
+          selectedValues={eventFilter ? eventFilter.split(",").filter(Boolean) : []}
+          label="Events"
+          options={events.map((e) => ({ value: e.id, label: e.title }))}
+          onChange={(values) => navigate({ event: values.join(","), page: "1" })}
+          searchPlaceholder="Search events"
+          countLabel="events"
         />
       </div>
 
