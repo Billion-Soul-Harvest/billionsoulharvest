@@ -72,12 +72,12 @@ export function CampaignWizard() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-center justify-between sm:justify-start sm:gap-2 mb-6 sm:mb-8">
         {STEPS.map((label, i) => (
-          <div key={label} className="flex items-center gap-2">
+          <div key={label} className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => i < step && setStep(i)}
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              className={`flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium transition-colors ${
                 i === step
                   ? "text-cyan-700"
                   : i < step
@@ -86,7 +86,7 @@ export function CampaignWizard() {
               }`}
             >
               <span
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
                   i === step
                     ? "bg-cyan-600 text-white"
                     : i < step
@@ -102,10 +102,10 @@ export function CampaignWizard() {
                   i + 1
                 )}
               </span>
-              <span className="hidden sm:inline">{label}</span>
+              <span className="text-[10px] sm:text-sm">{label}</span>
             </button>
             {i < STEPS.length - 1 && (
-              <div className={`w-8 h-px ${i < step ? "bg-cyan-300" : "bg-gray-200"}`} />
+              <div className={`hidden sm:block w-8 h-px ${i < step ? "bg-cyan-300" : "bg-gray-200"}`} />
             )}
           </div>
         ))}
@@ -118,7 +118,7 @@ export function CampaignWizard() {
       )}
 
       {/* Step content */}
-      <div className="bg-white rounded-2xl border shadow-sm p-6 sm:p-8">
+      <div className="bg-white rounded-xl sm:rounded-2xl border shadow-sm p-4 sm:p-6 md:p-8">
         {step === 0 && <BasicInfoStep form={form} updateForm={updateForm} />}
         {step === 1 && <StoryStep form={form} updateForm={updateForm} />}
         {step === 2 && <MediaStep form={form} updateForm={updateForm} />}
@@ -126,7 +126,7 @@ export function CampaignWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-6">
+      <div className="flex items-center justify-between mt-4 sm:mt-6">
         <Button
           type="button"
           variant="ghost"
@@ -135,7 +135,7 @@ export function CampaignWizard() {
         >
           Back
         </Button>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           {step < STEPS.length - 1 ? (
             <Button
               type="button"
@@ -152,6 +152,7 @@ export function CampaignWizard() {
                 variant="outline"
                 onClick={() => handleSave(false)}
                 disabled={saving}
+                className="text-xs sm:text-sm px-3 sm:px-4"
               >
                 Save as Draft
               </Button>
@@ -159,7 +160,7 @@ export function CampaignWizard() {
                 type="button"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                className="bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm px-3 sm:px-4"
               >
                 {saving ? "Submitting..." : "Submit for Review"}
               </Button>

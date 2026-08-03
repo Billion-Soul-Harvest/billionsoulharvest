@@ -26,7 +26,7 @@ export function PreviewStep({ form }: Props) {
         <span className="text-xs font-medium text-cyan-600 bg-cyan-50 px-2 py-1 rounded-full">
           {CAMPAIGN_CATEGORY_LABELS[form.category]}
         </span>
-        <h3 className="text-2xl font-bold text-gray-900 mt-2">{form.title || "Untitled Campaign"}</h3>
+        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mt-2">{form.title || "Untitled Campaign"}</h3>
       </div>
 
       {form.goal_cents > 0 && (
@@ -44,9 +44,9 @@ export function PreviewStep({ form }: Props) {
       )}
 
       {form.gallery_images.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {form.gallery_images.map((url, i) => (
-            <img key={i} src={url} alt={`Gallery ${i + 1}`} className="w-full h-24 object-cover rounded-lg" />
+            <img key={i} src={url} alt={`Gallery ${i + 1}`} className="w-full h-20 sm:h-24 object-cover rounded-lg" />
           ))}
         </div>
       )}

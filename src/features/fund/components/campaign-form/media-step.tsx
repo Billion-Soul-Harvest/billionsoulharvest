@@ -75,7 +75,7 @@ export function MediaStep({ form, updateForm }: Props) {
       {/* Gallery */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">Gallery Images</label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
           {form.gallery_images.map((url, i) => (
             <div key={i} className="relative">
               <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-24 object-cover rounded-lg" />
