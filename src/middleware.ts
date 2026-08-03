@@ -6,6 +6,17 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") ?? "";
 
+  // Subdomain routing: fund.billionsoulharvest.org → /fund
+  if (host.startsWith("fund.")) {
+    if (pathname.startsWith("/_next") || pathname.startsWith("/api")) {
+      // fall through to auth/cookie handling below
+    } else {
+      const url = request.nextUrl.clone();
+      url.pathname = `/fund${pathname === "/" ? "" : pathname}`;
+      return NextResponse.rewrite(url);
+    }
+  }
+
   // Subdomain routing: jameshwang.billionsoulharvest.org → /james-hwang
   if (host.startsWith("jameshwang.")) {
     if (pathname === "/") {
@@ -134,6 +145,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Protect fund dashboard/donor routes
+  if (pathname.startsWith("/fund/dashboard") || pathname.startsWith("/fund/donor")) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/fund/login";
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Rewrite public page routes to the static site route group
   // Event detail pages are excluded — they use the (events) route group
   // which renders Craft.js page_content from the event page builder.
@@ -147,7 +167,8 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/young-cho") &&
     !pathname.startsWith("/james-hwang") &&
     !pathname.match(/^\/events\/[^/]/) &&
-    !pathname.startsWith("/stories");
+    !pathname.startsWith("/stories") &&
+    !pathname.startsWith("/fund");
 
   if (isPublicPageRoute) {
     const url = request.nextUrl.clone();
