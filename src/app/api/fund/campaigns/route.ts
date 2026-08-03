@@ -94,6 +94,14 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Ensure fund_profile exists for this user
+    await supabase
+      .from("fund_profiles")
+      .upsert(
+        { id: user.id, display_name: user.email?.split("@")[0] || "User" },
+        { onConflict: "id", ignoreDuplicates: true }
+      );
+
     const body = await request.json();
     const { title, story_html, category, goal_cents, banner_url, gallery_images, end_date, team_id } = body;
 
