@@ -71,13 +71,34 @@ export function CampaignWizard() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Step indicator */}
-      <div className="flex items-center justify-between sm:justify-start sm:gap-2 mb-6 sm:mb-8">
+      {/* Step indicator — mobile: current step big circle with prev/next small numbers */}
+      <div className="sm:hidden flex items-center justify-center gap-4 mb-6">
+        {step > 0 && (
+          <button onClick={() => setStep(step - 1)} className="text-xs text-gray-400 font-medium">
+            {step}
+          </button>
+        )}
+        <div className="flex flex-col items-center gap-1">
+          <span className="w-12 h-12 rounded-full bg-cyan-600 text-white flex items-center justify-center text-lg font-bold">
+            {step + 1}
+          </span>
+          <span className="text-xs font-medium text-cyan-700">{STEPS[step]}</span>
+          <span className="text-[10px] text-gray-400">{step + 1} of {STEPS.length}</span>
+        </div>
+        {step < STEPS.length - 1 && (
+          <button onClick={() => step > 0 || form.title ? setStep(step + 1) : undefined} className="text-xs text-gray-400 font-medium">
+            {step + 2}
+          </button>
+        )}
+      </div>
+
+      {/* Step indicator — desktop: full horizontal steps */}
+      <div className="hidden sm:flex items-center gap-2 mb-8">
         {STEPS.map((label, i) => (
-          <div key={label} className="flex items-center gap-1 sm:gap-2">
+          <div key={label} className="flex items-center gap-2">
             <button
               onClick={() => i < step && setStep(i)}
-              className={`flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                 i === step
                   ? "text-cyan-700"
                   : i < step
@@ -102,10 +123,10 @@ export function CampaignWizard() {
                   i + 1
                 )}
               </span>
-              <span className="text-[10px] sm:text-sm">{label}</span>
+              <span>{label}</span>
             </button>
             {i < STEPS.length - 1 && (
-              <div className={`hidden sm:block w-8 h-px ${i < step ? "bg-cyan-300" : "bg-gray-200"}`} />
+              <div className={`w-8 h-px ${i < step ? "bg-cyan-300" : "bg-gray-200"}`} />
             )}
           </div>
         ))}
@@ -126,33 +147,44 @@ export function CampaignWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-4 sm:mt-6">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => setStep(step - 1)}
-          disabled={step === 0}
-        >
-          Back
-        </Button>
-        <div className="flex gap-2 sm:gap-3">
-          {step < STEPS.length - 1 ? (
+      <div className="mt-4 sm:mt-6">
+        {step < STEPS.length - 1 ? (
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setStep(step - 1)}
+              disabled={step === 0}
+              className="w-full sm:w-auto"
+            >
+              Back
+            </Button>
             <Button
               type="button"
               onClick={() => setStep(step + 1)}
               disabled={step === 0 && !form.title}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white"
+              className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white"
             >
               Continue
             </Button>
-          ) : (
-            <>
+          </div>
+        ) : (
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setStep(step - 1)}
+              className="w-full sm:w-auto"
+            >
+              Back
+            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                className="text-xs sm:text-sm px-3 sm:px-4"
+                className="w-full sm:w-auto"
               >
                 Save as Draft
               </Button>
@@ -160,13 +192,13 @@ export function CampaignWizard() {
                 type="button"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm px-3 sm:px-4"
+                className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white"
               >
                 {saving ? "Submitting..." : "Submit for Review"}
               </Button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
