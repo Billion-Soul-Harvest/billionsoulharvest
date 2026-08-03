@@ -41,36 +41,38 @@ export default function RecurringDonationsPage() {
   if (loading) return <div className="text-gray-500">Loading...</div>;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Recurring Donations</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Recurring Donations</h1>
 
       <div className="bg-white rounded-xl border divide-y">
         {subscriptions.map((sub) => (
-          <div key={sub.id} className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium text-gray-900">{sub.campaign?.title || "Campaign"}</p>
-              <p className="text-sm text-gray-500">
-                {formatCents(sub.amount_cents)}/{sub.interval}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                sub.status === "active" ? "bg-green-100 text-green-700" :
-                sub.status === "paused" ? "bg-yellow-100 text-yellow-700" :
-                "bg-gray-100 text-gray-600"
-              }`}>
-                {sub.status}
-              </span>
-              {sub.status === "active" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCancel(sub.id)}
-                  disabled={cancelling === sub.id}
-                >
-                  {cancelling === sub.id ? "Cancelling..." : "Cancel"}
-                </Button>
-              )}
+          <div key={sub.id} className="p-3 sm:p-4">
+            <div className="flex items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium text-sm sm:text-base text-gray-900 truncate">{sub.campaign?.title || "Campaign"}</p>
+                <p className="text-xs sm:text-sm text-gray-500">
+                  {formatCents(sub.amount_cents)}/{sub.interval}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 shrink-0">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  sub.status === "active" ? "bg-green-100 text-green-700" :
+                  sub.status === "paused" ? "bg-yellow-100 text-yellow-700" :
+                  "bg-gray-100 text-gray-600"
+                }`}>
+                  {sub.status}
+                </span>
+                {sub.status === "active" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCancel(sub.id)}
+                    disabled={cancelling === sub.id}
+                  >
+                    {cancelling === sub.id ? "Cancelling..." : "Cancel"}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         ))}

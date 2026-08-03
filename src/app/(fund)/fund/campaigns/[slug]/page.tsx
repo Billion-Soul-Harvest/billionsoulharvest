@@ -71,8 +71,8 @@ export default async function CampaignDetailPage({ params }: Props) {
   const campaignUrl = `https://fund.billionsoulharvest.org/campaigns/${slug}`;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-8">
           {/* Banner */}
@@ -88,7 +88,7 @@ export default async function CampaignDetailPage({ params }: Props) {
             <span className="text-xs font-medium text-cyan-600 bg-cyan-50 px-2.5 py-1 rounded-full">
               {CAMPAIGN_CATEGORY_LABELS[typedCampaign.category]}
             </span>
-            <h1 className="text-3xl font-bold text-gray-900 mt-3">{typedCampaign.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-3">{typedCampaign.title}</h1>
             {typedCampaign.creator && (
               <p className="text-gray-500 mt-1">
                 by <span className="font-medium text-gray-700">{typedCampaign.creator.display_name}</span>
@@ -130,10 +130,10 @@ export default async function CampaignDetailPage({ params }: Props) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Progress card */}
-          <div className="bg-white rounded-xl border p-6 sticky top-20">
+          <div className="bg-white rounded-xl border p-4 sm:p-6 lg:sticky lg:top-20">
             <div className="space-y-4">
               <div>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {formatCents(typedCampaign.raised_cents)}
                 </p>
                 <p className="text-sm text-gray-500">
