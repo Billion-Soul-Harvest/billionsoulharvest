@@ -22,12 +22,18 @@ export default function FundLoginPage() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
+      // Ensure fund_profile exists for this user
+      if (data.user) {
+        await supabase
+          .from("fund_profiles")
+          .upsert({ id: data.user.id, display_name: email.split("@")[0] }, { onConflict: "id", ignoreDuplicates: true });
+      }
       router.push("/fund/dashboard");
       router.refresh();
     }
