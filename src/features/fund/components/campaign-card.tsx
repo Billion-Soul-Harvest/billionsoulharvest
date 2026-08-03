@@ -27,6 +27,7 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
             src={campaign.banner_url}
             alt={campaign.title}
             fill
+            unoptimized
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
