@@ -10,6 +10,11 @@ export async function middleware(request: NextRequest) {
   if (host.startsWith("fund.")) {
     if (pathname.startsWith("/_next") || pathname.startsWith("/api")) {
       // fall through to auth/cookie handling below
+    } else if (pathname.startsWith("/fund")) {
+      // Already has /fund prefix (e.g. client-side navigation) — rewrite as-is
+      const url = request.nextUrl.clone();
+      url.pathname = pathname;
+      return NextResponse.rewrite(url);
     } else {
       const url = request.nextUrl.clone();
       url.pathname = `/fund${pathname === "/" ? "" : pathname}`;
