@@ -86,6 +86,11 @@ CREATE TABLE fund_campaigns (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- FK to fund_profiles for PostgREST joins (creator_id already FKs to auth.users)
+ALTER TABLE fund_campaigns
+  ADD CONSTRAINT fund_campaigns_creator_profile_fkey
+  FOREIGN KEY (creator_id) REFERENCES fund_profiles(id) ON DELETE CASCADE;
+
 CREATE INDEX idx_fund_campaigns_creator ON fund_campaigns(creator_id);
 CREATE INDEX idx_fund_campaigns_status ON fund_campaigns(status);
 CREATE INDEX idx_fund_campaigns_category ON fund_campaigns(category);
@@ -230,12 +235,12 @@ CREATE POLICY "Users can insert own profile"
   ON fund_profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Admins manage all profiles"
-  ON fund_profiles FOR ALL USING (is_admin());
+  ON fund_profiles FOR ALL USING (is_admin(auth.uid()));
 
 -- fund_campaigns
 CREATE POLICY "Active campaigns are viewable by everyone"
   ON fund_campaigns FOR SELECT USING (
-    status = 'active' OR creator_id = auth.uid() OR is_admin()
+    status = 'active' OR creator_id = auth.uid() OR is_admin(auth.uid())
   );
 
 CREATE POLICY "Authenticated users can create campaigns"
@@ -243,16 +248,16 @@ CREATE POLICY "Authenticated users can create campaigns"
 
 CREATE POLICY "Creators can update own campaigns"
   ON fund_campaigns FOR UPDATE USING (
-    creator_id = auth.uid() OR is_admin()
+    creator_id = auth.uid() OR is_admin(auth.uid())
   );
 
 CREATE POLICY "Admins can delete campaigns"
-  ON fund_campaigns FOR DELETE USING (is_admin());
+  ON fund_campaigns FOR DELETE USING (is_admin(auth.uid()));
 
 -- fund_donations
 CREATE POLICY "Donors can view own donations"
   ON fund_donations FOR SELECT USING (
-    donor_id = auth.uid() OR is_admin()
+    donor_id = auth.uid() OR is_admin(auth.uid())
     OR campaign_id IN (SELECT id FROM fund_campaigns WHERE creator_id = auth.uid())
   );
 
@@ -260,14 +265,14 @@ CREATE POLICY "Anyone can create donations"
   ON fund_donations FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Admins manage all donations"
-  ON fund_donations FOR ALL USING (is_admin());
+  ON fund_donations FOR ALL USING (is_admin(auth.uid()));
 
 -- fund_updates
 CREATE POLICY "Updates are viewable on active campaigns"
   ON fund_updates FOR SELECT USING (
     campaign_id IN (SELECT id FROM fund_campaigns WHERE status = 'active')
     OR author_id = auth.uid()
-    OR is_admin()
+    OR is_admin(auth.uid())
   );
 
 CREATE POLICY "Campaign creators can manage updates"
@@ -277,24 +282,24 @@ CREATE POLICY "Campaign creators can manage updates"
   );
 
 CREATE POLICY "Campaign creators can edit updates"
-  ON fund_updates FOR UPDATE USING (author_id = auth.uid() OR is_admin());
+  ON fund_updates FOR UPDATE USING (author_id = auth.uid() OR is_admin(auth.uid()));
 
 CREATE POLICY "Campaign creators can delete updates"
-  ON fund_updates FOR DELETE USING (author_id = auth.uid() OR is_admin());
+  ON fund_updates FOR DELETE USING (author_id = auth.uid() OR is_admin(auth.uid()));
 
 -- fund_comments
 CREATE POLICY "Comments are viewable on active campaigns"
   ON fund_comments FOR SELECT USING (
     is_hidden = false
     OR donor_id = auth.uid()
-    OR is_admin()
+    OR is_admin(auth.uid())
   );
 
 CREATE POLICY "Anyone can create comments"
   ON fund_comments FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Admins can manage comments"
-  ON fund_comments FOR ALL USING (is_admin());
+  ON fund_comments FOR ALL USING (is_admin(auth.uid()));
 
 -- fund_teams
 CREATE POLICY "Teams are viewable by everyone"
@@ -304,10 +309,10 @@ CREATE POLICY "Authenticated users can create teams"
   ON fund_teams FOR INSERT WITH CHECK (auth.uid() = captain_id);
 
 CREATE POLICY "Captains can update own teams"
-  ON fund_teams FOR UPDATE USING (captain_id = auth.uid() OR is_admin());
+  ON fund_teams FOR UPDATE USING (captain_id = auth.uid() OR is_admin(auth.uid()));
 
 CREATE POLICY "Admins can delete teams"
-  ON fund_teams FOR DELETE USING (is_admin());
+  ON fund_teams FOR DELETE USING (is_admin(auth.uid()));
 
 -- fund_team_members
 CREATE POLICY "Team members are viewable by everyone"
@@ -316,14 +321,14 @@ CREATE POLICY "Team members are viewable by everyone"
 CREATE POLICY "Captains can manage team members"
   ON fund_team_members FOR INSERT WITH CHECK (
     team_id IN (SELECT id FROM fund_teams WHERE captain_id = auth.uid())
-    OR is_admin()
+    OR is_admin(auth.uid())
   );
 
 CREATE POLICY "Captains can remove team members"
   ON fund_team_members FOR DELETE USING (
     team_id IN (SELECT id FROM fund_teams WHERE captain_id = auth.uid())
     OR user_id = auth.uid()
-    OR is_admin()
+    OR is_admin(auth.uid())
   );
 
 -- fund_matching_rules
@@ -331,12 +336,12 @@ CREATE POLICY "Matching rules are viewable by everyone"
   ON fund_matching_rules FOR SELECT USING (true);
 
 CREATE POLICY "Admins manage matching rules"
-  ON fund_matching_rules FOR ALL USING (is_admin());
+  ON fund_matching_rules FOR ALL USING (is_admin(auth.uid()));
 
 -- fund_recurring_subscriptions
 CREATE POLICY "Donors can view own subscriptions"
   ON fund_recurring_subscriptions FOR SELECT USING (
-    donor_id = auth.uid() OR is_admin()
+    donor_id = auth.uid() OR is_admin(auth.uid())
   );
 
 CREATE POLICY "Authenticated users can create subscriptions"
@@ -344,7 +349,7 @@ CREATE POLICY "Authenticated users can create subscriptions"
 
 CREATE POLICY "Donors can update own subscriptions"
   ON fund_recurring_subscriptions FOR UPDATE USING (
-    donor_id = auth.uid() OR is_admin()
+    donor_id = auth.uid() OR is_admin(auth.uid())
   );
 
 -- ============================================================
