@@ -18,6 +18,7 @@ export default function EditCampaignPage({ params }: Props) {
   const router = useRouter();
   const [campaign, setCampaign] = useState<FundCampaign | null>(null);
   const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,6 +54,45 @@ export default function EditCampaignPage({ params }: Props) {
       setError("Failed to save campaign");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSubmitForReview() {
+    if (!campaign) return;
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      // Save changes first
+      const saveRes = await fetch(`/api/fund/campaigns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: campaign.title,
+          story_html: campaign.story_html,
+          category: campaign.category,
+          goal_cents: campaign.goal_cents,
+          end_date: campaign.end_date,
+          banner_url: campaign.banner_url,
+          gallery_images: campaign.gallery_images,
+        }),
+      });
+      if (!saveRes.ok) throw new Error("Failed to save");
+
+      // Then submit for review
+      const res = await fetch(`/api/fund/campaigns/${id}/publish`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to submit");
+      }
+
+      router.push("/fund/dashboard/campaigns");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit for review");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -123,9 +163,14 @@ export default function EditCampaignPage({ params }: Props) {
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-        <Button onClick={handleSave} disabled={saving} className="bg-cyan-600 hover:bg-cyan-700 text-white">
-          {saving ? "Saving..." : "Save Changes"}
+        <Button onClick={handleSave} disabled={saving || submitting} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+          {saving ? "Saving..." : "Save as Draft"}
         </Button>
+        {campaign.status === "draft" && (
+          <Button onClick={handleSubmitForReview} disabled={saving || submitting} className="bg-green-600 hover:bg-green-700 text-white">
+            {submitting ? "Submitting..." : "Submit for Review"}
+          </Button>
+        )}
       </div>
     </div>
   );
