@@ -99,14 +99,14 @@ export default function EditCampaignPage({ params }: Props) {
   if (!campaign) return <div className="text-gray-500">Loading...</div>;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Edit Campaign</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Edit Campaign</h1>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 sm:px-4 py-3 rounded-xl">{error}</div>
       )}
 
-      <div className="bg-white rounded-xl border p-6 space-y-6">
+      <div className="bg-white rounded-xl border p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="space-y-2">
           <Label>Title</Label>
           <Input
@@ -129,7 +129,7 @@ export default function EditCampaignPage({ params }: Props) {
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Goal ($)</Label>
             <Input
@@ -161,16 +161,16 @@ export default function EditCampaignPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-        <Button onClick={handleSave} disabled={saving || submitting} className="bg-cyan-600 hover:bg-cyan-700 text-white">
-          {saving ? "Saving..." : "Save as Draft"}
-        </Button>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         {campaign.status === "draft" && (
-          <Button onClick={handleSubmitForReview} disabled={saving || submitting} className="bg-green-600 hover:bg-green-700 text-white">
+          <Button onClick={handleSubmitForReview} disabled={saving || submitting} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white order-first sm:order-last">
             {submitting ? "Submitting..." : "Submit for Review"}
           </Button>
         )}
+        <Button onClick={handleSave} disabled={saving || submitting} className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white sm:order-2">
+          {saving ? "Saving..." : "Save as Draft"}
+        </Button>
+        <Button variant="outline" onClick={() => router.back()} className="w-full sm:w-auto sm:order-1">Cancel</Button>
       </div>
     </div>
   );
