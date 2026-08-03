@@ -4,15 +4,16 @@ import { CampaignGrid } from "@/features/fund/components/campaign-grid";
 import { CAMPAIGN_CATEGORIES, CAMPAIGN_CATEGORY_LABELS } from "@/features/fund/constants";
 import type { FundCampaign } from "@/features/fund/types";
 
-const CATEGORY_ICONS: Record<string, string> = {
-  church_planting: "M3 21V9l9-6 9 6v12",
-  missions_trips: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
-  bible_distribution: "M4 19.5A2.5 2.5 0 016.5 17H20",
-  medical_missions: "M12 6v12M6 12h12",
-  disaster_relief: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
-  building_projects: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16",
-  youth_ministry: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2",
-  worship_ministry: "M9 19V6l12-3v13",
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  church_planting:    "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=600&h=400&fit=crop",
+  missions_trips:     "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&h=400&fit=crop",
+  bible_distribution: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600&h=400&fit=crop",
+  medical_missions:   "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop",
+  disaster_relief:    "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=600&h=400&fit=crop",
+  building_projects:  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop",
+  youth_ministry:     "https://images.unsplash.com/photo-1529390079861-591de354faf5?w=600&h=400&fit=crop",
+  worship_ministry:   "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=400&fit=crop",
 };
 
 const HERO_STATS = [
@@ -276,35 +277,32 @@ export default async function FundHomePage() {
       {/* ── Featured Categories ── */}
       <section className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 text-center mb-10">
-            Browse by category
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold tracking-widest text-cyan-600 uppercase mb-3">
+              Find your cause
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+              Browse by category
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {CAMPAIGN_CATEGORIES.filter(c => c !== "other").map((cat) => (
               <Link
                 key={cat}
                 href={`/fund/category/${cat}`}
-                className="group relative flex flex-col items-center p-6 rounded-2xl bg-gray-50 hover:bg-cyan-50 border border-gray-100 hover:border-cyan-200 transition-all duration-200"
+                className="group relative aspect-[3/2] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
-                <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200 group-hover:border-cyan-300 flex items-center justify-center mb-4 shadow-sm group-hover:shadow transition-all">
-                  <svg
-                    className="w-6 h-6 text-cyan-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d={CATEGORY_ICONS[cat] || CATEGORY_ICONS.disaster_relief} />
-                  </svg>
+                <img
+                  src={CATEGORY_IMAGES[cat] || CATEGORY_IMAGES.church_planting}
+                  alt={CAMPAIGN_CATEGORY_LABELS[cat]}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4">
+                  <h3 className="text-sm sm:text-base font-bold text-white drop-shadow-sm">
+                    {CAMPAIGN_CATEGORY_LABELS[cat]}
+                  </h3>
                 </div>
-                <span className="text-sm font-semibold text-gray-700 group-hover:text-cyan-700 text-center transition-colors">
-                  {CAMPAIGN_CATEGORY_LABELS[cat]}
-                </span>
-                <span className="mt-2 text-xs font-medium text-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Browse &rarr;
-                </span>
               </Link>
             ))}
           </div>
