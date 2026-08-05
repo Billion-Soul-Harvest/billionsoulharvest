@@ -375,6 +375,7 @@ export interface RegistrationSection {
 export interface RegistrationFieldConfig {
   visible: boolean;
   required: boolean;
+  description?: string;
 }
 
 export type RegistrationCustomFieldType =

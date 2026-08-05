@@ -93,13 +93,16 @@ function SortableFieldRow({
   sectionName,
   onToggleVisible,
   onToggleRequired,
+  onUpdateDescription,
 }: {
   fieldKey: string;
-  field: { visible: boolean; required: boolean };
+  field: { visible: boolean; required: boolean; description?: string };
   sectionName?: string;
   onToggleVisible: (checked: boolean) => void;
   onToggleRequired: (checked: boolean) => void;
+  onUpdateDescription: (description: string | undefined) => void;
 }) {
+  const [showDesc, setShowDesc] = useState(false);
   const {
     attributes,
     listeners,
@@ -119,7 +122,7 @@ function SortableFieldRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-50 text-sm"
+      className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-50 text-sm flex-wrap"
     >
       <button
         type="button"
@@ -149,15 +152,36 @@ function SortableFieldRow({
         )}
       </span>
       {field.visible && (
-        <label className="flex items-center gap-1 text-xs text-gray-500">
-          <input
-            type="checkbox"
-            checked={field.required}
-            onChange={(e) => onToggleRequired(e.target.checked)}
-            className="w-3 h-3 rounded"
+        <>
+          <label className="flex items-center gap-1 text-xs text-gray-500">
+            <input
+              type="checkbox"
+              checked={field.required}
+              onChange={(e) => onToggleRequired(e.target.checked)}
+              className="w-3 h-3 rounded"
+            />
+            Required
+          </label>
+          <button
+            type="button"
+            onClick={() => setShowDesc(!showDesc)}
+            className={`text-xs px-1.5 py-0.5 rounded ${field.description ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
+            title={field.description ? "Edit description" : "Add description"}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+          </button>
+        </>
+      )}
+      {showDesc && field.visible && (
+        <div className="w-full mt-1 pl-10">
+          <MarkdownInput
+            value={field.description ?? ""}
+            onChange={(val) => onUpdateDescription(val || undefined)}
+            placeholder="Field description (optional) — supports links, bold, italic"
           />
-          Required
-        </label>
+        </div>
       )}
     </div>
   );
@@ -1012,6 +1036,16 @@ export function EventForm({ event }: Props) {
                             };
                             setRegConfig(updated);
                             autoSaveRegConfig(updated);
+                          }}
+                          onUpdateDescription={(desc) => {
+                            const updated = {
+                              ...regConfig,
+                              fields: {
+                                ...regConfig.fields,
+                                [key]: { ...regConfig.fields[key], description: desc },
+                              },
+                            };
+                            setRegConfig(updated);
                           }}
                         />
                       );

@@ -216,13 +216,16 @@ export function DynamicRegistrationForm({
     if (hiddenKeys.has(key)) return null;
 
     const req = fieldConfig.required && <span className="text-red-500">*</span>;
+    const desc = fieldConfig.description ? (
+      <RichText className="text-xs text-gray-500">{fieldConfig.description}</RichText>
+    ) : null;
 
     switch (key) {
       case "region":
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Region {req}</Label>
-            <p className="text-xs text-gray-500">Select which continent you are in.</p>
+            {desc || <p className="text-xs text-gray-500">Select which continent you are in.</p>}
             <SearchableSelect
               value={watch("region")}
               onValueChange={(value) => setValue("region", value)}
@@ -237,6 +240,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Country {req}</Label>
+            {desc}
             <SearchableSelect
               value={watch("country")}
               onValueChange={(value) => setValue("country", value)}
@@ -251,7 +255,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>VISA Requirement {req}</Label>
-            <p className="text-xs text-gray-500">Do you require a Visa to enter the host country?</p>
+            {desc || <p className="text-xs text-gray-500">Do you require a Visa to enter the host country?</p>}
             <Select onValueChange={(value: string | null) => { if (value) setValue("visaRequired", value); }}>
               <SelectTrigger className={inputClass}>
                 <SelectValue placeholder="Select" />
@@ -268,6 +272,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Passport Number {req}</Label>
+            {desc}
             <Input {...register("passportNumber")} className={inputClass} placeholder="Your passport number" />
             {errors.passportNumber && <p className="text-red-600 text-xs">{errors.passportNumber.message as string}</p>}
           </div>
@@ -276,6 +281,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Phone / WhatsApp Number {req}</Label>
+            {desc}
             <Input type="tel" {...register("phone")} className={inputClass} placeholder="Country Code + Phone Number" />
             {errors.phone && <p className="text-red-600 text-xs">{errors.phone.message as string}</p>}
           </div>
@@ -284,6 +290,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Organization / Movement / Church {req}</Label>
+            {desc}
             <Input {...register("churchName")} className={inputClass} placeholder="Your organization or church" />
             {errors.churchName && <p className="text-red-600 text-xs">{errors.churchName.message as string}</p>}
           </div>
@@ -292,6 +299,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Ministry Title / Role {req}</Label>
+            {desc}
             <Input {...register("churchRole")} className={inputClass} placeholder="Your ministry title or role" />
             {errors.churchRole && <p className="text-red-600 text-xs">{errors.churchRole.message as string}</p>}
           </div>
@@ -300,6 +308,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Referred By (Last Name, First Name) {req}</Label>
+            {desc}
             <Input {...register("referredBy")} className={inputClass} placeholder="Last Name, First Name" />
             {errors.referredBy && <p className="text-red-600 text-xs">{errors.referredBy.message as string}</p>}
           </div>
@@ -308,6 +317,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>City {req}</Label>
+            {desc}
             <Input {...register("city")} className={inputClass} placeholder="Your city" />
             {errors.city && <p className="text-red-600 text-xs">{errors.city.message as string}</p>}
           </div>
@@ -316,6 +326,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Dietary Requirements {req}</Label>
+            {desc}
             <Input {...register("dietaryRequirements")} className={inputClass} placeholder="Any dietary restrictions" />
             {errors.dietaryRequirements && <p className="text-red-600 text-xs">{errors.dietaryRequirements.message as string}</p>}
           </div>
@@ -324,6 +335,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>How did you hear about this event? {req}</Label>
+            {desc}
             <Select onValueChange={(value: string | null) => { if (value) setValue("howHeard", value); }}>
               <SelectTrigger className={inputClass}>
                 <SelectValue placeholder="Select an option" />
@@ -341,6 +353,7 @@ export function DynamicRegistrationForm({
         return (
           <div key={key} className="space-y-1.5">
             <Label className={labelClass}>Special Needs or Requests {req}</Label>
+            {desc}
             <Textarea {...register("specialNeeds")} className={`${inputClass} min-h-[80px]`} placeholder="Any special accommodations" />
             {errors.specialNeeds && <p className="text-red-600 text-xs">{errors.specialNeeds.message as string}</p>}
           </div>
