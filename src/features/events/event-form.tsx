@@ -539,8 +539,8 @@ function SortableSectionCard({
           const isDefault = !!fc;
           return (
             <div key={key}>
-              <div className="flex items-center justify-between text-xs px-2 py-1 bg-gray-50 rounded">
-                <span className="text-gray-700">{getFieldLabel(key)}</span>
+              <div className="flex items-center justify-between text-sm px-2 py-1.5 bg-gray-50 rounded">
+                <span className="text-gray-700 font-medium">{getFieldLabel(key)}</span>
                 <div className="flex items-center gap-2">
                   {isDefault && (
                     <>
