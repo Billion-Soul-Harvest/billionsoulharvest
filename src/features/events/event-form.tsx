@@ -302,7 +302,10 @@ function SectionsEditor({
   }
 
   function getFieldLabel(key: string): string {
-    return FIELD_LABELS[key] ?? regConfig.customFields.find((f) => f.id === key)?.label ?? key;
+    if (FIELD_LABELS[key]) return FIELD_LABELS[key];
+    const cf = regConfig.customFields.find((f) => f.id === key);
+    if (cf) return cf.label || "Untitled field";
+    return key;
   }
 
   function conditionSummary(condition?: SectionCondition | null): string {
@@ -537,6 +540,9 @@ function SortableSectionCard({
         {section.fieldKeys.map((key) => {
           const fc = fieldConfigs[key];
           const isDefault = !!fc;
+          const isCustom = key.startsWith("custom_");
+          // Skip orphaned custom fields (deleted but ID still in fieldKeys)
+          if (isCustom && !isDefault && getFieldLabel(key) === key) return null;
           return (
             <div key={key}>
               <div className="flex items-center justify-between text-sm px-2 py-1.5 bg-gray-50 rounded">
