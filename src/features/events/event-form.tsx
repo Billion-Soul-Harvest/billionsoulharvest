@@ -356,6 +356,21 @@ function SectionsEditor({
                 onAssignField={(key) => assignField(section.id, key)}
                 onRemoveField={(key) => removeFieldFromSection(section.id, key)}
                 onCreateCustomField={(label, type) => createCustomFieldInSection(section.id, label, type)}
+                fieldConfigs={Object.fromEntries(
+                  section.fieldKeys
+                    .filter((k) => k in regConfig.fields)
+                    .map((k) => [k, regConfig.fields[k as keyof typeof regConfig.fields]])
+                )}
+                onUpdateFieldConfig={(key, patch) => {
+                  const updated = {
+                    ...regConfig,
+                    fields: {
+                      ...regConfig.fields,
+                      [key]: { ...regConfig.fields[key as keyof typeof regConfig.fields], ...patch },
+                    },
+                  };
+                  onUpdate(updated);
+                }}
               />
             ))}
           </div>
@@ -383,6 +398,8 @@ function SortableSectionCard({
   onAssignField,
   onRemoveField,
   onCreateCustomField,
+  fieldConfigs,
+  onUpdateFieldConfig,
 }: {
   section: RegistrationSection;
   allFields: { key: string; label: string }[];
@@ -394,7 +411,10 @@ function SortableSectionCard({
   onAssignField: (key: string) => void;
   onRemoveField: (key: string) => void;
   onCreateCustomField: (label: string, type: RegistrationCustomFieldType) => void;
+  fieldConfigs: Record<string, { required: boolean; description?: string }>;
+  onUpdateFieldConfig: (key: string, patch: { required?: boolean; description?: string }) => void;
 }) {
+  const [expandedDescKey, setExpandedDescKey] = useState<string | null>(null);
   const [showNewField, setShowNewField] = useState(false);
   const [newFieldLabel, setNewFieldLabel] = useState("");
   const [newFieldType, setNewFieldType] = useState<RegistrationCustomFieldType>("text");
@@ -514,16 +534,56 @@ function SortableSectionCard({
         {section.fieldKeys.length === 0 && (
           <p className="text-xs text-gray-400 italic">No fields assigned</p>
         )}
-        {section.fieldKeys.map((key) => (
-          <div key={key} className="flex items-center justify-between text-xs px-2 py-1 bg-gray-50 rounded">
-            <span className="text-gray-700">{getFieldLabel(key)}</span>
-            <button type="button" onClick={() => onRemoveField(key)} className="text-gray-400 hover:text-red-500">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        ))}
+        {section.fieldKeys.map((key) => {
+          const fc = fieldConfigs[key];
+          const isDefault = !!fc;
+          return (
+            <div key={key}>
+              <div className="flex items-center justify-between text-xs px-2 py-1 bg-gray-50 rounded">
+                <span className="text-gray-700">{getFieldLabel(key)}</span>
+                <div className="flex items-center gap-2">
+                  {isDefault && (
+                    <>
+                      <label className="flex items-center gap-1 text-gray-500">
+                        <input
+                          type="checkbox"
+                          checked={fc.required}
+                          onChange={(e) => onUpdateFieldConfig(key, { required: e.target.checked })}
+                          className="w-3 h-3 rounded"
+                        />
+                        Required
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedDescKey(expandedDescKey === key ? null : key)}
+                        className={`px-1 py-0.5 rounded ${fc.description ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
+                        title={fc.description ? "Edit description" : "Add description"}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  <button type="button" onClick={() => onRemoveField(key)} className="text-gray-400 hover:text-red-500">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              {isDefault && expandedDescKey === key && (
+                <div className="mt-1 ml-2">
+                  <MarkdownInput
+                    value={fc.description ?? ""}
+                    onChange={(val) => onUpdateFieldConfig(key, { description: val || undefined })}
+                    placeholder="Field description (optional) — supports links, bold, italic"
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {unassignedFields.length > 0 && (
           <SearchableSelect
@@ -1009,12 +1069,13 @@ export function EventForm({ event }: Props) {
                       const field = regConfig.fields[key];
                       if (!field) return null;
                       const assignedSection = (regConfig.sections ?? []).find((s) => s.fieldKeys.includes(key));
+                      if (assignedSection) return null;
                       return (
                         <SortableFieldRow
                           key={key}
                           fieldKey={key}
                           field={field}
-                          sectionName={assignedSection?.title || undefined}
+                          sectionName={undefined}
                           onToggleVisible={(checked) => {
                             const updated = {
                               ...regConfig,
