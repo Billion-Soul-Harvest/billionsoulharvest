@@ -1203,9 +1203,14 @@ export function EventForm({ event }: Props) {
                       <button
                         type="button"
                         onClick={() => {
+                          const deletedId = regConfig.customFields[idx].id;
                           setRegConfig((prev) => ({
                             ...prev,
                             customFields: prev.customFields.filter((_, i) => i !== idx),
+                            sections: (prev.sections ?? []).map((s) => ({
+                              ...s,
+                              fieldKeys: s.fieldKeys.filter((k) => k !== deletedId),
+                            })),
                           }));
                         }}
                         className="text-gray-400 hover:text-red-500 p-1"
