@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -93,6 +93,7 @@ export function DynamicRegistrationForm({
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | boolean>>({});
   const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({});
+  const [currentPage, setCurrentPage] = useState(0);
 
   const {
     register,
@@ -420,30 +421,71 @@ export function DynamicRegistrationForm({
     );
   }
 
-  // Unsectioned default fields: visible fields not assigned to any section
-  const unsectionedDefaultFields = fieldOrder.filter(
+  // Unsectioned fields: use unsectionedOrder if available, otherwise default + custom
+  const unsectionedDefaultKeys = fieldOrder.filter(
     (key) => !sectionedFieldKeys.has(key) && fields[key]?.visible && !hiddenKeys.has(key)
   );
-
-  // Unsectioned custom fields
   const unsectionedCustomFields = registrationConfig.customFields.filter(
     (f) => !sectionedFieldKeys.has(f.id) && !hiddenKeys.has(f.id)
   );
+  const allUnsectionedKeys = new Set([...unsectionedDefaultKeys, ...unsectionedCustomFields.map((f) => f.id)]);
+  const savedUnsectionedOrder = registrationConfig.unsectionedOrder ?? [];
+  const orderedUnsectioned = [
+    ...savedUnsectionedOrder.filter((k) => allUnsectionedKeys.has(k)),
+    ...[...unsectionedDefaultKeys, ...unsectionedCustomFields.map((f) => f.id)].filter((k) => !savedUnsectionedOrder.includes(k)),
+  ];
+  const customFieldMap = new Map(registrationConfig.customFields.map((f) => [f.id, f]));
 
   // Ordered sections
   const orderedSections = sectionOrder
     .map((id) => sections.find((s) => s.id === id))
     .filter((s): s is NonNullable<typeof s> => !!s);
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+  // Build sections with visibility info for multi-page
+  const sectionsWithVisibility = orderedSections.map((section) => ({
+    section,
+    visible: evaluateSectionCondition(section.condition, { ...allWatchedValues, ...customFieldValues }),
+    hasFields: section.fieldKeys.some(
+      (key) => (key in fields && fields[key as keyof typeof fields]?.visible) ||
+        registrationConfig.customFields.some((f) => f.id === key)
+    ),
+  }));
 
-      {/* Always-visible: firstName, lastName, email */}
+  // For single-page mode, only show visible sections
+  const visibleSections = sectionsWithVisibility
+    .filter((s) => s.visible && s.hasFields)
+    .map((s) => s.section);
+
+  // For multi-page mode, include sections that have fields (even if conditionally hidden)
+  const multiPageSections = sectionsWithVisibility
+    .filter((s) => s.hasFields)
+    .map((s) => s.section);
+
+  const isMultiPage = registrationConfig.multiPage === true && multiPageSections.length > 0;
+  const totalPages = isMultiPage ? 1 + multiPageSections.length : 1;
+  const isLastPage = currentPage >= totalPages - 1;
+
+  // Check if current section page is visible (condition met)
+  const currentSectionVisible = isMultiPage && currentPage > 0
+    ? evaluateSectionCondition(multiPageSections[currentPage - 1]?.condition, { ...allWatchedValues, ...customFieldValues })
+    : true;
+
+  const validateCurrentPage = useCallback(() => {
+    if (!isMultiPage) return true;
+    if (currentPage === 0) {
+      const allValues = { ...allWatchedValues, ...customFieldValues };
+      const coreValid =
+        !!allValues.firstName?.toString().trim() &&
+        !!allValues.lastName?.toString().trim() &&
+        !!allValues.email?.toString().trim();
+      if (!coreValid) return false;
+    }
+    return true;
+  }, [isMultiPage, currentPage, allWatchedValues, customFieldValues]);
+
+  // Core fields (page 0 in multi-page, always shown in single-page)
+  const coreFieldsBlock = (
+    <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className={labelClass}>
@@ -460,7 +502,6 @@ export function DynamicRegistrationForm({
           {errors.lastName && <p className="text-red-600 text-xs">{errors.lastName.message as string}</p>}
         </div>
       </div>
-
       <div className="space-y-1.5">
         <Label className={labelClass}>
           Email <span className="text-red-500">*</span>
@@ -468,44 +509,185 @@ export function DynamicRegistrationForm({
         <Input type="email" {...register("email")} className={inputClass} placeholder="your@email.com" />
         {errors.email && <p className="text-red-600 text-xs">{errors.email.message as string}</p>}
       </div>
+    </>
+  );
 
-      {/* Unsectioned default fields */}
-      {unsectionedDefaultFields.map((key) => renderField(key))}
+  const unsectionedFieldsBlock = orderedUnsectioned.map((key) => {
+    const cf = customFieldMap.get(key);
+    if (cf) return renderCustomField(cf);
+    return renderField(key);
+  });
 
-      {/* Unsectioned custom fields */}
-      {unsectionedCustomFields.map((field) => renderCustomField(field))}
+  function renderSectionContent(section: NonNullable<typeof visibleSections[number]>, asPage = false) {
+    const sectionDefaultFields = section.fieldKeys.filter(
+      (key) => key in fields && fields[key as keyof typeof fields]?.visible
+    );
+    const sectionCustomFields = section.fieldKeys
+      .map((key) => registrationConfig.customFields.find((f) => f.id === key))
+      .filter((f): f is NonNullable<typeof f> => !!f);
 
-      {/* Sections */}
-      {orderedSections.map((section) => {
-        const visible = evaluateSectionCondition(section.condition, { ...allWatchedValues, ...customFieldValues });
-        if (!visible) return null;
-
-        const sectionDefaultFields = section.fieldKeys.filter(
-          (key) => key in fields && fields[key as keyof typeof fields]?.visible
-        );
-        const sectionCustomFields = section.fieldKeys
-          .map((key) => registrationConfig.customFields.find((f) => f.id === key))
-          .filter((f): f is NonNullable<typeof f> => !!f);
-
-        if (sectionDefaultFields.length === 0 && sectionCustomFields.length === 0) return null;
-
-        return (
-          <div key={section.id} className="space-y-4">
-            <div className="border-t pt-4">
-              <h3 className={`text-lg font-semibold ${inline ? "text-gray-900" : "text-[#0d223f]"}`}>
-                {section.title}
-              </h3>
-              {section.description && (
-                <p className="text-sm text-gray-500 mt-1">
-                  <RichText>{section.description}</RichText>
-                </p>
-              )}
-            </div>
-            {sectionDefaultFields.map((key) => renderField(key))}
-            {sectionCustomFields.map((field) => renderCustomField(field))}
+    return (
+      <div key={section.id} className="space-y-4">
+        {asPage ? (
+          // Google Forms style: section title as a prominent header card
+          <div className="border-l-4 border-[#0d223f] bg-[#0d223f]/[0.03] rounded-r-lg px-5 py-4">
+            <h3 className="text-xl font-semibold text-[#0d223f]">{section.title}</h3>
+            {section.description && (
+              <p className="text-sm text-gray-500 mt-1.5">
+                <RichText>{section.description}</RichText>
+              </p>
+            )}
           </div>
-        );
-      })}
+        ) : (
+          <div className="border-t pt-4">
+            <h3 className={`text-lg font-semibold ${inline ? "text-gray-900" : "text-[#0d223f]"}`}>
+              {section.title}
+            </h3>
+            {section.description && (
+              <p className="text-sm text-gray-500 mt-1">
+                <RichText>{section.description}</RichText>
+              </p>
+            )}
+          </div>
+        )}
+        {sectionDefaultFields.map((key) => renderField(key))}
+        {sectionCustomFields.map((field) => renderCustomField(field))}
+      </div>
+    );
+  }
+
+  const submitButtonClass = isMultiPage
+    ? "bg-[#0d223f] hover:bg-[#1a3a5c] text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50"
+    : inline
+      ? "w-full font-semibold py-5"
+      : "w-full bg-[#0d223f] hover:bg-[#1a3a5c] text-white font-semibold py-6 text-lg rounded-xl shadow-lg shadow-[#0d223f]/25 transition-all duration-200 hover:shadow-xl hover:shadow-[#0d223f]/30 disabled:opacity-50";
+
+  const submitButton = (
+    <Button
+      type="submit"
+      disabled={isSubmitting || !isRegistrationOpen}
+      className={submitButtonClass}
+    >
+      {isSubmitting ? (
+        <span className="flex items-center gap-2">
+          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Registering...
+        </span>
+      ) : (
+        isMultiPage ? "Submit" : "Complete Registration"
+      )}
+    </Button>
+  );
+
+  const nextButton = (
+    <Button
+      type="button"
+      onClick={() => {
+        if (validateCurrentPage()) setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
+      }}
+      className={inline
+        ? "font-semibold py-5 px-8"
+        : "bg-[#0d223f] hover:bg-[#1a3a5c] text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200"
+      }
+    >
+      Next
+    </Button>
+  );
+
+  const backButton = (
+    <button
+      type="button"
+      onClick={() => setCurrentPage((p) => Math.max(p - 1, 0))}
+      className="text-[#0d223f]/70 hover:text-[#0d223f] font-medium py-3 px-6 transition-colors text-sm"
+    >
+      Back
+    </button>
+  );
+
+  // Google Forms style: progress bar at bottom, step dots at top
+  const progressPercent = ((currentPage + 1) / totalPages) * 100;
+  const progressBar = isMultiPage ? (
+    <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+      <div
+        className="bg-[#0d223f] h-full transition-all duration-500 ease-out"
+        style={{ width: `${progressPercent}%` }}
+      />
+    </div>
+  ) : null;
+
+  // Step indicator dots
+  const stepDots = isMultiPage ? (
+    <div className="flex items-center justify-center gap-2">
+      {Array.from({ length: totalPages }, (_, i) => (
+        <div
+          key={i}
+          className={`rounded-full transition-all duration-300 ${
+            i === currentPage
+              ? "w-2.5 h-2.5 bg-[#0d223f]"
+              : i < currentPage
+                ? "w-2 h-2 bg-[#0d223f]/40"
+                : "w-2 h-2 bg-gray-200"
+          }`}
+        />
+      ))}
+      <span className="text-xs text-gray-400 ml-2">
+        {currentPage + 1} of {totalPages}
+      </span>
+    </div>
+  ) : null;
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Step dots at top */}
+      {stepDots}
+
+      {isMultiPage ? (
+        <>
+          {/* Page 0: Core + unsectioned fields */}
+          {currentPage === 0 && (
+            <>
+              {coreFieldsBlock}
+              {unsectionedFieldsBlock}
+            </>
+          )}
+
+          {/* Section pages */}
+          {multiPageSections.map((section, idx) => {
+            if (currentPage !== idx + 1) return null;
+            if (!currentSectionVisible) {
+              return (
+                <div key={section.id} className="text-center py-12 text-gray-400">
+                  <svg className="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm font-medium">This section doesn&apos;t apply to you</p>
+                  <p className="text-xs mt-1">Based on your previous answers, you can skip this step.</p>
+                </div>
+              );
+            }
+            return (
+              <div key={section.id}>
+                {renderSectionContent(section, true)}
+              </div>
+            );
+          })}
+        </>
+      ) : (
+        <>
+          {coreFieldsBlock}
+          {unsectionedFieldsBlock}
+          {visibleSections.map((section) => renderSectionContent(section))}
+        </>
+      )}
 
       {!isRegistrationOpen && (
         <div className="bg-[#0d223f]/5 border border-[#b4c7ec]/30 text-[#0d223f] px-4 py-3 rounded-lg text-sm text-center">
@@ -513,26 +695,23 @@ export function DynamicRegistrationForm({
         </div>
       )}
 
-      <Button
-        type="submit"
-        disabled={isSubmitting || !isRegistrationOpen}
-        className={inline
-          ? "w-full font-semibold py-5"
-          : "w-full bg-[#0d223f] hover:bg-[#1a3a5c] text-white font-semibold py-6 text-lg rounded-xl shadow-lg shadow-[#0d223f]/25 transition-all duration-200 hover:shadow-xl hover:shadow-[#0d223f]/30 disabled:opacity-50"
-        }
-      >
-        {isSubmitting ? (
-          <span className="flex items-center gap-2">
-            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            Registering...
-          </span>
-        ) : (
-          "Complete Registration"
-        )}
-      </Button>
+      {/* Navigation */}
+      {isMultiPage ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              {currentPage > 0 && backButton}
+            </div>
+            <div>
+              {isLastPage ? submitButton : nextButton}
+            </div>
+          </div>
+          {/* Progress bar at bottom — Google Forms style */}
+          {progressBar}
+        </div>
+      ) : (
+        submitButton
+      )}
     </form>
   );
 }

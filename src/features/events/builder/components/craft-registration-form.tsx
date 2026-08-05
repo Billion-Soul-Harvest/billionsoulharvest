@@ -105,6 +105,13 @@ export function CraftRegistrationForm({
         const sectionedKeys = new Set(sections.flatMap((s) => s.fieldKeys));
         const unsectionedFields = visibleFields.filter((key) => !sectionedKeys.has(key));
         const unsectionedCustom = config.customFields.filter((f) => !sectionedKeys.has(f.id));
+        const allUnsectionedSet = new Set([...unsectionedFields, ...unsectionedCustom.map((f) => f.id)]);
+        const saved = config.unsectionedOrder ?? [];
+        const orderedUnsectioned = [
+          ...saved.filter((k) => allUnsectionedSet.has(k)),
+          ...[...unsectionedFields, ...unsectionedCustom.map((f) => f.id)].filter((k) => !saved.includes(k)),
+        ];
+        const customMap = new Map(config.customFields.map((f) => [f.id, f]));
         const sectionOrder = config.sectionOrder ?? sections.map((s) => s.id);
         const orderedSections = sectionOrder
           .map((id) => sections.find((s) => s.id === id))
@@ -112,21 +119,24 @@ export function CraftRegistrationForm({
 
         return (
           <>
-            {unsectionedFields.map((key) => (
-              <div key={key} style={{ marginBottom: 12 }}>
-                <PreviewField
-                  label={DEFAULT_FIELD_LABELS[key] ?? key}
-                  required={config.fields[key as keyof typeof config.fields].required}
-                  labelColor={labelColor}
-                  description={config.fields[key as keyof typeof config.fields]?.description}
-                />
-              </div>
-            ))}
-            {unsectionedCustom.map((field) => (
-              <div key={field.id} style={{ marginBottom: 12 }}>
-                <PreviewField label={field.label} required={field.required} labelColor={labelColor} description={field.description} />
-              </div>
-            ))}
+            {orderedUnsectioned.map((key) => {
+              const cf = customMap.get(key);
+              if (cf) return (
+                <div key={cf.id} style={{ marginBottom: 12 }}>
+                  <PreviewField label={cf.label} required={cf.required} labelColor={labelColor} description={cf.description} />
+                </div>
+              );
+              return (
+                <div key={key} style={{ marginBottom: 12 }}>
+                  <PreviewField
+                    label={DEFAULT_FIELD_LABELS[key] ?? key}
+                    required={config.fields[key as keyof typeof config.fields]?.required}
+                    labelColor={labelColor}
+                    description={config.fields[key as keyof typeof config.fields]?.description}
+                  />
+                </div>
+              );
+            })}
             {orderedSections.map((section) => {
               const sectionDefaultFields = section.fieldKeys.filter(
                 (key) => key in config.fields && config.fields[key as keyof typeof config.fields]?.visible

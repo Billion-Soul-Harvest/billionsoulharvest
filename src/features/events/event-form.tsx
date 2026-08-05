@@ -374,6 +374,15 @@ function SectionsEditor({
                   };
                   onUpdate(updated);
                 }}
+                customFields={regConfig.customFields}
+                onUpdateCustomField={(id, patch) => {
+                  onUpdate({
+                    ...regConfig,
+                    customFields: regConfig.customFields.map((f) =>
+                      f.id === id ? { ...f, ...patch } : f
+                    ),
+                  });
+                }}
               />
             ))}
           </div>
@@ -386,6 +395,101 @@ function SectionsEditor({
           ) : null}
         </DragOverlay>
       </DndContext>
+    </div>
+  );
+}
+
+function SortableSectionField({
+  id,
+  label,
+  required,
+  description,
+  isDefault,
+  expandedDesc,
+  onToggleExpandDesc,
+  onToggleRequired,
+  onUpdateDescription,
+  onRemove,
+}: {
+  id: string;
+  label: string;
+  required: boolean;
+  description: string;
+  isDefault: boolean;
+  visible: boolean;
+  expandedDesc: boolean;
+  onToggleExpandDesc: () => void;
+  onToggleRequired: (val: boolean) => void;
+  onUpdateDescription: (val: string | undefined) => void;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="flex items-center gap-1.5 text-sm px-2 py-1.5 bg-gray-50 rounded">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none shrink-0"
+          {...attributes}
+          {...listeners}
+        >
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
+            <circle cx="5" cy="3" r="1.5" /><circle cx="11" cy="3" r="1.5" />
+            <circle cx="5" cy="8" r="1.5" /><circle cx="11" cy="8" r="1.5" />
+            <circle cx="5" cy="13" r="1.5" /><circle cx="11" cy="13" r="1.5" />
+          </svg>
+        </button>
+        <span className="text-gray-700 font-medium flex-1">{label}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <label className="flex items-center gap-1 text-xs text-gray-500">
+            <input
+              type="checkbox"
+              checked={required}
+              onChange={(e) => onToggleRequired(e.target.checked)}
+              className="w-3 h-3 rounded"
+            />
+            Required
+          </label>
+          <button
+            type="button"
+            onClick={onToggleExpandDesc}
+            className={`px-1 py-0.5 rounded ${description ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
+            title={description ? "Edit description" : "Add description"}
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+          </button>
+          <button type="button" onClick={onRemove} className="text-gray-400 hover:text-red-500">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      {expandedDesc && (
+        <div className="mt-1 ml-6">
+          <MarkdownInput
+            value={description}
+            onChange={(val) => onUpdateDescription(val || undefined)}
+            placeholder="Field description (optional) — supports links, bold, italic"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -403,6 +507,8 @@ function SortableSectionCard({
   onCreateCustomField,
   fieldConfigs,
   onUpdateFieldConfig,
+  customFields,
+  onUpdateCustomField,
 }: {
   section: RegistrationSection;
   allFields: { key: string; label: string }[];
@@ -416,6 +522,8 @@ function SortableSectionCard({
   onCreateCustomField: (label: string, type: RegistrationCustomFieldType) => void;
   fieldConfigs: Record<string, { required: boolean; description?: string }>;
   onUpdateFieldConfig: (key: string, patch: { required?: boolean; description?: string }) => void;
+  customFields: RegistrationCustomField[];
+  onUpdateCustomField: (id: string, patch: Partial<RegistrationCustomField>) => void;
 }) {
   const [expandedDescKey, setExpandedDescKey] = useState<string | null>(null);
   const [showNewField, setShowNewField] = useState(false);
@@ -429,6 +537,20 @@ function SortableSectionCard({
     transition,
     isDragging,
   } = useSortable({ id: section.id });
+
+  const fieldSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleFieldDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = section.fieldKeys.indexOf(active.id as string);
+    const newIdx = section.fieldKeys.indexOf(over.id as string);
+    if (oldIdx === -1 || newIdx === -1) return;
+    onUpdate({ fieldKeys: arrayMove(section.fieldKeys, oldIdx, newIdx) });
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -537,59 +659,47 @@ function SortableSectionCard({
         {section.fieldKeys.length === 0 && (
           <p className="text-xs text-gray-400 italic">No fields assigned</p>
         )}
-        {section.fieldKeys.map((key) => {
-          const fc = fieldConfigs[key];
-          const isDefault = !!fc;
-          const isCustom = key.startsWith("custom_");
-          // Skip orphaned custom fields (deleted but ID still in fieldKeys)
-          if (isCustom && !isDefault && getFieldLabel(key) === key) return null;
-          return (
-            <div key={key}>
-              <div className="flex items-center justify-between text-sm px-2 py-1.5 bg-gray-50 rounded">
-                <span className="text-gray-700 font-medium">{getFieldLabel(key)}</span>
-                <div className="flex items-center gap-2">
-                  {isDefault && (
-                    <>
-                      <label className="flex items-center gap-1 text-gray-500">
-                        <input
-                          type="checkbox"
-                          checked={fc.required}
-                          onChange={(e) => onUpdateFieldConfig(key, { required: e.target.checked })}
-                          className="w-3 h-3 rounded"
-                        />
-                        Required
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setExpandedDescKey(expandedDescKey === key ? null : key)}
-                        className={`px-1 py-0.5 rounded ${fc.description ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
-                        title={fc.description ? "Edit description" : "Add description"}
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                        </svg>
-                      </button>
-                    </>
-                  )}
-                  <button type="button" onClick={() => onRemoveField(key)} className="text-gray-400 hover:text-red-500">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              {isDefault && expandedDescKey === key && (
-                <div className="mt-1 ml-2">
-                  <MarkdownInput
-                    value={fc.description ?? ""}
-                    onChange={(val) => onUpdateFieldConfig(key, { description: val || undefined })}
-                    placeholder="Field description (optional) — supports links, bold, italic"
-                  />
-                </div>
-              )}
-            </div>
-          );
-        })}
+        <DndContext
+          id={`section-fields-${section.id}`}
+          sensors={fieldSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleFieldDragEnd}
+        >
+          <SortableContext items={section.fieldKeys} strategy={verticalListSortingStrategy}>
+            {section.fieldKeys.map((key) => {
+              const fc = fieldConfigs[key];
+              const isDefault = !!fc;
+              const isCustom = key.startsWith("custom_");
+              const cf = isCustom ? customFields.find((f) => f.id === key) : null;
+              // Skip orphaned custom fields (deleted but ID still in fieldKeys)
+              if (isCustom && !isDefault && !cf) return null;
+              const fieldRequired = isDefault ? fc.required : (cf?.required ?? false);
+              const fieldDesc = isDefault ? (fc.description ?? "") : (cf?.description ?? "");
+              return (
+                <SortableSectionField
+                  key={key}
+                  id={key}
+                  label={getFieldLabel(key)}
+                  required={fieldRequired}
+                  description={fieldDesc}
+                  isDefault={isDefault}
+                  visible={isDefault ? fc.required !== undefined : true}
+                  expandedDesc={expandedDescKey === key}
+                  onToggleExpandDesc={() => setExpandedDescKey(expandedDescKey === key ? null : key)}
+                  onToggleRequired={(val) => {
+                    if (isDefault) onUpdateFieldConfig(key, { required: val });
+                    else if (cf) onUpdateCustomField(cf.id, { required: val });
+                  }}
+                  onUpdateDescription={(val) => {
+                    if (isDefault) onUpdateFieldConfig(key, { description: val });
+                    else if (cf) onUpdateCustomField(cf.id, { description: val });
+                  }}
+                  onRemove={() => onRemoveField(key)}
+                />
+              );
+            })}
+          </SortableContext>
+        </DndContext>
 
         {unassignedFields.length > 0 && (
           <SearchableSelect
@@ -669,6 +779,195 @@ function SortableSectionCard({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function SortableCustomFieldCard({
+  field,
+  onUpdate,
+  onDelete,
+}: {
+  field: RegistrationCustomField;
+  onUpdate: (patch: Partial<RegistrationCustomField>) => void;
+  onDelete: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: field.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="border rounded-lg p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none shrink-0"
+          {...attributes}
+          {...listeners}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+            <circle cx="5" cy="3" r="1.5" /><circle cx="11" cy="3" r="1.5" />
+            <circle cx="5" cy="8" r="1.5" /><circle cx="11" cy="8" r="1.5" />
+            <circle cx="5" cy="13" r="1.5" /><circle cx="11" cy="13" r="1.5" />
+          </svg>
+        </button>
+        <Input
+          value={field.label}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onUpdate({ label: e.target.value })}
+          placeholder="Field label"
+          className="text-sm flex-1"
+        />
+        <Input
+          value={field.placeholder ?? ""}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onUpdate({ placeholder: e.target.value })}
+          placeholder="Placeholder (optional)"
+          className="text-sm flex-1"
+        />
+        <button
+          type="button"
+          onClick={onDelete}
+          className="text-gray-400 hover:text-red-500 p-1"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <MarkdownInput
+        value={field.description ?? ""}
+        onChange={(val) => onUpdate({ description: val || undefined })}
+        placeholder="Field description (optional) — supports links, bold, italic"
+      />
+      <div className="flex items-center gap-3">
+        <Select
+          value={field.type}
+          onValueChange={(v: string | null) => {
+            if (!v) return;
+            const patch: Partial<RegistrationCustomField> = { type: v as RegistrationCustomFieldType };
+            if (v === "select" && !field.options?.length) {
+              patch.options = ["Option 1"];
+            }
+            onUpdate(patch);
+          }}
+        >
+          <SelectTrigger className="w-[130px] text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="text">Text</SelectItem>
+            <SelectItem value="number">Number</SelectItem>
+            <SelectItem value="email">Email</SelectItem>
+            <SelectItem value="tel">Phone</SelectItem>
+            <SelectItem value="url">URL</SelectItem>
+            <SelectItem value="date">Date</SelectItem>
+            <SelectItem value="textarea">Text Area</SelectItem>
+            <SelectItem value="select">Dropdown</SelectItem>
+            <SelectItem value="checkbox">Checkbox</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="flex items-center gap-1 text-xs text-gray-500">
+          <input
+            type="checkbox"
+            checked={field.required}
+            onChange={(e) => onUpdate({ required: e.target.checked })}
+            className="w-3 h-3 rounded"
+          />
+          Required
+        </label>
+      </div>
+      {field.type === "select" && (
+        <div className="space-y-1">
+          <p className="text-xs text-gray-500">Options (one per line)</p>
+          <Textarea
+            value={(field.options ?? []).join("\n")}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onUpdate({ options: e.target.value.split("\n") })}
+            className="text-sm min-h-[60px]"
+            placeholder="Option 1&#10;Option 2&#10;Option 3"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomFieldsEditor({
+  customFields,
+  onUpdate,
+  onDelete,
+  onAdd,
+}: {
+  customFields: RegistrationCustomField[];
+  onUpdate: (fields: RegistrationCustomField[]) => void;
+  onDelete: (idx: number) => void;
+  onAdd: () => void;
+}) {
+  const cfSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleCfDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = customFields.findIndex((f) => f.id === active.id);
+    const newIdx = customFields.findIndex((f) => f.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    onUpdate(arrayMove(customFields, oldIdx, newIdx));
+  }
+
+  function updateField(idx: number, patch: Partial<RegistrationCustomField>) {
+    const updated = [...customFields];
+    updated[idx] = { ...updated[idx], ...patch };
+    onUpdate(updated);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium text-gray-700">Custom Fields</p>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="text-xs text-[#29BDD6] hover:text-[#1ea8c0] font-medium"
+        >
+          + Add Field
+        </button>
+      </div>
+
+      {customFields.length === 0 && (
+        <p className="text-xs text-gray-400">No custom fields added.</p>
+      )}
+
+      <DndContext
+        id="custom-fields-dnd"
+        sensors={cfSensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleCfDragEnd}
+      >
+        <SortableContext items={customFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3">
+            {customFields.map((field, idx) => (
+              <SortableCustomFieldCard
+                key={field.id}
+                field={field}
+                onUpdate={(patch) => updateField(idx, patch)}
+                onDelete={() => onDelete(idx)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
@@ -976,323 +1275,6 @@ export function EventForm({ event }: Props) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h3 className="font-semibold text-gray-900">Registration</h3>
-            {regConfig.enabled && form.slug && (
-              <a
-                href={`/register/${form.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-cyan-600 hover:text-cyan-700 font-medium"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Preview
-              </a>
-            )}
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={regConfig.enabled}
-              onChange={(e) => {
-                const updated = { ...regConfig, enabled: e.target.checked };
-                setRegConfig(updated);
-                autoSaveRegConfig(updated);
-              }}
-              className="sr-only peer"
-            />
-            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#29BDD6]" />
-          </label>
-        </div>
-
-        {regConfig.enabled && (
-          <div className="space-y-4">
-            {/* Page Display toggles */}
-            <div className="border-b pb-4 mb-4 space-y-3">
-              <p className="text-sm font-medium text-gray-700">Page Display</p>
-              {form.banner_url && (
-                <label className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Use banner as hero background</span>
-                  <div className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={regConfig.showBanner === true}
-                      onChange={(e) => {
-                        const updated = { ...regConfig, showBanner: e.target.checked };
-                        setRegConfig(updated);
-                        autoSaveRegConfig(updated);
-                      }}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#29BDD6]" />
-                  </div>
-                </label>
-              )}
-              <label className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Show event details in hero</span>
-                <div className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={regConfig.showHeroContent !== false}
-                    onChange={(e) => {
-                      const updated = { ...regConfig, showHeroContent: e.target.checked };
-                      setRegConfig(updated);
-                      autoSaveRegConfig(updated);
-                    }}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#29BDD6]" />
-                </div>
-              </label>
-            </div>
-
-            {/* Default fields */}
-            <div>
-              <p className="text-sm text-gray-500 mb-3">Configure which fields appear on the registration form.</p>
-              <div className="space-y-1">
-                {/* Always-on fields */}
-                <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded text-sm text-gray-400">
-                  <input type="checkbox" checked disabled className="w-4 h-4 rounded" />
-                  <span className="flex-1">First Name, Last Name, Email</span>
-                  <span className="text-xs">Always required</span>
-                </div>
-
-                {/* Configurable fields (drag to reorder) */}
-                <DndContext
-                  id="reg-fields-dnd"
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleFieldDragStart}
-                  onDragEnd={handleFieldDragEnd}
-                >
-                  <SortableContext items={fieldOrder as string[]} strategy={verticalListSortingStrategy}>
-                    {fieldOrder.map((key) => {
-                      const field = regConfig.fields[key];
-                      if (!field) return null;
-                      const assignedSection = (regConfig.sections ?? []).find((s) => s.fieldKeys.includes(key));
-                      if (assignedSection) return null;
-                      return (
-                        <SortableFieldRow
-                          key={key}
-                          fieldKey={key}
-                          field={field}
-                          sectionName={undefined}
-                          onToggleVisible={(checked) => {
-                            const updated = {
-                              ...regConfig,
-                              fields: {
-                                ...regConfig.fields,
-                                [key]: { ...regConfig.fields[key], visible: checked },
-                              },
-                            };
-                            setRegConfig(updated);
-                            autoSaveRegConfig(updated);
-                          }}
-                          onToggleRequired={(checked) => {
-                            const updated = {
-                              ...regConfig,
-                              fields: {
-                                ...regConfig.fields,
-                                [key]: { ...regConfig.fields[key], required: checked },
-                              },
-                            };
-                            setRegConfig(updated);
-                            autoSaveRegConfig(updated);
-                          }}
-                          onUpdateDescription={(desc) => {
-                            const updated = {
-                              ...regConfig,
-                              fields: {
-                                ...regConfig.fields,
-                                [key]: { ...regConfig.fields[key], description: desc },
-                              },
-                            };
-                            setRegConfig(updated);
-                          }}
-                        />
-                      );
-                    })}
-                  </SortableContext>
-
-                  <DragOverlay>
-                    {activeFieldKey && regConfig.fields[activeFieldKey as keyof RegistrationConfig["fields"]] ? (
-                      <div className="flex items-center gap-3 px-3 py-2 rounded bg-white shadow-lg ring-2 ring-blue-400 text-sm">
-                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 16 16">
-                          <circle cx="5" cy="3" r="1.5" />
-                          <circle cx="11" cy="3" r="1.5" />
-                          <circle cx="5" cy="8" r="1.5" />
-                          <circle cx="11" cy="8" r="1.5" />
-                          <circle cx="5" cy="13" r="1.5" />
-                          <circle cx="11" cy="13" r="1.5" />
-                        </svg>
-                        <span className="flex-1 text-gray-700">{FIELD_LABELS[activeFieldKey] ?? activeFieldKey}</span>
-                      </div>
-                    ) : null}
-                  </DragOverlay>
-                </DndContext>
-              </div>
-            </div>
-
-            {/* Sections */}
-            <SectionsEditor
-              regConfig={regConfig}
-              onUpdate={(updated) => {
-                setRegConfig(updated);
-                autoSaveRegConfig(updated);
-              }}
-              fieldOrder={fieldOrder}
-            />
-
-            {/* Custom Fields */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-700">Custom Fields</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newField: RegistrationCustomField = {
-                      id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                      label: "",
-                      type: "text",
-                      required: false,
-                    };
-                    setRegConfig((prev) => ({
-                      ...prev,
-                      customFields: [...prev.customFields, newField],
-                    }));
-                  }}
-                  className="text-xs text-[#29BDD6] hover:text-[#1ea8c0] font-medium"
-                >
-                  + Add Field
-                </button>
-              </div>
-
-              {regConfig.customFields.length === 0 && (
-                <p className="text-xs text-gray-400">No custom fields added.</p>
-              )}
-
-              <div className="space-y-3">
-                {regConfig.customFields.map((field, idx) => (
-                  <div key={field.id} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={field.label}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                          const updated = [...regConfig.customFields];
-                          updated[idx] = { ...updated[idx], label: e.target.value };
-                          setRegConfig((prev) => ({ ...prev, customFields: updated }));
-                        }}
-                        placeholder="Field label"
-                        className="text-sm flex-1"
-                      />
-                      <Input
-                        value={field.placeholder ?? ""}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                          const updated = [...regConfig.customFields];
-                          updated[idx] = { ...updated[idx], placeholder: e.target.value };
-                          setRegConfig((prev) => ({ ...prev, customFields: updated }));
-                        }}
-                        placeholder="Placeholder (optional)"
-                        className="text-sm flex-1"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const deletedId = regConfig.customFields[idx].id;
-                          setRegConfig((prev) => ({
-                            ...prev,
-                            customFields: prev.customFields.filter((_, i) => i !== idx),
-                            sections: (prev.sections ?? []).map((s) => ({
-                              ...s,
-                              fieldKeys: s.fieldKeys.filter((k) => k !== deletedId),
-                            })),
-                          }));
-                        }}
-                        className="text-gray-400 hover:text-red-500 p-1"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    <MarkdownInput
-                      value={field.description ?? ""}
-                      onChange={(val) => {
-                        const updated = [...regConfig.customFields];
-                        updated[idx] = { ...updated[idx], description: val || undefined };
-                        setRegConfig((prev) => ({ ...prev, customFields: updated }));
-                      }}
-                      placeholder="Field description (optional) — supports links, bold, italic"
-                    />
-                    <div className="flex items-center gap-3">
-                      <Select
-                        value={field.type}
-                        onValueChange={(v: string | null) => {
-                          if (!v) return;
-                          const updated = [...regConfig.customFields];
-                          updated[idx] = { ...updated[idx], type: v as RegistrationCustomFieldType };
-                          if (v === "select" && !updated[idx].options?.length) {
-                            updated[idx].options = ["Option 1"];
-                          }
-                          setRegConfig((prev) => ({ ...prev, customFields: updated }));
-                        }}
-                      >
-                        <SelectTrigger className="w-[130px] text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="tel">Phone</SelectItem>
-                          <SelectItem value="url">URL</SelectItem>
-                          <SelectItem value="date">Date</SelectItem>
-                          <SelectItem value="textarea">Text Area</SelectItem>
-                          <SelectItem value="select">Dropdown</SelectItem>
-                          <SelectItem value="checkbox">Checkbox</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <label className="flex items-center gap-1 text-xs text-gray-500">
-                        <input
-                          type="checkbox"
-                          checked={field.required}
-                          onChange={(e) => {
-                            const updated = [...regConfig.customFields];
-                            updated[idx] = { ...updated[idx], required: e.target.checked };
-                            setRegConfig((prev) => ({ ...prev, customFields: updated }));
-                          }}
-                          className="w-3 h-3 rounded"
-                        />
-                        Required
-                      </label>
-                    </div>
-                    {field.type === "select" && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500">Options (one per line)</p>
-                        <Textarea
-                          value={(field.options ?? []).join("\n")}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                            const updated = [...regConfig.customFields];
-                            updated[idx] = { ...updated[idx], options: e.target.value.split("\n") };
-                            setRegConfig((prev) => ({ ...prev, customFields: updated }));
-                          }}
-                          className="text-sm min-h-[60px]"
-                          placeholder="Option 1&#10;Option 2&#10;Option 3"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       {!isEditing && (
         <div className="bg-white rounded-xl border p-6 space-y-4">

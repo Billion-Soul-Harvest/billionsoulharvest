@@ -436,6 +436,8 @@ export interface RegistrationConfig {
   customFields: RegistrationCustomField[];
   sections?: RegistrationSection[];
   sectionOrder?: string[];
+  unsectionedOrder?: string[];
+  multiPage?: boolean;
 }
 
 // Story types
