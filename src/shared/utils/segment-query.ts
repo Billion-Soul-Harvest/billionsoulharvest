@@ -47,6 +47,11 @@ export function buildSegmentQuery(
   if (filter.email_lists && filter.email_lists.length > 0) {
     query = query.overlaps("email_lists", filter.email_lists);
   }
+  if (filter.email_lists_exclude && filter.email_lists_exclude.length > 0) {
+    for (const listName of filter.email_lists_exclude) {
+      query = query.not("email_lists", "cs", `{${listName}}`);
+    }
+  }
   if (filter.contact_ids && filter.contact_ids.length > 0) {
     query = query.in("id", filter.contact_ids);
   }
