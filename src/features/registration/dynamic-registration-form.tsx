@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { RegistrationConfig } from "@/shared/types/database";
+import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
 import { howHeardOptions, regionOptions, countryOptions } from "./schema";
 
 interface DynamicRegistrationFormProps {
@@ -203,168 +204,145 @@ export function DynamicRegistrationForm({
         {errors.email && <p className="text-red-600 text-xs">{errors.email.message as string}</p>}
       </div>
 
-      {/* Region */}
-      {fields.region?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Region {fields.region.required && <span className="text-red-500">*</span>}
-          </Label>
-          <p className="text-xs text-gray-500">Select which continent you are in.</p>
-          <SearchableSelect
-            value={watch("region")}
-            onValueChange={(value) => setValue("region", value)}
-            options={regionOptions.map((opt) => ({ value: opt, label: opt }))}
-            placeholder="Choose"
-            searchPlaceholder="Search regions..."
-          />
-          {errors.region && <p className="text-red-600 text-xs">{errors.region.message as string}</p>}
-        </div>
-      )}
+      {/* Configurable fields rendered in fieldOrder */}
+      {(registrationConfig.fieldOrder ?? DEFAULT_FIELD_ORDER).map((key) => {
+        const fieldConfig = fields[key];
+        if (!fieldConfig?.visible) return null;
 
-      {/* Country */}
-      {fields.country?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Country {fields.country.required && <span className="text-red-500">*</span>}
-          </Label>
-          <SearchableSelect
-            value={watch("country")}
-            onValueChange={(value) => setValue("country", value)}
-            options={countryOptions.map((opt) => ({ value: opt, label: opt }))}
-            placeholder="Select your country"
-            searchPlaceholder="Search countries..."
-          />
-          {errors.country && <p className="text-red-600 text-xs">{errors.country.message as string}</p>}
-        </div>
-      )}
+        const req = fieldConfig.required && <span className="text-red-500">*</span>;
 
-      {/* VISA Requirement */}
-      {fields.visaRequired?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            VISA Requirement {fields.visaRequired.required && <span className="text-red-500">*</span>}
-          </Label>
-          <p className="text-xs text-gray-500">Do you require a Visa to enter the host country?</p>
-          <Select onValueChange={(value: string | null) => { if (value) setValue("visaRequired", value); }}>
-            <SelectTrigger className={inputClass}>
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Yes">Yes</SelectItem>
-              <SelectItem value="No">No</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.visaRequired && <p className="text-red-600 text-xs">{errors.visaRequired.message as string}</p>}
-        </div>
-      )}
-
-      {/* Passport Number */}
-      {fields.passportNumber?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Passport Number {fields.passportNumber.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Input {...register("passportNumber")} className={inputClass} placeholder="Your passport number" />
-          {errors.passportNumber && <p className="text-red-600 text-xs">{errors.passportNumber.message as string}</p>}
-        </div>
-      )}
-
-      {/* Phone */}
-      {fields.phone?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Phone / WhatsApp Number {fields.phone.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Input type="tel" {...register("phone")} className={inputClass} placeholder="Country Code + Phone Number" />
-          {errors.phone && <p className="text-red-600 text-xs">{errors.phone.message as string}</p>}
-        </div>
-      )}
-
-      {/* Church / Organization */}
-      {fields.churchName?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Organization / Movement / Church {fields.churchName.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Input {...register("churchName")} className={inputClass} placeholder="Your organization or church" />
-          {errors.churchName && <p className="text-red-600 text-xs">{errors.churchName.message as string}</p>}
-        </div>
-      )}
-
-      {/* Ministry Title / Role */}
-      {fields.churchRole?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Ministry Title / Role {fields.churchRole.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Input {...register("churchRole")} className={inputClass} placeholder="Your ministry title or role" />
-          {errors.churchRole && <p className="text-red-600 text-xs">{errors.churchRole.message as string}</p>}
-        </div>
-      )}
-
-      {/* Referred By */}
-      {fields.referredBy?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Referred By (Last Name, First Name) {fields.referredBy.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Input {...register("referredBy")} className={inputClass} placeholder="Last Name, First Name" />
-          {errors.referredBy && <p className="text-red-600 text-xs">{errors.referredBy.message as string}</p>}
-        </div>
-      )}
-
-      {/* City */}
-      {fields.city?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            City {fields.city.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Input {...register("city")} className={inputClass} placeholder="Your city" />
-          {errors.city && <p className="text-red-600 text-xs">{errors.city.message as string}</p>}
-        </div>
-      )}
-
-      {/* Dietary Requirements */}
-      {fields.dietaryRequirements?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Dietary Requirements {fields.dietaryRequirements.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Input {...register("dietaryRequirements")} className={inputClass} placeholder="Any dietary restrictions" />
-          {errors.dietaryRequirements && <p className="text-red-600 text-xs">{errors.dietaryRequirements.message as string}</p>}
-        </div>
-      )}
-
-      {/* How Did You Hear */}
-      {fields.howHeard?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            How did you hear about this event? {fields.howHeard.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Select onValueChange={(value: string | null) => { if (value) setValue("howHeard", value); }}>
-            <SelectTrigger className={inputClass}>
-              <SelectValue placeholder="Select an option" />
-            </SelectTrigger>
-            <SelectContent>
-              {howHeardOptions.map((opt) => (
-                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.howHeard && <p className="text-red-600 text-xs">{errors.howHeard.message as string}</p>}
-        </div>
-      )}
-
-      {/* Special Needs */}
-      {fields.specialNeeds?.visible && (
-        <div className="space-y-1.5">
-          <Label className={labelClass}>
-            Special Needs or Requests {fields.specialNeeds.required && <span className="text-red-500">*</span>}
-          </Label>
-          <Textarea {...register("specialNeeds")} className={`${inputClass} min-h-[80px]`} placeholder="Any special accommodations" />
-          {errors.specialNeeds && <p className="text-red-600 text-xs">{errors.specialNeeds.message as string}</p>}
-        </div>
-      )}
+        switch (key) {
+          case "region":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Region {req}</Label>
+                <p className="text-xs text-gray-500">Select which continent you are in.</p>
+                <SearchableSelect
+                  value={watch("region")}
+                  onValueChange={(value) => setValue("region", value)}
+                  options={regionOptions.map((opt) => ({ value: opt, label: opt }))}
+                  placeholder="Choose"
+                  searchPlaceholder="Search regions..."
+                />
+                {errors.region && <p className="text-red-600 text-xs">{errors.region.message as string}</p>}
+              </div>
+            );
+          case "country":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Country {req}</Label>
+                <SearchableSelect
+                  value={watch("country")}
+                  onValueChange={(value) => setValue("country", value)}
+                  options={countryOptions.map((opt) => ({ value: opt, label: opt }))}
+                  placeholder="Select your country"
+                  searchPlaceholder="Search countries..."
+                />
+                {errors.country && <p className="text-red-600 text-xs">{errors.country.message as string}</p>}
+              </div>
+            );
+          case "visaRequired":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>VISA Requirement {req}</Label>
+                <p className="text-xs text-gray-500">Do you require a Visa to enter the host country?</p>
+                <Select onValueChange={(value: string | null) => { if (value) setValue("visaRequired", value); }}>
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.visaRequired && <p className="text-red-600 text-xs">{errors.visaRequired.message as string}</p>}
+              </div>
+            );
+          case "passportNumber":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Passport Number {req}</Label>
+                <Input {...register("passportNumber")} className={inputClass} placeholder="Your passport number" />
+                {errors.passportNumber && <p className="text-red-600 text-xs">{errors.passportNumber.message as string}</p>}
+              </div>
+            );
+          case "phone":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Phone / WhatsApp Number {req}</Label>
+                <Input type="tel" {...register("phone")} className={inputClass} placeholder="Country Code + Phone Number" />
+                {errors.phone && <p className="text-red-600 text-xs">{errors.phone.message as string}</p>}
+              </div>
+            );
+          case "churchName":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Organization / Movement / Church {req}</Label>
+                <Input {...register("churchName")} className={inputClass} placeholder="Your organization or church" />
+                {errors.churchName && <p className="text-red-600 text-xs">{errors.churchName.message as string}</p>}
+              </div>
+            );
+          case "churchRole":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Ministry Title / Role {req}</Label>
+                <Input {...register("churchRole")} className={inputClass} placeholder="Your ministry title or role" />
+                {errors.churchRole && <p className="text-red-600 text-xs">{errors.churchRole.message as string}</p>}
+              </div>
+            );
+          case "referredBy":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Referred By (Last Name, First Name) {req}</Label>
+                <Input {...register("referredBy")} className={inputClass} placeholder="Last Name, First Name" />
+                {errors.referredBy && <p className="text-red-600 text-xs">{errors.referredBy.message as string}</p>}
+              </div>
+            );
+          case "city":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>City {req}</Label>
+                <Input {...register("city")} className={inputClass} placeholder="Your city" />
+                {errors.city && <p className="text-red-600 text-xs">{errors.city.message as string}</p>}
+              </div>
+            );
+          case "dietaryRequirements":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Dietary Requirements {req}</Label>
+                <Input {...register("dietaryRequirements")} className={inputClass} placeholder="Any dietary restrictions" />
+                {errors.dietaryRequirements && <p className="text-red-600 text-xs">{errors.dietaryRequirements.message as string}</p>}
+              </div>
+            );
+          case "howHeard":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>How did you hear about this event? {req}</Label>
+                <Select onValueChange={(value: string | null) => { if (value) setValue("howHeard", value); }}>
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder="Select an option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {howHeardOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.howHeard && <p className="text-red-600 text-xs">{errors.howHeard.message as string}</p>}
+              </div>
+            );
+          case "specialNeeds":
+            return (
+              <div key={key} className="space-y-1.5">
+                <Label className={labelClass}>Special Needs or Requests {req}</Label>
+                <Textarea {...register("specialNeeds")} className={`${inputClass} min-h-[80px]`} placeholder="Any special accommodations" />
+                {errors.specialNeeds && <p className="text-red-600 text-xs">{errors.specialNeeds.message as string}</p>}
+              </div>
+            );
+          default:
+            return null;
+        }
+      })}
 
       {/* Custom Fields */}
       {registrationConfig.customFields.map((field) => (

@@ -17,6 +17,26 @@ import {
 import { LocationSearchInput, type PlaceResult } from "@/features/events/location-search-input";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType } from "@/shared/types/database";
+import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { eventTemplates } from "@/features/events/templates/event-templates";
 import { applyTemplate } from "@/features/events/templates/apply-template";
 
@@ -48,6 +68,90 @@ interface Props {
 
 function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  region: "Region",
+  country: "Country",
+  visaRequired: "VISA Requirement",
+  passportNumber: "Passport Number",
+  phone: "Phone / WhatsApp Number",
+  churchName: "Organization / Movement / Church",
+  churchRole: "Ministry Title / Role",
+  referredBy: "Referred By",
+  city: "City",
+  dietaryRequirements: "Dietary Requirements",
+  howHeard: "How Did You Hear",
+  specialNeeds: "Special Needs",
+};
+
+function SortableFieldRow({
+  fieldKey,
+  field,
+  onToggleVisible,
+  onToggleRequired,
+}: {
+  fieldKey: string;
+  field: { visible: boolean; required: boolean };
+  onToggleVisible: (checked: boolean) => void;
+  onToggleRequired: (checked: boolean) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: fieldKey });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-50 text-sm"
+    >
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+          <circle cx="5" cy="3" r="1.5" />
+          <circle cx="11" cy="3" r="1.5" />
+          <circle cx="5" cy="8" r="1.5" />
+          <circle cx="11" cy="8" r="1.5" />
+          <circle cx="5" cy="13" r="1.5" />
+          <circle cx="11" cy="13" r="1.5" />
+        </svg>
+      </button>
+      <input
+        type="checkbox"
+        checked={field.visible}
+        onChange={(e) => onToggleVisible(e.target.checked)}
+        className="w-4 h-4 rounded border-gray-300"
+      />
+      <span className="flex-1 text-gray-700">{FIELD_LABELS[fieldKey] ?? fieldKey}</span>
+      {field.visible && (
+        <label className="flex items-center gap-1 text-xs text-gray-500">
+          <input
+            type="checkbox"
+            checked={field.required}
+            onChange={(e) => onToggleRequired(e.target.checked)}
+            className="w-3 h-3 rounded"
+          />
+          Required
+        </label>
+      )}
+    </div>
+  );
 }
 
 export function EventForm({ event }: Props) {
@@ -126,6 +230,33 @@ export function EventForm({ event }: Props) {
     if (!isEditing) return;
     const supabase = createClient();
     await supabase.from("events").update({ registration_config: updated }).eq("id", event.id!);
+  }
+
+  const fieldOrder = regConfig.fieldOrder ?? DEFAULT_FIELD_ORDER;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
+
+  function handleFieldDragStart(e: DragStartEvent) {
+    setActiveFieldKey(e.active.id as string);
+  }
+
+  function handleFieldDragEnd(e: DragEndEvent) {
+    setActiveFieldKey(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = fieldOrder.indexOf(active.id as keyof RegistrationConfig["fields"]);
+    const newIndex = fieldOrder.indexOf(over.id as keyof RegistrationConfig["fields"]);
+    const newOrder = arrayMove(fieldOrder, oldIndex, newIndex);
+
+    const updated = { ...regConfig, fieldOrder: newOrder };
+    setRegConfig(updated);
+    autoSaveRegConfig(updated);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -412,57 +543,66 @@ export function EventForm({ event }: Props) {
                   <span className="text-xs">Always required</span>
                 </div>
 
-                {/* Configurable fields */}
-                {(Object.entries(regConfig.fields) as Array<[keyof RegistrationConfig["fields"], { visible: boolean; required: boolean }]>).map(([key, field]) => {
-                  const labels: Record<string, string> = {
-                    region: "Region",
-                    country: "Country",
-                    visaRequired: "VISA Requirement",
-                    passportNumber: "Passport Number",
-                    phone: "Phone / WhatsApp Number",
-                    churchName: "Organization / Movement / Church",
-                    churchRole: "Ministry Title / Role",
-                    referredBy: "Referred By",
-                    city: "City",
-                    dietaryRequirements: "Dietary Requirements",
-                    howHeard: "How Did You Hear",
-                    specialNeeds: "Special Needs",
-                  };
-                  return (
-                    <div key={key} className="flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-50 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={field.visible}
-                        onChange={(e) => setRegConfig((prev) => ({
-                          ...prev,
-                          fields: {
-                            ...prev.fields,
-                            [key]: { ...prev.fields[key], visible: e.target.checked },
-                          },
-                        }))}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="flex-1 text-gray-700">{labels[key] ?? key}</span>
-                      {field.visible && (
-                        <label className="flex items-center gap-1 text-xs text-gray-500">
-                          <input
-                            type="checkbox"
-                            checked={field.required}
-                            onChange={(e) => setRegConfig((prev) => ({
-                              ...prev,
+                {/* Configurable fields (drag to reorder) */}
+                <DndContext
+                  id="reg-fields-dnd"
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleFieldDragStart}
+                  onDragEnd={handleFieldDragEnd}
+                >
+                  <SortableContext items={fieldOrder as string[]} strategy={verticalListSortingStrategy}>
+                    {fieldOrder.map((key) => {
+                      const field = regConfig.fields[key];
+                      if (!field) return null;
+                      return (
+                        <SortableFieldRow
+                          key={key}
+                          fieldKey={key}
+                          field={field}
+                          onToggleVisible={(checked) => {
+                            const updated = {
+                              ...regConfig,
                               fields: {
-                                ...prev.fields,
-                                [key]: { ...prev.fields[key], required: e.target.checked },
+                                ...regConfig.fields,
+                                [key]: { ...regConfig.fields[key], visible: checked },
                               },
-                            }))}
-                            className="w-3 h-3 rounded"
-                          />
-                          Required
-                        </label>
-                      )}
-                    </div>
-                  );
-                })}
+                            };
+                            setRegConfig(updated);
+                            autoSaveRegConfig(updated);
+                          }}
+                          onToggleRequired={(checked) => {
+                            const updated = {
+                              ...regConfig,
+                              fields: {
+                                ...regConfig.fields,
+                                [key]: { ...regConfig.fields[key], required: checked },
+                              },
+                            };
+                            setRegConfig(updated);
+                            autoSaveRegConfig(updated);
+                          }}
+                        />
+                      );
+                    })}
+                  </SortableContext>
+
+                  <DragOverlay>
+                    {activeFieldKey && regConfig.fields[activeFieldKey as keyof RegistrationConfig["fields"]] ? (
+                      <div className="flex items-center gap-3 px-3 py-2 rounded bg-white shadow-lg ring-2 ring-blue-400 text-sm">
+                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 16 16">
+                          <circle cx="5" cy="3" r="1.5" />
+                          <circle cx="11" cy="3" r="1.5" />
+                          <circle cx="5" cy="8" r="1.5" />
+                          <circle cx="11" cy="8" r="1.5" />
+                          <circle cx="5" cy="13" r="1.5" />
+                          <circle cx="11" cy="13" r="1.5" />
+                        </svg>
+                        <span className="flex-1 text-gray-700">{FIELD_LABELS[activeFieldKey] ?? activeFieldKey}</span>
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
               </div>
             </div>
 
