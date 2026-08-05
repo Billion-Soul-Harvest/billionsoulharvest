@@ -3,7 +3,8 @@ import { render } from "@react-email/components";
 import { buildSegmentQuery } from "@/shared/utils/segment-query";
 import { buildUnsubscribeUrl } from "@/shared/utils/unsubscribe-token";
 import { CampaignWrapperEmail } from "@/features/email/templates/campaign-wrapper";
-import { sendEmails, getFromAddress } from "@/shared/utils/send-email";
+import { sendEmailsViaResend } from "@/shared/utils/send-email-resend";
+import { getFromAddress } from "@/shared/utils/send-email";
 import { getRemainingQuota } from "@/shared/utils/daily-email-quota";
 
 export function getServiceSupabase() {
@@ -151,7 +152,7 @@ export async function processNextBatch(
       })
     );
 
-    const results = await sendEmails(emailPayloads.map((e) => e.payload));
+    const results = await sendEmailsViaResend(emailPayloads.map((e) => e.payload));
 
     for (let j = 0; j < results.length; j++) {
       const { sendId, retryCount } = emailPayloads[j];
