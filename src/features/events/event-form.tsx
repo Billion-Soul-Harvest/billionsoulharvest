@@ -1114,6 +1114,15 @@ export function EventForm({ event }: Props) {
                         </svg>
                       </button>
                     </div>
+                    <MarkdownInput
+                      value={field.description ?? ""}
+                      onChange={(val) => {
+                        const updated = [...regConfig.customFields];
+                        updated[idx] = { ...updated[idx], description: val || undefined };
+                        setRegConfig((prev) => ({ ...prev, customFields: updated }));
+                      }}
+                      placeholder="Field description (optional) — supports links, bold, italic"
+                    />
                     <div className="flex items-center gap-3">
                       <Select
                         value={field.type}

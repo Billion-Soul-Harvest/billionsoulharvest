@@ -395,6 +395,7 @@ export interface RegistrationCustomField {
   required: boolean;
   options?: string[];
   placeholder?: string;
+  description?: string;
 }
 
 export const DEFAULT_FIELD_ORDER: Array<keyof RegistrationConfig["fields"]> = [

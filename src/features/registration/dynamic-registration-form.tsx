@@ -357,6 +357,9 @@ export function DynamicRegistrationForm({
         <Label className={labelClass}>
           {field.label} {field.required && <span className="text-red-500">*</span>}
         </Label>
+        {field.description && (
+          <RichText className="text-xs text-gray-500">{field.description}</RichText>
+        )}
         {(field.type === "text" || field.type === "number" || field.type === "email" || field.type === "tel" || field.type === "url" || field.type === "date") && (
           <Input
             type={field.type}
