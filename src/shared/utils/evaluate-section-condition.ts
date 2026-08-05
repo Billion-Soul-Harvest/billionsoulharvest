@@ -9,11 +9,25 @@ export function evaluateSectionCondition(
   const rawValue = formValues[condition.fieldKey];
   const fieldValue = rawValue == null ? "" : String(rawValue);
 
+  // Normalize boolean/truthy comparisons for checkbox fields
+  const TRUTHY = new Set(["true", "yes", "1"]);
+  const FALSY = new Set(["false", "no", "0", ""]);
+  function looseEquals(a: string, b: string): boolean {
+    if (a === b) return true;
+    const al = a.toLowerCase();
+    const bl = b.toLowerCase();
+    if (al === bl) return true;
+    // Both truthy or both falsy = match
+    if (TRUTHY.has(al) && TRUTHY.has(bl)) return true;
+    if (FALSY.has(al) && FALSY.has(bl)) return true;
+    return false;
+  }
+
   switch (condition.operator) {
     case "equals":
-      return fieldValue === (condition.value ?? "");
+      return looseEquals(fieldValue, condition.value ?? "");
     case "not_equals":
-      return fieldValue !== (condition.value ?? "");
+      return !looseEquals(fieldValue, condition.value ?? "");
     case "contains":
       return fieldValue.toLowerCase().includes((condition.value ?? "").toLowerCase());
     case "not_empty":
