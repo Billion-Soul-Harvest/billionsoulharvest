@@ -118,6 +118,7 @@ export function CraftRegistrationForm({
                   label={DEFAULT_FIELD_LABELS[key] ?? key}
                   required={config.fields[key as keyof typeof config.fields].required}
                   labelColor={labelColor}
+                  description={config.fields[key as keyof typeof config.fields]?.description}
                 />
               </div>
             ))}
@@ -170,6 +171,7 @@ export function CraftRegistrationForm({
                         label={DEFAULT_FIELD_LABELS[key] ?? key}
                         required={config.fields[key as keyof typeof config.fields].required}
                         labelColor={labelColor}
+                        description={config.fields[key as keyof typeof config.fields]?.description}
                       />
                     </div>
                   ))}
