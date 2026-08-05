@@ -18,6 +18,7 @@ import { LocationSearchInput, type PlaceResult } from "@/features/events/locatio
 import { createClient } from "@/shared/utils/supabase/client";
 import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType, RegistrationSection, ConditionOperator, SectionCondition } from "@/shared/types/database";
 import { MarkdownInput } from "@/shared/components/markdown-input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
 import {
   DndContext,
@@ -248,6 +249,16 @@ function SectionsEditor({
     );
   }
 
+  function createCustomFieldInSection(sectionId: string, label: string, type: RegistrationCustomFieldType) {
+    const id = `custom_${Date.now()}`;
+    const newField: RegistrationCustomField = { id, label, type, required: false };
+    const updatedCustomFields = [...regConfig.customFields, newField];
+    const updatedSections = sections.map((s) =>
+      s.id === sectionId ? { ...s, fieldKeys: [...s.fieldKeys, id] } : s
+    );
+    onUpdate({ ...regConfig, customFields: updatedCustomFields, sections: updatedSections });
+  }
+
   function removeFieldFromSection(sectionId: string, fieldKey: string) {
     updateSections(
       sections.map((s) =>
@@ -320,6 +331,7 @@ function SectionsEditor({
                 onDelete={() => deleteSection(section.id)}
                 onAssignField={(key) => assignField(section.id, key)}
                 onRemoveField={(key) => removeFieldFromSection(section.id, key)}
+                onCreateCustomField={(label, type) => createCustomFieldInSection(section.id, label, type)}
               />
             ))}
           </div>
@@ -346,6 +358,7 @@ function SortableSectionCard({
   onDelete,
   onAssignField,
   onRemoveField,
+  onCreateCustomField,
 }: {
   section: RegistrationSection;
   allFields: { key: string; label: string }[];
@@ -356,7 +369,11 @@ function SortableSectionCard({
   onDelete: () => void;
   onAssignField: (key: string) => void;
   onRemoveField: (key: string) => void;
+  onCreateCustomField: (label: string, type: RegistrationCustomFieldType) => void;
 }) {
+  const [showNewField, setShowNewField] = useState(false);
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldType, setNewFieldType] = useState<RegistrationCustomFieldType>("text");
   const {
     attributes,
     listeners,
@@ -485,18 +502,81 @@ function SortableSectionCard({
         ))}
 
         {unassignedFields.length > 0 && (
-          <select
+          <SearchableSelect
             value=""
-            onChange={(e) => {
-              if (e.target.value) onAssignField(e.target.value);
-            }}
-            className="text-xs border rounded px-2 py-1 bg-white w-full mt-1"
+            onValueChange={(val) => { if (val) onAssignField(val); }}
+            options={unassignedFields.map((f) => ({ value: f.key, label: f.label }))}
+            placeholder="Assign a field..."
+            searchPlaceholder="Search fields..."
+            className="mt-1 text-xs"
+          />
+        )}
+
+        {showNewField ? (
+          <div className="mt-1 border rounded p-2 bg-gray-50 space-y-2">
+            <Input
+              value={newFieldLabel}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewFieldLabel(e.target.value)}
+              placeholder="Field label"
+              className="text-xs"
+              autoFocus
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === "Enter" && newFieldLabel.trim()) {
+                  e.preventDefault();
+                  onCreateCustomField(newFieldLabel.trim(), newFieldType);
+                  setNewFieldLabel("");
+                  setNewFieldType("text");
+                  setShowNewField(false);
+                }
+                if (e.key === "Escape") setShowNewField(false);
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <select
+                value={newFieldType}
+                onChange={(e) => setNewFieldType(e.target.value as RegistrationCustomFieldType)}
+                className="text-xs border rounded px-2 py-1 bg-white flex-1"
+              >
+                <option value="text">Text</option>
+                <option value="textarea">Textarea</option>
+                <option value="select">Select</option>
+                <option value="checkbox">Checkbox</option>
+                <option value="number">Number</option>
+                <option value="date">Date</option>
+                <option value="email">Email</option>
+                <option value="tel">Phone</option>
+                <option value="url">URL</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newFieldLabel.trim()) return;
+                  onCreateCustomField(newFieldLabel.trim(), newFieldType);
+                  setNewFieldLabel("");
+                  setNewFieldType("text");
+                  setShowNewField(false);
+                }}
+                className="text-xs bg-[#29BDD6] text-white px-2 py-1 rounded hover:bg-[#1ea8c0]"
+              >
+                Add
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowNewField(false); setNewFieldLabel(""); }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowNewField(true)}
+            className="mt-1 text-xs text-[#29BDD6] hover:text-[#1ea8c0] font-medium"
           >
-            <option value="">Assign a field...</option>
-            {unassignedFields.map((f) => (
-              <option key={f.key} value={f.key}>{f.label}</option>
-            ))}
-          </select>
+            + New Custom Field
+          </button>
         )}
       </div>
     </div>
