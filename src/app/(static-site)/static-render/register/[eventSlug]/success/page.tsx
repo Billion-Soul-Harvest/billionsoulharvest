@@ -81,6 +81,7 @@ export default async function SuccessPage({ params }: Props) {
         </div>
 
         <div className="flex flex-col items-center gap-4">
+          {/* Temporarily hidden — event page not yet ready
           {event.external_url && (
             <a
               href={event.external_url}
@@ -94,6 +95,7 @@ export default async function SuccessPage({ params }: Props) {
               </svg>
             </a>
           )}
+          */}
 
           <Link
             href="/"

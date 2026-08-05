@@ -175,6 +175,7 @@ export default async function RegisterPage({ params }: Props) {
           )}
         </div>
 
+        {/* Temporarily hidden — event page not yet ready
         {event.external_url && (
           <div className="mt-6 text-center">
             <a
@@ -190,6 +191,7 @@ export default async function RegisterPage({ params }: Props) {
             </a>
           </div>
         )}
+        */}
 
         {/* Footer */}
         <div className="mt-12 text-center">
