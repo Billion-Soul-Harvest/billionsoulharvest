@@ -98,23 +98,89 @@ export function CraftRegistrationForm({
         <PreviewField label="Email" required labelColor={labelColor} />
       </div>
 
-      {/* Configurable default fields */}
-      {visibleFields.map((key) => (
-        <div key={key} style={{ marginBottom: 12 }}>
-          <PreviewField
-            label={DEFAULT_FIELD_LABELS[key] ?? key}
-            required={config.fields[key as keyof typeof config.fields].required}
-            labelColor={labelColor}
-          />
-        </div>
-      ))}
+      {/* Unsectioned default fields */}
+      {(() => {
+        const sections = config.sections ?? [];
+        const sectionedKeys = new Set(sections.flatMap((s) => s.fieldKeys));
+        const unsectionedFields = visibleFields.filter((key) => !sectionedKeys.has(key));
+        const unsectionedCustom = config.customFields.filter((f) => !sectionedKeys.has(f.id));
+        const sectionOrder = config.sectionOrder ?? sections.map((s) => s.id);
+        const orderedSections = sectionOrder
+          .map((id) => sections.find((s) => s.id === id))
+          .filter((s): s is NonNullable<typeof s> => !!s);
 
-      {/* Custom fields */}
-      {config.customFields.map((field) => (
-        <div key={field.id} style={{ marginBottom: 12 }}>
-          <PreviewField label={field.label} required={field.required} labelColor={labelColor} />
-        </div>
-      ))}
+        return (
+          <>
+            {unsectionedFields.map((key) => (
+              <div key={key} style={{ marginBottom: 12 }}>
+                <PreviewField
+                  label={DEFAULT_FIELD_LABELS[key] ?? key}
+                  required={config.fields[key as keyof typeof config.fields].required}
+                  labelColor={labelColor}
+                />
+              </div>
+            ))}
+            {unsectionedCustom.map((field) => (
+              <div key={field.id} style={{ marginBottom: 12 }}>
+                <PreviewField label={field.label} required={field.required} labelColor={labelColor} />
+              </div>
+            ))}
+            {orderedSections.map((section) => {
+              const sectionDefaultFields = section.fieldKeys.filter(
+                (key) => key in config.fields && config.fields[key as keyof typeof config.fields]?.visible
+              );
+              const sectionCustomFields = section.fieldKeys
+                .map((key) => config.customFields.find((f) => f.id === key))
+                .filter((f): f is NonNullable<typeof f> => !!f);
+
+              if (sectionDefaultFields.length === 0 && sectionCustomFields.length === 0) return null;
+
+              return (
+                <div key={section.id} style={{ marginTop: 16 }}>
+                  <div style={{
+                    borderTop: "1px solid #e5e7eb",
+                    paddingTop: 12,
+                    marginBottom: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: textColor }}>{section.title}</p>
+                    {section.condition && (
+                      <span style={{
+                        fontSize: 10,
+                        padding: "2px 6px",
+                        borderRadius: 9999,
+                        backgroundColor: "#fef3c7",
+                        color: "#92400e",
+                      }}>
+                        Conditional
+                      </span>
+                    )}
+                  </div>
+                  {section.description && (
+                    <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>{section.description}</p>
+                  )}
+                  {sectionDefaultFields.map((key) => (
+                    <div key={key} style={{ marginBottom: 12 }}>
+                      <PreviewField
+                        label={DEFAULT_FIELD_LABELS[key] ?? key}
+                        required={config.fields[key as keyof typeof config.fields].required}
+                        labelColor={labelColor}
+                      />
+                    </div>
+                  ))}
+                  {sectionCustomFields.map((field) => (
+                    <div key={field.id} style={{ marginBottom: 12 }}>
+                      <PreviewField label={field.label} required={field.required} labelColor={labelColor} />
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </>
+        );
+      })()}
 
       {/* Submit button preview */}
       <div

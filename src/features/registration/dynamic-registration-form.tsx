@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +18,7 @@ import {
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { RegistrationConfig } from "@/shared/types/database";
 import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
+import { evaluateSectionCondition } from "@/shared/utils/evaluate-section-condition";
 import { howHeardOptions, regionOptions, countryOptions } from "./schema";
 
 interface DynamicRegistrationFormProps {
@@ -27,7 +28,20 @@ interface DynamicRegistrationFormProps {
   inline?: boolean;
 }
 
-function buildSchema(config: RegistrationConfig) {
+function getHiddenFieldKeys(config: RegistrationConfig, formValues: Record<string, unknown>): Set<string> {
+  const hidden = new Set<string>();
+  const sections = config.sections ?? [];
+  for (const section of sections) {
+    if (!evaluateSectionCondition(section.condition, formValues)) {
+      for (const key of section.fieldKeys) {
+        hidden.add(key);
+      }
+    }
+  }
+  return hidden;
+}
+
+function buildSchema(config: RegistrationConfig, hiddenKeys: Set<string>) {
   const shape: Record<string, z.ZodTypeAny> = {
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),
@@ -52,14 +66,13 @@ function buildSchema(config: RegistrationConfig) {
   ];
 
   for (const { key, field, label } of fieldDefs) {
-    if (field?.visible) {
+    if (field?.visible && !hiddenKeys.has(key)) {
       shape[key] = field.required
         ? z.string().min(1, `${label} is required`)
         : z.string().optional();
     }
   }
 
-  // Custom fields validation is handled separately
   return z.object(shape);
 }
 
@@ -77,7 +90,8 @@ export function DynamicRegistrationForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const schema = buildSchema(registrationConfig);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | boolean>>({});
+  const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({});
 
   const {
     register,
@@ -87,18 +101,40 @@ export function DynamicRegistrationForm({
     formState: { errors },
   } = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(schema) as any,
+    resolver: (values, context, options) => {
+      const allValues = { ...values, ...customFieldValues };
+      const hidden = getHiddenFieldKeys(registrationConfig, allValues);
+      const schema = buildSchema(registrationConfig, hidden);
+      return zodResolver(schema)(values, context, options);
+    },
     defaultValues: {},
   });
 
-  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | boolean>>({});
-  const [customFieldErrors, setCustomFieldErrors] = useState<Record<string, string>>({});
+  const allWatchedValues = watch();
+
+  const hiddenKeys = useMemo(
+    () => getHiddenFieldKeys(registrationConfig, { ...allWatchedValues, ...customFieldValues }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [registrationConfig, JSON.stringify(allWatchedValues), JSON.stringify(customFieldValues)]
+  );
 
   const { fields } = registrationConfig;
+
+  // Compute which fields are in sections and which are unsectioned
+  const sections = registrationConfig.sections ?? [];
+  const sectionOrder = registrationConfig.sectionOrder ?? sections.map((s) => s.id);
+  const sectionedFieldKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const section of sections) {
+      for (const key of section.fieldKeys) set.add(key);
+    }
+    return set;
+  }, [sections]);
 
   function validateCustomFields(): boolean {
     const errs: Record<string, string> = {};
     for (const field of registrationConfig.customFields) {
+      if (hiddenKeys.has(field.id)) continue;
       if (field.required) {
         const val = customFieldValues[field.id];
         if (field.type === "checkbox") {
@@ -123,6 +159,7 @@ export function DynamicRegistrationForm({
     try {
       const customFields: Record<string, string | boolean> = {};
       for (const field of registrationConfig.customFields) {
+        if (hiddenKeys.has(field.id)) continue;
         customFields[field.id] = customFieldValues[field.id] ?? (field.type === "checkbox" ? false : "");
       }
 
@@ -170,6 +207,217 @@ export function DynamicRegistrationForm({
     : "border-[#b4c7ec]/40 focus:border-[#00b8d4] focus:ring-[#00b8d4]/20 bg-white";
   const labelClass = inline ? "text-gray-700 font-medium" : "text-[#0d223f] font-medium";
 
+  const fieldOrder = registrationConfig.fieldOrder ?? DEFAULT_FIELD_ORDER;
+
+  function renderField(key: string) {
+    const fieldConfig = fields[key as keyof typeof fields];
+    if (!fieldConfig?.visible) return null;
+    if (hiddenKeys.has(key)) return null;
+
+    const req = fieldConfig.required && <span className="text-red-500">*</span>;
+
+    switch (key) {
+      case "region":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Region {req}</Label>
+            <p className="text-xs text-gray-500">Select which continent you are in.</p>
+            <SearchableSelect
+              value={watch("region")}
+              onValueChange={(value) => setValue("region", value)}
+              options={regionOptions.map((opt) => ({ value: opt, label: opt }))}
+              placeholder="Choose"
+              searchPlaceholder="Search regions..."
+            />
+            {errors.region && <p className="text-red-600 text-xs">{errors.region.message as string}</p>}
+          </div>
+        );
+      case "country":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Country {req}</Label>
+            <SearchableSelect
+              value={watch("country")}
+              onValueChange={(value) => setValue("country", value)}
+              options={countryOptions.map((opt) => ({ value: opt, label: opt }))}
+              placeholder="Select your country"
+              searchPlaceholder="Search countries..."
+            />
+            {errors.country && <p className="text-red-600 text-xs">{errors.country.message as string}</p>}
+          </div>
+        );
+      case "visaRequired":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>VISA Requirement {req}</Label>
+            <p className="text-xs text-gray-500">Do you require a Visa to enter the host country?</p>
+            <Select onValueChange={(value: string | null) => { if (value) setValue("visaRequired", value); }}>
+              <SelectTrigger className={inputClass}>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Yes">Yes</SelectItem>
+                <SelectItem value="No">No</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.visaRequired && <p className="text-red-600 text-xs">{errors.visaRequired.message as string}</p>}
+          </div>
+        );
+      case "passportNumber":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Passport Number {req}</Label>
+            <Input {...register("passportNumber")} className={inputClass} placeholder="Your passport number" />
+            {errors.passportNumber && <p className="text-red-600 text-xs">{errors.passportNumber.message as string}</p>}
+          </div>
+        );
+      case "phone":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Phone / WhatsApp Number {req}</Label>
+            <Input type="tel" {...register("phone")} className={inputClass} placeholder="Country Code + Phone Number" />
+            {errors.phone && <p className="text-red-600 text-xs">{errors.phone.message as string}</p>}
+          </div>
+        );
+      case "churchName":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Organization / Movement / Church {req}</Label>
+            <Input {...register("churchName")} className={inputClass} placeholder="Your organization or church" />
+            {errors.churchName && <p className="text-red-600 text-xs">{errors.churchName.message as string}</p>}
+          </div>
+        );
+      case "churchRole":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Ministry Title / Role {req}</Label>
+            <Input {...register("churchRole")} className={inputClass} placeholder="Your ministry title or role" />
+            {errors.churchRole && <p className="text-red-600 text-xs">{errors.churchRole.message as string}</p>}
+          </div>
+        );
+      case "referredBy":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Referred By (Last Name, First Name) {req}</Label>
+            <Input {...register("referredBy")} className={inputClass} placeholder="Last Name, First Name" />
+            {errors.referredBy && <p className="text-red-600 text-xs">{errors.referredBy.message as string}</p>}
+          </div>
+        );
+      case "city":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>City {req}</Label>
+            <Input {...register("city")} className={inputClass} placeholder="Your city" />
+            {errors.city && <p className="text-red-600 text-xs">{errors.city.message as string}</p>}
+          </div>
+        );
+      case "dietaryRequirements":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Dietary Requirements {req}</Label>
+            <Input {...register("dietaryRequirements")} className={inputClass} placeholder="Any dietary restrictions" />
+            {errors.dietaryRequirements && <p className="text-red-600 text-xs">{errors.dietaryRequirements.message as string}</p>}
+          </div>
+        );
+      case "howHeard":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>How did you hear about this event? {req}</Label>
+            <Select onValueChange={(value: string | null) => { if (value) setValue("howHeard", value); }}>
+              <SelectTrigger className={inputClass}>
+                <SelectValue placeholder="Select an option" />
+              </SelectTrigger>
+              <SelectContent>
+                {howHeardOptions.map((opt) => (
+                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.howHeard && <p className="text-red-600 text-xs">{errors.howHeard.message as string}</p>}
+          </div>
+        );
+      case "specialNeeds":
+        return (
+          <div key={key} className="space-y-1.5">
+            <Label className={labelClass}>Special Needs or Requests {req}</Label>
+            <Textarea {...register("specialNeeds")} className={`${inputClass} min-h-[80px]`} placeholder="Any special accommodations" />
+            {errors.specialNeeds && <p className="text-red-600 text-xs">{errors.specialNeeds.message as string}</p>}
+          </div>
+        );
+      default:
+        return null;
+    }
+  }
+
+  function renderCustomField(field: typeof registrationConfig.customFields[number]) {
+    if (hiddenKeys.has(field.id)) return null;
+    return (
+      <div key={field.id} className="space-y-1.5">
+        <Label className={labelClass}>
+          {field.label} {field.required && <span className="text-red-500">*</span>}
+        </Label>
+        {(field.type === "text" || field.type === "number" || field.type === "email" || field.type === "tel" || field.type === "url" || field.type === "date") && (
+          <Input
+            type={field.type}
+            className={inputClass}
+            value={(customFieldValues[field.id] as string) ?? ""}
+            onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+            placeholder={field.placeholder}
+          />
+        )}
+        {field.type === "textarea" && (
+          <Textarea
+            className={`${inputClass} min-h-[80px]`}
+            value={(customFieldValues[field.id] as string) ?? ""}
+            onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+            placeholder={field.placeholder}
+          />
+        )}
+        {field.type === "select" && (
+          <Select onValueChange={(value: string | null) => { if (value) setCustomFieldValues((prev) => ({ ...prev, [field.id]: value })); }}>
+            <SelectTrigger className={inputClass}>
+              <SelectValue placeholder={field.placeholder ?? "Select an option"} />
+            </SelectTrigger>
+            <SelectContent>
+              {(field.options ?? []).map((opt) => (
+                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {field.type === "checkbox" && (
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!customFieldValues[field.id]}
+              onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.checked }))}
+              className="w-4 h-4 rounded border-gray-300"
+            />
+            <span className="text-sm text-gray-600">{field.label}</span>
+          </label>
+        )}
+        {customFieldErrors[field.id] && (
+          <p className="text-red-600 text-xs">{customFieldErrors[field.id]}</p>
+        )}
+      </div>
+    );
+  }
+
+  // Unsectioned default fields: visible fields not assigned to any section
+  const unsectionedDefaultFields = fieldOrder.filter(
+    (key) => !sectionedFieldKeys.has(key) && fields[key]?.visible && !hiddenKeys.has(key)
+  );
+
+  // Unsectioned custom fields
+  const unsectionedCustomFields = registrationConfig.customFields.filter(
+    (f) => !sectionedFieldKeys.has(f.id) && !hiddenKeys.has(f.id)
+  );
+
+  // Ordered sections
+  const orderedSections = sectionOrder
+    .map((id) => sections.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => !!s);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {error && (
@@ -204,197 +452,41 @@ export function DynamicRegistrationForm({
         {errors.email && <p className="text-red-600 text-xs">{errors.email.message as string}</p>}
       </div>
 
-      {/* Configurable fields rendered in fieldOrder */}
-      {(registrationConfig.fieldOrder ?? DEFAULT_FIELD_ORDER).map((key) => {
-        const fieldConfig = fields[key];
-        if (!fieldConfig?.visible) return null;
+      {/* Unsectioned default fields */}
+      {unsectionedDefaultFields.map((key) => renderField(key))}
 
-        const req = fieldConfig.required && <span className="text-red-500">*</span>;
+      {/* Unsectioned custom fields */}
+      {unsectionedCustomFields.map((field) => renderCustomField(field))}
 
-        switch (key) {
-          case "region":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Region {req}</Label>
-                <p className="text-xs text-gray-500">Select which continent you are in.</p>
-                <SearchableSelect
-                  value={watch("region")}
-                  onValueChange={(value) => setValue("region", value)}
-                  options={regionOptions.map((opt) => ({ value: opt, label: opt }))}
-                  placeholder="Choose"
-                  searchPlaceholder="Search regions..."
-                />
-                {errors.region && <p className="text-red-600 text-xs">{errors.region.message as string}</p>}
-              </div>
-            );
-          case "country":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Country {req}</Label>
-                <SearchableSelect
-                  value={watch("country")}
-                  onValueChange={(value) => setValue("country", value)}
-                  options={countryOptions.map((opt) => ({ value: opt, label: opt }))}
-                  placeholder="Select your country"
-                  searchPlaceholder="Search countries..."
-                />
-                {errors.country && <p className="text-red-600 text-xs">{errors.country.message as string}</p>}
-              </div>
-            );
-          case "visaRequired":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>VISA Requirement {req}</Label>
-                <p className="text-xs text-gray-500">Do you require a Visa to enter the host country?</p>
-                <Select onValueChange={(value: string | null) => { if (value) setValue("visaRequired", value); }}>
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Yes">Yes</SelectItem>
-                    <SelectItem value="No">No</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.visaRequired && <p className="text-red-600 text-xs">{errors.visaRequired.message as string}</p>}
-              </div>
-            );
-          case "passportNumber":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Passport Number {req}</Label>
-                <Input {...register("passportNumber")} className={inputClass} placeholder="Your passport number" />
-                {errors.passportNumber && <p className="text-red-600 text-xs">{errors.passportNumber.message as string}</p>}
-              </div>
-            );
-          case "phone":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Phone / WhatsApp Number {req}</Label>
-                <Input type="tel" {...register("phone")} className={inputClass} placeholder="Country Code + Phone Number" />
-                {errors.phone && <p className="text-red-600 text-xs">{errors.phone.message as string}</p>}
-              </div>
-            );
-          case "churchName":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Organization / Movement / Church {req}</Label>
-                <Input {...register("churchName")} className={inputClass} placeholder="Your organization or church" />
-                {errors.churchName && <p className="text-red-600 text-xs">{errors.churchName.message as string}</p>}
-              </div>
-            );
-          case "churchRole":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Ministry Title / Role {req}</Label>
-                <Input {...register("churchRole")} className={inputClass} placeholder="Your ministry title or role" />
-                {errors.churchRole && <p className="text-red-600 text-xs">{errors.churchRole.message as string}</p>}
-              </div>
-            );
-          case "referredBy":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Referred By (Last Name, First Name) {req}</Label>
-                <Input {...register("referredBy")} className={inputClass} placeholder="Last Name, First Name" />
-                {errors.referredBy && <p className="text-red-600 text-xs">{errors.referredBy.message as string}</p>}
-              </div>
-            );
-          case "city":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>City {req}</Label>
-                <Input {...register("city")} className={inputClass} placeholder="Your city" />
-                {errors.city && <p className="text-red-600 text-xs">{errors.city.message as string}</p>}
-              </div>
-            );
-          case "dietaryRequirements":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Dietary Requirements {req}</Label>
-                <Input {...register("dietaryRequirements")} className={inputClass} placeholder="Any dietary restrictions" />
-                {errors.dietaryRequirements && <p className="text-red-600 text-xs">{errors.dietaryRequirements.message as string}</p>}
-              </div>
-            );
-          case "howHeard":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>How did you hear about this event? {req}</Label>
-                <Select onValueChange={(value: string | null) => { if (value) setValue("howHeard", value); }}>
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder="Select an option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {howHeardOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.howHeard && <p className="text-red-600 text-xs">{errors.howHeard.message as string}</p>}
-              </div>
-            );
-          case "specialNeeds":
-            return (
-              <div key={key} className="space-y-1.5">
-                <Label className={labelClass}>Special Needs or Requests {req}</Label>
-                <Textarea {...register("specialNeeds")} className={`${inputClass} min-h-[80px]`} placeholder="Any special accommodations" />
-                {errors.specialNeeds && <p className="text-red-600 text-xs">{errors.specialNeeds.message as string}</p>}
-              </div>
-            );
-          default:
-            return null;
-        }
+      {/* Sections */}
+      {orderedSections.map((section) => {
+        const visible = evaluateSectionCondition(section.condition, { ...allWatchedValues, ...customFieldValues });
+        if (!visible) return null;
+
+        const sectionDefaultFields = section.fieldKeys.filter(
+          (key) => key in fields && fields[key as keyof typeof fields]?.visible
+        );
+        const sectionCustomFields = section.fieldKeys
+          .map((key) => registrationConfig.customFields.find((f) => f.id === key))
+          .filter((f): f is NonNullable<typeof f> => !!f);
+
+        if (sectionDefaultFields.length === 0 && sectionCustomFields.length === 0) return null;
+
+        return (
+          <div key={section.id} className="space-y-4">
+            <div className="border-t pt-4">
+              <h3 className={`text-lg font-semibold ${inline ? "text-gray-900" : "text-[#0d223f]"}`}>
+                {section.title}
+              </h3>
+              {section.description && (
+                <p className="text-sm text-gray-500 mt-1">{section.description}</p>
+              )}
+            </div>
+            {sectionDefaultFields.map((key) => renderField(key))}
+            {sectionCustomFields.map((field) => renderCustomField(field))}
+          </div>
+        );
       })}
-
-      {/* Custom Fields */}
-      {registrationConfig.customFields.map((field) => (
-        <div key={field.id} className="space-y-1.5">
-          <Label className={labelClass}>
-            {field.label} {field.required && <span className="text-red-500">*</span>}
-          </Label>
-          {(field.type === "text" || field.type === "number" || field.type === "email" || field.type === "tel" || field.type === "url" || field.type === "date") && (
-            <Input
-              type={field.type}
-              className={inputClass}
-              value={(customFieldValues[field.id] as string) ?? ""}
-              onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-              placeholder={field.placeholder}
-            />
-          )}
-          {field.type === "textarea" && (
-            <Textarea
-              className={`${inputClass} min-h-[80px]`}
-              value={(customFieldValues[field.id] as string) ?? ""}
-              onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-              placeholder={field.placeholder}
-            />
-          )}
-          {field.type === "select" && (
-            <Select onValueChange={(value: string | null) => { if (value) setCustomFieldValues((prev) => ({ ...prev, [field.id]: value })); }}>
-              <SelectTrigger className={inputClass}>
-                <SelectValue placeholder={field.placeholder ?? "Select an option"} />
-              </SelectTrigger>
-              <SelectContent>
-                {(field.options ?? []).map((opt) => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {field.type === "checkbox" && (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!customFieldValues[field.id]}
-                onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.checked }))}
-                className="w-4 h-4 rounded border-gray-300"
-              />
-              <span className="text-sm text-gray-600">{field.label}</span>
-            </label>
-          )}
-          {customFieldErrors[field.id] && (
-            <p className="text-red-600 text-xs">{customFieldErrors[field.id]}</p>
-          )}
-        </div>
-      ))}
 
       {!isRegistrationOpen && (
         <div className="bg-[#0d223f]/5 border border-[#b4c7ec]/30 text-[#0d223f] px-4 py-3 rounded-lg text-sm text-center">

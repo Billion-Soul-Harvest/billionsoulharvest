@@ -7,6 +7,7 @@ import { render } from "@react-email/components";
 import { RegistrationConfirmationEmail } from "@/features/email/templates/registration-confirmation";
 import { sendEmail, getFromAddress } from "@/shared/utils/send-email";
 import type { RegistrationConfig } from "@/shared/types/database";
+import { evaluateSectionCondition } from "@/shared/utils/evaluate-section-condition";
 
 function getSupabase() {
   return createClient(
@@ -15,12 +16,27 @@ function getSupabase() {
   );
 }
 
-function buildDynamicSchema(config: RegistrationConfig) {
+function getHiddenSectionFieldKeys(config: RegistrationConfig, formData: Record<string, unknown>): Set<string> {
+  const hidden = new Set<string>();
+  const sections = config.sections ?? [];
+  for (const section of sections) {
+    if (!evaluateSectionCondition(section.condition, formData)) {
+      for (const key of section.fieldKeys) {
+        hidden.add(key);
+      }
+    }
+  }
+  return hidden;
+}
+
+function buildDynamicSchema(config: RegistrationConfig, formData?: Record<string, unknown>) {
   const shape: Record<string, z.ZodTypeAny> = {
     firstName: z.string().min(1),
     lastName: z.string().min(1),
     email: z.string().email(),
   };
+
+  const hiddenKeys = formData ? getHiddenSectionFieldKeys(config, formData) : new Set<string>();
 
   const fieldDefs: Array<{ key: string; field?: { visible: boolean; required: boolean }; zodRequired: z.ZodTypeAny; zodOptional: z.ZodTypeAny }> = [
     { key: "region", field: config.fields.region, zodRequired: z.string().min(1), zodOptional: z.string().optional() },
@@ -38,7 +54,7 @@ function buildDynamicSchema(config: RegistrationConfig) {
   ];
 
   for (const { key, field, zodRequired, zodOptional } of fieldDefs) {
-    if (field?.visible) {
+    if (field?.visible && !hiddenKeys.has(key)) {
       shape[key] = field.required ? zodRequired : zodOptional;
     }
   }
@@ -72,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use dynamic schema if registration_config exists, otherwise use static schema
-    const validationSchema = regConfig ? buildDynamicSchema(regConfig) : registrationSchema;
+    const validationSchema = regConfig ? buildDynamicSchema(regConfig, formData) : registrationSchema;
 
     const result = validationSchema.safeParse(formData);
     if (!result.success) {
@@ -142,9 +158,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create registration
+    // Create registration — strip custom fields belonging to hidden sections
+    const hiddenKeys = regConfig ? getHiddenSectionFieldKeys(regConfig, formData) : new Set<string>();
+    const filteredCustomFields: Record<string, unknown> = {};
+    if (customFields) {
+      for (const [k, v] of Object.entries(customFields)) {
+        if (!hiddenKeys.has(k)) filteredCustomFields[k] = v;
+      }
+    }
+
     const allCustomFields = {
-      ...(customFields || {}),
+      ...filteredCustomFields,
       ...(data.region ? { region: data.region } : {}),
       ...(data.visaRequired ? { visaRequired: data.visaRequired } : {}),
       ...(data.passportNumber ? { passportNumber: data.passportNumber } : {}),

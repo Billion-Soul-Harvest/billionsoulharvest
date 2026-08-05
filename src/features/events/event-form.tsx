@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { LocationSearchInput, type PlaceResult } from "@/features/events/location-search-input";
 import { createClient } from "@/shared/utils/supabase/client";
-import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType } from "@/shared/types/database";
+import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType, RegistrationSection, ConditionOperator, SectionCondition } from "@/shared/types/database";
 import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
 import {
   DndContext,
@@ -88,11 +88,13 @@ const FIELD_LABELS: Record<string, string> = {
 function SortableFieldRow({
   fieldKey,
   field,
+  sectionName,
   onToggleVisible,
   onToggleRequired,
 }: {
   fieldKey: string;
   field: { visible: boolean; required: boolean };
+  sectionName?: string;
   onToggleVisible: (checked: boolean) => void;
   onToggleRequired: (checked: boolean) => void;
 }) {
@@ -138,7 +140,12 @@ function SortableFieldRow({
         onChange={(e) => onToggleVisible(e.target.checked)}
         className="w-4 h-4 rounded border-gray-300"
       />
-      <span className="flex-1 text-gray-700">{FIELD_LABELS[fieldKey] ?? fieldKey}</span>
+      <span className="flex-1 text-gray-700">
+        {FIELD_LABELS[fieldKey] ?? fieldKey}
+        {sectionName && (
+          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{sectionName}</span>
+        )}
+      </span>
       {field.visible && (
         <label className="flex items-center gap-1 text-xs text-gray-500">
           <input
@@ -150,6 +157,348 @@ function SortableFieldRow({
           Required
         </label>
       )}
+    </div>
+  );
+}
+
+const CONDITION_OPERATORS: { value: ConditionOperator; label: string; needsValue: boolean }[] = [
+  { value: "equals", label: "equals", needsValue: true },
+  { value: "not_equals", label: "does not equal", needsValue: true },
+  { value: "contains", label: "contains", needsValue: true },
+  { value: "not_empty", label: "is not empty", needsValue: false },
+  { value: "is_empty", label: "is empty", needsValue: false },
+];
+
+function getAllFieldOptions(config: RegistrationConfig, fieldOrder: Array<keyof RegistrationConfig["fields"]>) {
+  const options: { key: string; label: string }[] = [];
+  for (const key of fieldOrder) {
+    if (config.fields[key]?.visible) {
+      options.push({ key, label: FIELD_LABELS[key] ?? key });
+    }
+  }
+  for (const cf of config.customFields) {
+    if (cf.label) options.push({ key: cf.id, label: cf.label });
+  }
+  return options;
+}
+
+function getAssignedFieldKeys(sections: RegistrationSection[]): Set<string> {
+  const set = new Set<string>();
+  for (const s of sections) {
+    for (const k of s.fieldKeys) set.add(k);
+  }
+  return set;
+}
+
+function SectionsEditor({
+  regConfig,
+  onUpdate,
+  fieldOrder,
+}: {
+  regConfig: RegistrationConfig;
+  onUpdate: (updated: RegistrationConfig) => void;
+  fieldOrder: Array<keyof RegistrationConfig["fields"]>;
+}) {
+  const sections = regConfig.sections ?? [];
+  const sectionOrder = regConfig.sectionOrder ?? sections.map((s) => s.id);
+  const assignedKeys = getAssignedFieldKeys(sections);
+  const allFields = getAllFieldOptions(regConfig, fieldOrder);
+  const unassignedFields = allFields.filter((f) => !assignedKeys.has(f.key));
+
+  const sectionSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+
+  function updateSections(newSections: RegistrationSection[], newOrder?: string[]) {
+    onUpdate({
+      ...regConfig,
+      sections: newSections,
+      sectionOrder: newOrder ?? sectionOrder,
+    });
+  }
+
+  function addSection() {
+    const id = `section_${Date.now()}`;
+    const newSection: RegistrationSection = { id, title: "", fieldKeys: [] };
+    const newSections = [...sections, newSection];
+    const newOrder = [...sectionOrder, id];
+    updateSections(newSections, newOrder);
+  }
+
+  function deleteSection(id: string) {
+    updateSections(
+      sections.filter((s) => s.id !== id),
+      sectionOrder.filter((sid) => sid !== id)
+    );
+  }
+
+  function updateSection(id: string, patch: Partial<RegistrationSection>) {
+    updateSections(sections.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  }
+
+  function assignField(sectionId: string, fieldKey: string) {
+    updateSections(
+      sections.map((s) =>
+        s.id === sectionId ? { ...s, fieldKeys: [...s.fieldKeys, fieldKey] } : s
+      )
+    );
+  }
+
+  function removeFieldFromSection(sectionId: string, fieldKey: string) {
+    updateSections(
+      sections.map((s) =>
+        s.id === sectionId ? { ...s, fieldKeys: s.fieldKeys.filter((k) => k !== fieldKey) } : s
+      )
+    );
+  }
+
+  function handleSectionDragEnd(e: DragEndEvent) {
+    setActiveSectionId(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = sectionOrder.indexOf(active.id as string);
+    const newIdx = sectionOrder.indexOf(over.id as string);
+    const newOrder = arrayMove(sectionOrder, oldIdx, newIdx);
+    updateSections(sections, newOrder);
+  }
+
+  function getFieldLabel(key: string): string {
+    return FIELD_LABELS[key] ?? regConfig.customFields.find((f) => f.id === key)?.label ?? key;
+  }
+
+  function conditionSummary(condition?: SectionCondition | null): string {
+    if (!condition) return "Always visible";
+    const fieldLabel = getFieldLabel(condition.fieldKey);
+    const op = CONDITION_OPERATORS.find((o) => o.value === condition.operator);
+    if (op && !op.needsValue) return `When ${fieldLabel} ${op.label}`;
+    return `When ${fieldLabel} ${op?.label ?? condition.operator} "${condition.value ?? ""}"`;
+  }
+
+  const orderedSections = sectionOrder
+    .map((id) => sections.find((s) => s.id === id))
+    .filter((s): s is RegistrationSection => !!s);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium text-gray-700">Sections</p>
+        <button
+          type="button"
+          onClick={addSection}
+          className="text-xs text-[#29BDD6] hover:text-[#1ea8c0] font-medium"
+        >
+          + Add Section
+        </button>
+      </div>
+
+      {sections.length === 0 && (
+        <p className="text-xs text-gray-400 mb-3">No sections. Fields display as a flat list.</p>
+      )}
+
+      <DndContext
+        id="sections-dnd"
+        sensors={sectionSensors}
+        collisionDetection={closestCenter}
+        onDragStart={(e) => setActiveSectionId(e.active.id as string)}
+        onDragEnd={handleSectionDragEnd}
+      >
+        <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3 mb-4">
+            {orderedSections.map((section) => (
+              <SortableSectionCard
+                key={section.id}
+                section={section}
+                allFields={allFields}
+                unassignedFields={unassignedFields}
+                conditionSummary={conditionSummary}
+                getFieldLabel={getFieldLabel}
+                onUpdate={(patch) => updateSection(section.id, patch)}
+                onDelete={() => deleteSection(section.id)}
+                onAssignField={(key) => assignField(section.id, key)}
+                onRemoveField={(key) => removeFieldFromSection(section.id, key)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+        <DragOverlay>
+          {activeSectionId ? (
+            <div className="bg-white shadow-lg ring-2 ring-blue-400 rounded-lg p-3 text-sm font-medium text-gray-700">
+              {sections.find((s) => s.id === activeSectionId)?.title || "Untitled Section"}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
+  );
+}
+
+function SortableSectionCard({
+  section,
+  allFields,
+  unassignedFields,
+  conditionSummary,
+  getFieldLabel,
+  onUpdate,
+  onDelete,
+  onAssignField,
+  onRemoveField,
+}: {
+  section: RegistrationSection;
+  allFields: { key: string; label: string }[];
+  unassignedFields: { key: string; label: string }[];
+  conditionSummary: (c?: SectionCondition | null) => string;
+  getFieldLabel: (key: string) => string;
+  onUpdate: (patch: Partial<RegistrationSection>) => void;
+  onDelete: () => void;
+  onAssignField: (key: string) => void;
+  onRemoveField: (key: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="border rounded-lg p-3 space-y-2 bg-white">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+            <circle cx="5" cy="3" r="1.5" /><circle cx="11" cy="3" r="1.5" />
+            <circle cx="5" cy="8" r="1.5" /><circle cx="11" cy="8" r="1.5" />
+            <circle cx="5" cy="13" r="1.5" /><circle cx="11" cy="13" r="1.5" />
+          </svg>
+        </button>
+        <Input
+          value={section.title}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onUpdate({ title: e.target.value })}
+          placeholder="Section title"
+          className="text-sm flex-1"
+        />
+        <button type="button" onClick={onDelete} className="text-gray-400 hover:text-red-500 p-1">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <Input
+        value={section.description ?? ""}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onUpdate({ description: e.target.value || undefined })}
+        placeholder="Description (optional)"
+        className="text-sm"
+      />
+
+      {/* Condition editor */}
+      <div className="bg-gray-50 rounded p-2 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500 shrink-0">Show when:</span>
+          <select
+            value={section.condition?.fieldKey ?? ""}
+            onChange={(e) => {
+              if (!e.target.value) {
+                onUpdate({ condition: null });
+              } else {
+                onUpdate({
+                  condition: {
+                    fieldKey: e.target.value,
+                    operator: section.condition?.operator ?? "equals",
+                    value: section.condition?.value,
+                  },
+                });
+              }
+            }}
+            className="text-xs border rounded px-2 py-1 bg-white"
+          >
+            <option value="">Always visible</option>
+            {allFields.map((f) => (
+              <option key={f.key} value={f.key}>{f.label}</option>
+            ))}
+          </select>
+
+          {section.condition && (
+            <>
+              <select
+                value={section.condition.operator}
+                onChange={(e) =>
+                  onUpdate({
+                    condition: { ...section.condition!, operator: e.target.value as ConditionOperator },
+                  })
+                }
+                className="text-xs border rounded px-2 py-1 bg-white"
+              >
+                {CONDITION_OPERATORS.map((op) => (
+                  <option key={op.value} value={op.value}>{op.label}</option>
+                ))}
+              </select>
+
+              {CONDITION_OPERATORS.find((o) => o.value === section.condition?.operator)?.needsValue && (
+                <Input
+                  value={section.condition.value ?? ""}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    onUpdate({ condition: { ...section.condition!, value: e.target.value } })
+                  }
+                  placeholder="Value"
+                  className="text-xs w-28"
+                />
+              )}
+            </>
+          )}
+        </div>
+        <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${section.condition ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+          {conditionSummary(section.condition)}
+        </span>
+      </div>
+
+      {/* Assigned fields */}
+      <div className="space-y-1">
+        <p className="text-xs text-gray-500">Fields in this section:</p>
+        {section.fieldKeys.length === 0 && (
+          <p className="text-xs text-gray-400 italic">No fields assigned</p>
+        )}
+        {section.fieldKeys.map((key) => (
+          <div key={key} className="flex items-center justify-between text-xs px-2 py-1 bg-gray-50 rounded">
+            <span className="text-gray-700">{getFieldLabel(key)}</span>
+            <button type="button" onClick={() => onRemoveField(key)} className="text-gray-400 hover:text-red-500">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+
+        {unassignedFields.length > 0 && (
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) onAssignField(e.target.value);
+            }}
+            className="text-xs border rounded px-2 py-1 bg-white w-full mt-1"
+          >
+            <option value="">Assign a field...</option>
+            {unassignedFields.map((f) => (
+              <option key={f.key} value={f.key}>{f.label}</option>
+            ))}
+          </select>
+        )}
+      </div>
     </div>
   );
 }
@@ -555,11 +904,13 @@ export function EventForm({ event }: Props) {
                     {fieldOrder.map((key) => {
                       const field = regConfig.fields[key];
                       if (!field) return null;
+                      const assignedSection = (regConfig.sections ?? []).find((s) => s.fieldKeys.includes(key));
                       return (
                         <SortableFieldRow
                           key={key}
                           fieldKey={key}
                           field={field}
+                          sectionName={assignedSection?.title || undefined}
                           onToggleVisible={(checked) => {
                             const updated = {
                               ...regConfig,
@@ -605,6 +956,16 @@ export function EventForm({ event }: Props) {
                 </DndContext>
               </div>
             </div>
+
+            {/* Sections */}
+            <SectionsEditor
+              regConfig={regConfig}
+              onUpdate={(updated) => {
+                setRegConfig(updated);
+                autoSaveRegConfig(updated);
+              }}
+              fieldOrder={fieldOrder}
+            />
 
             {/* Custom Fields */}
             <div>

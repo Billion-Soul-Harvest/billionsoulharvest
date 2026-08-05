@@ -356,6 +356,22 @@ export interface EventSection {
 }
 
 // Registration Config types
+export type ConditionOperator = "equals" | "not_equals" | "contains" | "not_empty" | "is_empty";
+
+export interface SectionCondition {
+  fieldKey: string;
+  operator: ConditionOperator;
+  value?: string;
+}
+
+export interface RegistrationSection {
+  id: string;
+  title: string;
+  description?: string;
+  condition?: SectionCondition | null;
+  fieldKeys: string[];
+}
+
 export interface RegistrationFieldConfig {
   visible: boolean;
   required: boolean;
@@ -416,6 +432,8 @@ export interface RegistrationConfig {
     specialNeeds: RegistrationFieldConfig;
   };
   customFields: RegistrationCustomField[];
+  sections?: RegistrationSection[];
+  sectionOrder?: string[];
 }
 
 // Story types
