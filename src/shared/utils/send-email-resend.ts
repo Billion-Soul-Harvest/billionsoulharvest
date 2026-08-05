@@ -1,4 +1,6 @@
 import { Resend } from "resend";
+import { createServiceClient } from "@/shared/utils/supabase/service";
+import { recordEmailsSent } from "@/shared/utils/daily-email-quota";
 
 interface EmailPayload {
   to: string;
@@ -63,6 +65,12 @@ export async function sendEmailsViaResend(
         error: err instanceof Error ? err.message : "Send failed",
       });
     }
+  }
+
+  const successCount = results.filter((r) => r.success).length;
+  if (successCount > 0) {
+    const supabase = createServiceClient();
+    await recordEmailsSent(supabase, successCount);
   }
 
   return results;
