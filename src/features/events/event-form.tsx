@@ -399,12 +399,15 @@ function SortableSectionCard({
         </button>
       </div>
 
-      <Input
-        value={section.description ?? ""}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onUpdate({ description: e.target.value || undefined })}
-        placeholder="Description (optional)"
-        className="text-sm"
-      />
+      <div>
+        <Textarea
+          value={section.description ?? ""}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onUpdate({ description: e.target.value || undefined })}
+          placeholder="Description (optional) — supports **bold**, *italic*, [link text](https://...)"
+          className="text-sm min-h-[60px]"
+        />
+        <p className="text-[10px] text-gray-400 mt-0.5">Supports **bold**, *italic*, [link text](url)</p>
+      </div>
 
       {/* Condition editor */}
       <div className="bg-gray-50 rounded p-2 space-y-2">

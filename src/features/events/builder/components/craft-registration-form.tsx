@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { RegistrationConfig } from "@/shared/types/database";
 import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
+import { RichText } from "@/shared/components/rich-text";
 
 interface CraftRegistrationFormProps {
   backgroundColor?: string;
@@ -159,7 +160,9 @@ export function CraftRegistrationForm({
                     )}
                   </div>
                   {section.description && (
-                    <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>{section.description}</p>
+                    <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                      <RichText>{section.description}</RichText>
+                    </p>
                   )}
                   {sectionDefaultFields.map((key) => (
                     <div key={key} style={{ marginBottom: 12 }}>

@@ -19,6 +19,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { RegistrationConfig } from "@/shared/types/database";
 import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
 import { evaluateSectionCondition } from "@/shared/utils/evaluate-section-condition";
+import { RichText } from "@/shared/components/rich-text";
 import { howHeardOptions, regionOptions, countryOptions } from "./schema";
 
 interface DynamicRegistrationFormProps {
@@ -479,7 +480,9 @@ export function DynamicRegistrationForm({
                 {section.title}
               </h3>
               {section.description && (
-                <p className="text-sm text-gray-500 mt-1">{section.description}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  <RichText>{section.description}</RichText>
+                </p>
               )}
             </div>
             {sectionDefaultFields.map((key) => renderField(key))}
