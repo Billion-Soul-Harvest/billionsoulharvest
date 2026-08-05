@@ -1979,15 +1979,20 @@ function DebouncedSearchInput({
 }) {
   const [value, setValue] = useState(defaultValue);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSubmitted = useRef(defaultValue);
 
   useEffect(() => {
-    setValue(defaultValue);
+    if (defaultValue !== lastSubmitted.current) {
+      setValue(defaultValue);
+    }
+    lastSubmitted.current = defaultValue;
   }, [defaultValue]);
 
   function handleChange(newValue: string) {
     setValue(newValue);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
+      lastSubmitted.current = newValue;
       onSearch(newValue);
     }, 350);
   }
