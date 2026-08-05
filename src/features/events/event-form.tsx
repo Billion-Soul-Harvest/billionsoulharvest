@@ -17,6 +17,7 @@ import {
 import { LocationSearchInput, type PlaceResult } from "@/features/events/location-search-input";
 import { createClient } from "@/shared/utils/supabase/client";
 import type { EventStatus, EventType, RegistrationConfig, RegistrationCustomField, RegistrationCustomFieldType, RegistrationSection, ConditionOperator, SectionCondition } from "@/shared/types/database";
+import { MarkdownInput } from "@/shared/components/markdown-input";
 import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
 import {
   DndContext,
@@ -399,15 +400,11 @@ function SortableSectionCard({
         </button>
       </div>
 
-      <div>
-        <Textarea
-          value={section.description ?? ""}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onUpdate({ description: e.target.value || undefined })}
-          placeholder="Description (optional) — supports **bold**, *italic*, [link text](https://...)"
-          className="text-sm min-h-[60px]"
-        />
-        <p className="text-[10px] text-gray-400 mt-0.5">Supports **bold**, *italic*, [link text](url)</p>
-      </div>
+      <MarkdownInput
+        value={section.description ?? ""}
+        onChange={(val) => onUpdate({ description: val || undefined })}
+        placeholder="Section description (optional)"
+      />
 
       {/* Condition editor */}
       <div className="bg-gray-50 rounded p-2 space-y-2">
