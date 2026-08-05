@@ -92,6 +92,7 @@ interface Props {
   positionFilter: string;
   languageFilter: string;
   listFilter: string;
+  excludeListFilter: string;
   eventFilter: string;
   events: { id: string; title: string }[];
   tagFilter: string;
@@ -369,6 +370,7 @@ function SearchableFilterDropdown({
   onChange,
   searchPlaceholder,
   countLabel,
+  accentColor,
 }: {
   selectedValues: string[];
   label: string;
@@ -376,7 +378,9 @@ function SearchableFilterDropdown({
   onChange: (values: string[]) => void;
   searchPlaceholder?: string;
   countLabel?: string;
+  accentColor?: "cyan" | "rose";
 }) {
+  const isRose = accentColor === "rose";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -424,9 +428,9 @@ function SearchableFilterDropdown({
         onClick={() => setOpen(!open)}
         className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[120px] ${
           open
-            ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
+            ? isRose ? "border-rose-300 ring-2 ring-rose-100 text-gray-900" : "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
             : hasSelection
-              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+              ? isRose ? "border-rose-200 bg-rose-50 text-rose-700" : "border-cyan-200 bg-cyan-50 text-cyan-700"
               : "border-gray-200 text-gray-600 hover:border-gray-300"
         }`}
       >
@@ -443,7 +447,7 @@ function SearchableFilterDropdown({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={searchPlaceholder ?? "Search lists"}
-                className="w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                className={`w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1 ${isRose ? "focus:ring-rose-500 focus:border-rose-500" : "focus:ring-cyan-500 focus:border-cyan-500"}`}
                 autoFocus
               />
             </div>
@@ -469,12 +473,12 @@ function SearchableFilterDropdown({
                   onClick={() => toggleValue(opt.value)}
                   className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-3 ${
                     isChecked
-                      ? "bg-cyan-50 text-cyan-700 font-medium"
+                      ? isRose ? "bg-rose-50 text-rose-700 font-medium" : "bg-cyan-50 text-cyan-700 font-medium"
                       : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
-                    isChecked ? "bg-cyan-600 border-cyan-600" : "border-gray-300"
+                    isChecked ? isRose ? "bg-rose-500 border-rose-500" : "bg-cyan-600 border-cyan-600" : "border-gray-300"
                   }`}>
                     {isChecked && (
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,6 +495,86 @@ function SearchableFilterDropdown({
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function AppliedFilterChips({
+  listFilter,
+  excludeListFilter,
+  tagFilter,
+  tagMode,
+  eventFilter,
+  events,
+  onRemove,
+}: {
+  listFilter: string;
+  excludeListFilter: string;
+  tagFilter: string;
+  tagMode: string;
+  eventFilter: string;
+  events: { id: string; title: string }[];
+  onRemove: (updates: Record<string, string>) => void;
+}) {
+  const lists = listFilter && listFilter !== "all" ? listFilter.split(",").filter(Boolean) : [];
+  const excludeLists = excludeListFilter ? excludeListFilter.split(",").filter(Boolean) : [];
+  const tags = tagFilter ? tagFilter.split(",").filter(Boolean) : [];
+  const eventIds = eventFilter ? eventFilter.split(",").filter(Boolean) : [];
+
+  const hasAny = lists.length > 0 || excludeLists.length > 0 || tags.length > 0 || eventIds.length > 0;
+  if (!hasAny) return null;
+
+  const chipCount = (lists.length > 0 ? 1 : 0) + (excludeLists.length > 0 ? 1 : 0) + (tags.length > 0 ? 1 : 0) + (eventIds.length > 0 ? 1 : 0);
+
+  function chipLabel(values: string[], labelFn?: (v: string) => string) {
+    const labels = values.map(labelFn ?? ((v) => v));
+    if (labels.length <= 2) return labels.join(", ");
+    return `${labels[0]}, ${labels[1]} +${labels.length - 2}`;
+  }
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap mb-3">
+      {lists.length > 0 && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-50 text-cyan-700 border border-cyan-200">
+          Lists: {chipLabel(lists, (v) => v === "__none__" ? "Not in any list" : v)}
+          <button type="button" onClick={() => onRemove({ list: "" })} className="hover:text-cyan-900">
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      )}
+      {excludeLists.length > 0 && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+          Exclude: {chipLabel(excludeLists)}
+          <button type="button" onClick={() => onRemove({ excludeList: "" })} className="hover:text-rose-900">
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      )}
+      {tags.length > 0 && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-50 text-cyan-700 border border-cyan-200">
+          Tags ({tagMode === "or" ? "any" : "all"}): {chipLabel(tags)}
+          <button type="button" onClick={() => onRemove({ tag: "" })} className="hover:text-cyan-900">
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      )}
+      {eventIds.length > 0 && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-50 text-cyan-700 border border-cyan-200">
+          Events: {chipLabel(eventIds, (id) => events.find((e) => e.id === id)?.title ?? id)}
+          <button type="button" onClick={() => onRemove({ event: "" })} className="hover:text-cyan-900">
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      )}
+      {chipCount > 1 && (
+        <button
+          type="button"
+          onClick={() => onRemove({ list: "", excludeList: "", tag: "", event: "" })}
+          className="text-xs text-gray-400 hover:text-gray-600 font-medium"
+        >
+          Clear all
+        </button>
       )}
     </div>
   );
@@ -789,6 +873,7 @@ export function ContactsListClient({
   positionFilter,
   languageFilter,
   listFilter,
+  excludeListFilter,
   eventFilter,
   events,
   tagFilter,
@@ -1110,7 +1195,7 @@ export function ContactsListClient({
   const navigate = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams();
-      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, list: listFilter, event: eventFilter, tag: tagFilter, tagMode, sort, dir, ...updates };
+      const merged = { page: String(page), pageSize: String(pageSize), search, searchField, type: typeFilter, region: regionFilter, position: positionFilter, language: languageFilter, list: listFilter, excludeList: excludeListFilter, event: eventFilter, tag: tagFilter, tagMode, sort, dir, ...updates };
       for (const [k, v] of Object.entries(merged)) {
         if (v && v !== "all" && v !== "1" && !(k === "pageSize" && v === "25") && !(k === "sort" && v === "created_at") && !(k === "dir" && v === "desc") && !(k === "searchField" && v === "name_email") && !(k === "tagMode" && v === "and")) {
           params.set(k, v);
@@ -1121,7 +1206,7 @@ export function ContactsListClient({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, eventFilter, tagFilter, tagMode, sort, dir, startTransition]
+    [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, excludeListFilter, eventFilter, tagFilter, tagMode, sort, dir, startTransition]
   );
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -1206,12 +1291,21 @@ export function ContactsListClient({
 
         <SearchableFilterDropdown
           selectedValues={listFilter ? listFilter.split(",").filter(Boolean) : []}
-          label="Lists"
+          label="Include lists"
           options={[
             { value: "__none__", label: "Not in any list" },
             ...listNames.map((name) => ({ value: name, label: name })),
           ]}
           onChange={(values) => navigate({ list: values.join(","), page: "1" })}
+        />
+        <SearchableFilterDropdown
+          selectedValues={excludeListFilter ? excludeListFilter.split(",").filter(Boolean) : []}
+          label="Exclude lists"
+          options={listNames.map((name) => ({ value: name, label: name }))}
+          onChange={(values) => navigate({ excludeList: values.join(","), page: "1" })}
+          searchPlaceholder="Search lists"
+          countLabel="lists"
+          accentColor="rose"
         />
 
         <TagFilterDropdown
@@ -1230,6 +1324,17 @@ export function ContactsListClient({
           countLabel="events"
         />
       </div>
+
+      {/* Applied filter chips */}
+      <AppliedFilterChips
+        listFilter={listFilter}
+        excludeListFilter={excludeListFilter}
+        tagFilter={tagFilter}
+        tagMode={tagMode}
+        eventFilter={eventFilter}
+        events={events}
+        onRemove={(updates) => navigate({ ...updates, page: "1" })}
+      />
 
       {/* All contacts header + gear icon / Selected contacts + Actions */}
       <div className="flex items-center justify-between mb-3">
@@ -1961,6 +2066,7 @@ export function ContactsListClient({
     if (regionFilter) filter.region_id = regionFilter;
     if (languageFilter) filter.language = languageFilter;
     if (listFilter) filter.email_lists = listFilter.split(",").filter(Boolean);
+    if (excludeListFilter) filter.email_lists_exclude = excludeListFilter.split(",").filter(Boolean);
     if (tagFilter) filter.tags_include = tagFilter.split(",").filter(Boolean);
     return filter;
   }

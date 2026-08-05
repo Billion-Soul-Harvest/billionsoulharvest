@@ -202,6 +202,7 @@ export interface SegmentFilter {
   country?: string;
   tags_include?: string[];
   email_lists?: string[];
+  email_lists_exclude?: string[];
   contact_ids?: string[];
   criteria?: SegmentCriterion[];
 }
@@ -380,10 +381,26 @@ export interface RegistrationCustomField {
   placeholder?: string;
 }
 
+export const DEFAULT_FIELD_ORDER: Array<keyof RegistrationConfig["fields"]> = [
+  "city",
+  "phone",
+  "region",
+  "country",
+  "howHeard",
+  "churchName",
+  "churchRole",
+  "referredBy",
+  "specialNeeds",
+  "visaRequired",
+  "passportNumber",
+  "dietaryRequirements",
+];
+
 export interface RegistrationConfig {
   enabled: boolean;
   showBanner?: boolean;
   showHeroContent?: boolean;
+  fieldOrder?: Array<keyof RegistrationConfig["fields"]>;
   fields: {
     region: RegistrationFieldConfig;
     country: RegistrationFieldConfig;

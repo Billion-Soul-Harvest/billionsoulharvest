@@ -18,6 +18,7 @@ interface Props {
     position?: string;
     language?: string;
     list?: string;
+    excludeList?: string;
     event?: string;
     tag?: string;
     tagMode?: string;
@@ -41,6 +42,7 @@ export default async function ContactsPage({ searchParams }: Props) {
   const positionFilter = params.position ?? "all";
   const languageFilter = params.language ?? "all";
   const listFilter = params.list ?? "all";
+  const excludeListFilter = params.excludeList ?? "";
   const eventFilter = params.event ?? "";
   const tagFilter = params.tag ?? "";
   const tagMode = params.tagMode === "or" ? "or" : "and";
@@ -125,6 +127,13 @@ export default async function ContactsPage({ searchParams }: Props) {
     }
   }
 
+  if (excludeListFilter) {
+    const excludedLists = excludeListFilter.split(",").map((l) => l.trim()).filter(Boolean);
+    for (const listName of excludedLists) {
+      query = query.not("email_lists", "cs", `{${listName}}`);
+    }
+  }
+
   if (eventFilter) {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const selectedEventIds = eventFilter.split(",").map((e) => e.trim()).filter((e) => UUID_RE.test(e));
@@ -204,6 +213,7 @@ export default async function ContactsPage({ searchParams }: Props) {
         positionFilter={positionFilter}
         languageFilter={languageFilter}
         listFilter={listFilter}
+        excludeListFilter={excludeListFilter}
         eventFilter={eventFilter}
         events={eventRows ?? []}
         tagFilter={tagFilter}
