@@ -250,7 +250,7 @@ function SectionsEditor({
   }
 
   function createCustomFieldInSection(sectionId: string, label: string, type: RegistrationCustomFieldType) {
-    const id = `custom_${Date.now()}`;
+    const id = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const newField: RegistrationCustomField = { id, label, type, required: false };
     const updatedCustomFields = [...regConfig.customFields, newField];
     const updatedSections = sections.map((s) =>
@@ -1055,7 +1055,7 @@ export function EventForm({ event }: Props) {
                   type="button"
                   onClick={() => {
                     const newField: RegistrationCustomField = {
-                      id: `custom_${Date.now()}`,
+                      id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
                       label: "",
                       type: "text",
                       required: false,

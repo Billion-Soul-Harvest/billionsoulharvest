@@ -123,7 +123,7 @@ export function CraftRegistrationForm({
             ))}
             {unsectionedCustom.map((field) => (
               <div key={field.id} style={{ marginBottom: 12 }}>
-                <PreviewField label={field.label} required={field.required} labelColor={labelColor} />
+                <PreviewField label={field.label} required={field.required} labelColor={labelColor} description={field.description} />
               </div>
             ))}
             {orderedSections.map((section) => {
@@ -175,7 +175,7 @@ export function CraftRegistrationForm({
                   ))}
                   {sectionCustomFields.map((field) => (
                     <div key={field.id} style={{ marginBottom: 12 }}>
-                      <PreviewField label={field.label} required={field.required} labelColor={labelColor} />
+                      <PreviewField label={field.label} required={field.required} labelColor={labelColor} description={field.description} />
                     </div>
                   ))}
                 </div>
@@ -204,12 +204,17 @@ export function CraftRegistrationForm({
   );
 }
 
-function PreviewField({ label, required, labelColor }: { label: string; required: boolean; labelColor: string }) {
+function PreviewField({ label, required, labelColor, description }: { label: string; required: boolean; labelColor: string; description?: string }) {
   return (
     <div>
       <p style={{ fontSize: 13, fontWeight: 500, color: labelColor, marginBottom: 4 }}>
         {label} {required && <span style={{ color: "#ef4444" }}>*</span>}
       </p>
+      {description && (
+        <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>
+          <RichText>{description}</RichText>
+        </p>
+      )}
       <div
         style={{
           height: 36,
