@@ -6,6 +6,7 @@ import { useEventData } from "../event-context";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { RegistrationConfig } from "@/shared/types/database";
+import { DEFAULT_FIELD_ORDER } from "@/shared/types/database";
 
 interface CraftRegistrationFormProps {
   backgroundColor?: string;
@@ -71,10 +72,8 @@ export function CraftRegistrationForm({
     );
   }
 
-  const visibleFields: string[] = [];
-  for (const [key, fieldConfig] of Object.entries(config.fields)) {
-    if (fieldConfig.visible) visibleFields.push(key);
-  }
+  const fieldOrder = config.fieldOrder ?? DEFAULT_FIELD_ORDER;
+  const visibleFields = fieldOrder.filter((key) => config.fields[key]?.visible);
 
   return (
     <div
