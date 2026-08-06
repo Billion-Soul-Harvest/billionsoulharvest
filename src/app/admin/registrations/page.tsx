@@ -14,20 +14,10 @@ export default async function RegistrationsPage() {
     .select("id, title, slug")
     .order("created_at", { ascending: false });
 
-  const { data: registrations } = await supabase
-    .from("registrations")
-    .select(`
-      *,
-      contact:contacts(first_name, last_name, email, phone, church_name),
-      event:events(title, slug)
-    `)
-    .order("created_at", { ascending: false });
-
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Registrations</h1>
       <RegistrationsTable
-        registrations={registrations ?? []}
         events={events ?? []}
       />
     </div>

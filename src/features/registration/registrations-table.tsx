@@ -1,21 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronRight, ArrowRightLeft, Trash2 } from "lucide-react";
+import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowRightLeft, Trash2, Settings2, X } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
 import { SendEmailDialog } from "@/features/emails/send-email-dialog";
 import { toast } from "sonner";
+import { AllCommunityModule, themeQuartz } from "ag-grid-community";
+import type { ColDef, SelectionChangedEvent, RowClickedEvent, ICellRendererParams, SortChangedEvent, PaginationChangedEvent } from "ag-grid-community";
+import type { AgGridReact as AgGridReactType } from "ag-grid-react";
+import { AgGridReact, AgGridProvider } from "ag-grid-react";
 
 function FilterDropdown({
   value,
@@ -144,7 +140,6 @@ interface EventOption {
 }
 
 interface Props {
-  registrations: Registration[];
   events: EventOption[];
 }
 
@@ -157,6 +152,105 @@ const statusColor: Record<string, string> = {
   waitlisted: "bg-blue-100 text-blue-800",
 };
 
+const registrationsGridTheme = themeQuartz.withParams({
+  backgroundColor: "#ffffff",
+  headerBackgroundColor: "#f9fafb",
+  headerFontSize: 13,
+  fontSize: 14,
+  borderRadius: 12,
+  spacing: 6,
+  headerFontWeight: 500,
+  rowBorder: { color: "#f3f4f6" },
+  selectedRowBackgroundColor: "rgba(6, 182, 212, 0.08)",
+});
+
+function StatusCellRenderer(params: ICellRendererParams<Registration>) {
+  if (!params.data) return null;
+  const status = params.data.status;
+  return (
+    <Badge variant="secondary" className={statusColor[status] ?? ""}>
+      {status}
+    </Badge>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ActionsCellRenderer(params: ICellRendererParams<Registration> & { context: any }) {
+  const reg = params.data;
+  const [open, setOpen] = useState(false);
+  const [statusSubOpen, setStatusSubOpen] = useState(false);
+  if (!reg) return null;
+  const ctx = params.context;
+
+  const close = () => { setOpen(false); setStatusSubOpen(false); };
+
+  return (
+    <div data-action-menu>
+      <ActionMenu
+        open={open}
+        onToggle={() => { setOpen((prev) => !prev); setStatusSubOpen(false); }}
+        onClose={close}
+      >
+        <button
+          type="button"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+          onClick={(e) => { e.stopPropagation(); ctx.setSelectedRegistration(reg); close(); }}
+        >
+          <Eye className="w-4 h-4" /> View Details
+        </button>
+        <div
+          className="relative"
+          onMouseEnter={() => setStatusSubOpen(true)}
+          onMouseLeave={() => setStatusSubOpen(false)}
+        >
+          <button
+            type="button"
+            className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+            onClick={(e) => { e.stopPropagation(); setStatusSubOpen((prev) => !prev); }}
+          >
+            <span className="flex items-center gap-2"><ArrowRightLeft className="w-4 h-4" /> Change Status</span>
+            <ChevronRight className="w-3 h-3 text-gray-400" />
+          </button>
+          {statusSubOpen && (
+            <div className="absolute right-full top-0 mr-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-[80]">
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 capitalize ${reg.status === s ? "font-semibold text-gray-900" : "text-gray-700"}`}
+                  onClick={(e) => { e.stopPropagation(); ctx.handleStatusChange(reg, s); close(); }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+          onClick={(e) => { e.stopPropagation(); ctx.setSelectedRegistration(reg); close(); }}
+        >
+          <FileText className="w-4 h-4" /> Add/Edit Note
+        </button>
+        <button
+          type="button"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+          onClick={(e) => { e.stopPropagation(); ctx.handleResendEmail(reg.id); }}
+        >
+          <RefreshCw className="w-4 h-4" /> Resend Email
+        </button>
+        <button
+          type="button"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+          onClick={(e) => { e.stopPropagation(); close(); ctx.setDeleteConfirm({ type: "single", id: reg.id }); }}
+        >
+          <Trash2 className="w-4 h-4" /> Delete
+        </button>
+      </ActionMenu>
+    </div>
+  );
+}
 
 // --- Detail Slide-out Panel Component ---
 function DetailPanel({
@@ -410,10 +504,24 @@ function DetailRow({
   );
 }
 
+// Column visibility config for Table Settings
+const COLUMN_SETTINGS = [
+  { key: "name", label: "Name", defaultVisible: true },
+  { key: "email", label: "Email", defaultVisible: true },
+  { key: "phone", label: "Phone", defaultVisible: true },
+  { key: "church", label: "Church", defaultVisible: true },
+  { key: "location", label: "Location", defaultVisible: true },
+  { key: "event", label: "Event", defaultVisible: true },
+  { key: "status", label: "Status", defaultVisible: true },
+  { key: "date", label: "Date", defaultVisible: true },
+] as const;
+
+type ColumnKey = (typeof COLUMN_SETTINGS)[number]["key"];
+
 // --- Main Component ---
-export function RegistrationsTable({ registrations, events }: Props) {
-  const router = useRouter();
+export function RegistrationsTable({ events }: Props) {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
@@ -421,74 +529,79 @@ export function RegistrationsTable({ registrations, events }: Props) {
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
     useState<Registration | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [actionMenu, setActionMenu] = useState<string | null>(null);
-  const [actionMenuStatusSub, setActionMenuStatusSub] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "single"; id: string } | { type: "bulk" } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [bulkStatusSubOpen, setBulkStatusSubOpen] = useState(false);
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Unique countries for filter dropdown
-  const uniqueCountries = useMemo(() =>
-    Array.from(
-      new Set(
-        registrations
-          .map((reg) => reg.country)
-          .filter((c): c is string => Boolean(c))
-      )
-    ).sort(),
-    [registrations]
+  const [tableSettingsOpen, setTableSettingsOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
+    () => new Set(COLUMN_SETTINGS.filter((c) => c.defaultVisible).map((c) => c.key))
   );
 
-  const filtered = useMemo(() =>
-    registrations.filter((reg) => {
-      const matchesSearch =
-        !search ||
-        `${reg.contact?.first_name} ${reg.contact?.last_name} ${reg.contact?.email}`
-          .toLowerCase()
-          .includes(search.toLowerCase());
+  // Server-side data state
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState({ total: 0, confirmed: 0, pending: 0, cancelled: 0, waitlisted: 0 });
+  const [uniqueCountries, setUniqueCountries] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sortField, setSortField] = useState("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const gridRef = useRef<AgGridReactType<Registration>>(null);
 
-      const matchesEvent =
-        eventFilter === "all" || reg.event?.slug === eventFilter;
-
-      const matchesStatus =
-        statusFilter === "all" || reg.status === statusFilter;
-
-      const matchesCountry =
-        countryFilter === "all" || reg.country === countryFilter;
-
-      return matchesSearch && matchesEvent && matchesStatus && matchesCountry;
-    }),
-    [registrations, search, eventFilter, statusFilter, countryFilter]
-  );
-
-  // Stat counts from filtered data (single pass)
-  const { totalCount, confirmedCount, pendingCount, cancelledCount, waitlistedCount } = useMemo(() => {
-    const counts = { totalCount: filtered.length, confirmedCount: 0, pendingCount: 0, cancelledCount: 0, waitlistedCount: 0 };
-    for (const r of filtered) {
-      if (r.status === "confirmed") counts.confirmedCount++;
-      else if (r.status === "pending") counts.pendingCount++;
-      else if (r.status === "cancelled") counts.cancelledCount++;
-      else if (r.status === "waitlisted") counts.waitlistedCount++;
-    }
-    return counts;
-  }, [filtered]);
-
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const safePageNum = Math.min(page, totalPages);
-  const startIndex = (safePageNum - 1) * pageSize;
-  const endIndex = Math.min(safePageNum * pageSize, totalCount);
-  const paginatedRows = filtered.slice(startIndex, endIndex);
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, eventFilter, statusFilter, countryFilter]);
+  }, [eventFilter, countryFilter]);
+
+  // Fetch registrations from API
+  const fetchRegistrations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        sortField,
+        sortDir,
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (eventFilter !== "all") params.set("event", eventFilter);
+      if (countryFilter !== "all") params.set("country", countryFilter);
+
+      const res = await fetch(`/api/registrations?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+
+      setRegistrations(data.rows);
+      setTotalCount(data.totalCount);
+      setStats(data.stats);
+      setUniqueCountries(data.uniqueCountries);
+    } catch {
+      toast.error("Failed to load registrations");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, debouncedSearch, eventFilter, countryFilter, sortField, sortDir]);
+
+  useEffect(() => {
+    fetchRegistrations();
+  }, [fetchRegistrations]);
+
+  const { confirmedCount, pendingCount, cancelledCount, waitlistedCount } = stats.total > 0
+    ? { confirmedCount: stats.confirmed, pendingCount: stats.pending, cancelledCount: stats.cancelled, waitlistedCount: stats.waitlisted }
+    : { confirmedCount: 0, pendingCount: 0, cancelledCount: 0, waitlistedCount: 0 };
 
   // Close bulk actions dropdown on outside click
   useEffect(() => {
@@ -503,7 +616,6 @@ export function RegistrationsTable({ registrations, events }: Props) {
   }, []);
 
   async function handleResendEmail(regId: string) {
-    setActionMenu(null);
     try {
       const res = await fetch(`/api/registrations/${regId}`, {
         method: "PATCH",
@@ -518,29 +630,6 @@ export function RegistrationsTable({ registrations, events }: Props) {
     } catch {
       toast.error("Failed to send email");
     }
-  }
-
-  // Select all / deselect all filtered
-  function toggleSelectAll() {
-    const filteredIds = filtered.map((r) => r.id);
-    const allSelected = filteredIds.every((id) => selectedIds.has(id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredIds));
-    }
-  }
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
   }
 
   function exportCSVForRows(rows: Registration[]) {
@@ -595,11 +684,11 @@ export function RegistrationsTable({ registrations, events }: Props) {
   }
 
   function exportCSV() {
-    exportCSVForRows(filtered);
+    exportCSVForRows(registrations);
   }
 
   function exportSelected() {
-    const selected = filtered.filter((r) => selectedIds.has(r.id));
+    const selected = registrations.filter((r) => selectedIds.has(r.id));
     exportCSVForRows(selected);
   }
 
@@ -625,7 +714,7 @@ export function RegistrationsTable({ registrations, events }: Props) {
         failed += results.filter((r) => !r.ok).length;
       }
       setSelectedIds(new Set());
-      router.refresh();
+      fetchRegistrations();
       if (failed > 0) {
         toast.error(`${failed} of ${count} updates failed`);
       } else {
@@ -648,7 +737,7 @@ export function RegistrationsTable({ registrations, events }: Props) {
         });
         if (res.ok) {
           toast.success(`Status updated to ${status}`);
-          router.refresh();
+          fetchRegistrations();
         } else {
           toast.error("Failed to update status");
         }
@@ -656,7 +745,7 @@ export function RegistrationsTable({ registrations, events }: Props) {
         toast.error("Failed to update status");
       }
     },
-    [router]
+    [fetchRegistrations]
   );
 
   async function handleDelete() {
@@ -684,7 +773,7 @@ export function RegistrationsTable({ registrations, events }: Props) {
       if (deleteConfirm.type === "bulk") {
         setSelectedIds(new Set());
       }
-      router.refresh();
+      fetchRegistrations();
     } catch {
       toast.error("Failed to delete");
     } finally {
@@ -693,19 +782,140 @@ export function RegistrationsTable({ registrations, events }: Props) {
     }
   }
 
-  const filteredIds = filtered.map((r) => r.id);
-  const allFilteredSelected =
-    filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
-
   // Deduplicated contact IDs from selected registrations (a contact may have multiple registrations)
   const selectedContactIds = useMemo(() =>
     Array.from(new Set(
-      filtered
+      registrations
         .filter((r) => selectedIds.has(r.id) && r.contact_id)
         .map((r) => r.contact_id)
     )),
-    [filtered, selectedIds]
+    [registrations, selectedIds]
   );
+
+  // --- AG Grid column definitions ---
+  const columnDefs = useMemo<ColDef<Registration>[]>(() => [
+    {
+      colId: "name",
+      headerName: "Name",
+      valueGetter: (p) => `${p.data?.contact?.first_name ?? ""} ${p.data?.contact?.last_name ?? ""}`.trim(),
+      minWidth: 130,
+      flex: 1,
+      filter: true,
+      hide: !visibleColumns.has("name"),
+    },
+    {
+      colId: "email",
+      headerName: "Email",
+      valueGetter: (p) => p.data?.contact?.email ?? "",
+      minWidth: 160,
+      flex: 1,
+      filter: true,
+      hide: !visibleColumns.has("email"),
+    },
+    {
+      colId: "phone",
+      headerName: "Phone",
+      valueGetter: (p) => p.data?.contact?.phone || "\u2014",
+      minWidth: 120,
+      flex: 0.8,
+      filter: true,
+      hide: !visibleColumns.has("phone"),
+    },
+    {
+      colId: "church",
+      headerName: "Church",
+      valueGetter: (p) => p.data?.church_name || p.data?.contact?.church_name || "\u2014",
+      minWidth: 120,
+      flex: 1,
+      filter: true,
+      hide: !visibleColumns.has("church"),
+    },
+    {
+      colId: "location",
+      headerName: "Location",
+      valueGetter: (p) => [p.data?.city, p.data?.country].filter(Boolean).join(", ") || "\u2014",
+      minWidth: 110,
+      flex: 0.8,
+      filter: true,
+      hide: !visibleColumns.has("location"),
+    },
+    {
+      colId: "event",
+      headerName: "Event",
+      valueGetter: (p) => p.data?.event?.title ?? "",
+      minWidth: 140,
+      flex: 1,
+      filter: true,
+      hide: !visibleColumns.has("event"),
+    },
+    {
+      colId: "status",
+      headerName: "Status",
+      field: "status",
+      cellRenderer: StatusCellRenderer,
+      minWidth: 100,
+      flex: 0.6,
+      filter: true,
+      hide: !visibleColumns.has("status"),
+    },
+    {
+      colId: "date",
+      headerName: "Date",
+      valueGetter: (p) => p.data ? new Date(p.data.created_at).toLocaleDateString() : "",
+      minWidth: 90,
+      flex: 0.6,
+      filter: true,
+      hide: !visibleColumns.has("date"),
+    },
+    {
+      headerName: "",
+      cellRenderer: ActionsCellRenderer,
+      minWidth: 60,
+      maxWidth: 60,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      pinned: "right" as const,
+    },
+  ], [visibleColumns]);
+
+  const defaultColDef = useMemo<ColDef>(() => ({
+    sortable: true,
+    resizable: true,
+  }), []);
+
+  // --- AG Grid event handlers ---
+  const onSelectionChanged = useCallback((event: SelectionChangedEvent<Registration>) => {
+    const selectedRows = event.api.getSelectedRows();
+    setSelectedIds(new Set(selectedRows.map((r) => r.id)));
+  }, []);
+
+  const onRowClicked = useCallback((event: RowClickedEvent<Registration>) => {
+    const target = event.event?.target as HTMLElement | undefined;
+    if (target?.closest('input[type="checkbox"]') || target?.closest("[data-action-menu]")) return;
+    if (event.data) setSelectedRegistration(event.data);
+  }, []);
+
+  const onSortChanged = useCallback((event: SortChangedEvent<Registration>) => {
+    const colState = event.api.getColumnState();
+    const sorted = colState.find((c) => c.sort);
+    if (sorted && sorted.colId) {
+      setSortField(sorted.colId);
+      setSortDir(sorted.sort === "asc" ? "asc" : "desc");
+    } else {
+      setSortField("date");
+      setSortDir("desc");
+    }
+    setPage(1);
+  }, []);
+
+  // --- AG Grid context (pass functions to cell renderers) ---
+  const gridContext = useMemo(() => ({
+    setSelectedRegistration,
+    handleStatusChange,
+    handleResendEmail,
+    setDeleteConfirm,
+  }), [handleStatusChange]);
 
   return (
     <div>
@@ -729,7 +939,7 @@ export function RegistrationsTable({ registrations, events }: Props) {
           </div>
           <p className="text-2xl font-bold text-gray-900 mt-1">{confirmedCount.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-xl border p-4">
+        {/* <div className="bg-white rounded-xl border p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">Pending</p>
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-yellow-100 text-yellow-600">
@@ -755,10 +965,10 @@ export function RegistrationsTable({ registrations, events }: Props) {
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900 mt-1">{waitlistedCount.toLocaleString()}</p>
-        </div>
+        </div> */}
       </div>
 
-      {/* Filters — Constant Contact style */}
+      {/* Filters -- Constant Contact style */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         {/* Search input with icon */}
         <div className="relative">
@@ -783,18 +993,18 @@ export function RegistrationsTable({ registrations, events }: Props) {
           onChange={setEventFilter}
         />
 
-        <FilterDropdown
+        {/* <FilterDropdown
           value={statusFilter}
           label="All Statuses"
           options={[
             { value: "all", label: "All Statuses" },
             { value: "confirmed", label: "Confirmed" },
-            { value: "pending", label: "Pending" },
-            { value: "cancelled", label: "Cancelled" },
-            { value: "waitlisted", label: "Waitlisted" },
+            // { value: "pending", label: "Pending" },
+            // { value: "cancelled", label: "Cancelled" },
+            // { value: "waitlisted", label: "Waitlisted" },
           ]}
           onChange={setStatusFilter}
-        />
+        /> */}
 
         <FilterDropdown
           value={countryFilter}
@@ -806,22 +1016,28 @@ export function RegistrationsTable({ registrations, events }: Props) {
           onChange={setCountryFilter}
         />
 
-        <Button variant="outline" onClick={exportCSV} className="sm:ml-auto rounded-lg h-[42px]">
-          <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <Button variant="outline" onClick={() => setTableSettingsOpen(true)} className="rounded-lg h-[42px]">
+            <Settings2 className="w-4 h-4 mr-2" />
+            Table Settings
+          </Button>
+          <Button variant="outline" onClick={exportCSV} className="rounded-lg h-[42px]">
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Selected bar with Actions dropdown */}
@@ -917,296 +1133,90 @@ export function RegistrationsTable({ registrations, events }: Props) {
         </div>
       )}
 
-      {/* Count */}
-      <p className="text-sm text-gray-500 mb-3">
-        {filtered.length} registration{filtered.length !== 1 ? "s" : ""}
-      </p>
-
-      {/* Table */}
-      <div className="bg-white rounded-xl border" style={{ overflow: "visible" }}>
-        <div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={allFilteredSelected}
-                    onChange={toggleSelectAll}
-                    className="rounded border-gray-300"
-                  />
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Name
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Email
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Phone
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Church
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Location
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Event
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Status
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Date
-                </th>
-                <th className="px-4 py-3 font-medium text-gray-600 sticky right-0 bg-gray-50">
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {paginatedRows.length > 0 ? (
-                paginatedRows.map((reg) => (
-                  <tr
-                    key={reg.id}
-                    className="group/row hover:bg-gray-50/50 cursor-pointer"
-                    onClick={(e) => {
-                      const target = e.target as HTMLElement;
-                      if (
-                        target.closest('input[type="checkbox"]') ||
-                        target.closest("[data-action-menu]")
-                      ) {
-                        return;
-                      }
-                      setSelectedRegistration(reg);
-                    }}
-                  >
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(reg.id)}
-                        onChange={() => toggleSelect(reg.id)}
-                        className="rounded border-gray-300"
-                      />
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {reg.contact?.first_name} {reg.contact?.last_name}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {reg.contact?.email}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {reg.contact?.phone || "\u2014"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {reg.church_name ||
-                        reg.contact?.church_name ||
-                        "\u2014"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {[reg.city, reg.country].filter(Boolean).join(", ") ||
-                        "\u2014"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {reg.event?.title}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant="secondary"
-                        className={statusColor[reg.status] ?? ""}
-                      >
-                        {reg.status}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
-                      {new Date(reg.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 sticky right-0 bg-white group-hover/row:bg-gray-50" data-action-menu>
-                      <ActionMenu
-                        open={actionMenu === reg.id}
-                        onToggle={() => {
-                          setActionMenu(actionMenu === reg.id ? null : reg.id);
-                          setActionMenuStatusSub(false);
-                        }}
-                        onClose={() => { setActionMenu(null); setActionMenuStatusSub(false); }}
-                      >
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedRegistration(reg);
-                            setActionMenu(null);
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                          View Details
-                        </button>
-                        <div
-                          className="relative"
-                          onMouseEnter={() => setActionMenuStatusSub(true)}
-                          onMouseLeave={() => setActionMenuStatusSub(false)}
-                        >
-                          <button
-                            type="button"
-                            className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActionMenuStatusSub((prev) => !prev);
-                            }}
-                          >
-                            <span className="flex items-center gap-2">
-                              <ArrowRightLeft className="w-4 h-4" />
-                              Change Status
-                            </span>
-                            <ChevronRight className="w-3 h-3 text-gray-400" />
-                          </button>
-                          {actionMenuStatusSub && (
-                            <div className="absolute right-full top-0 mr-1 w-40 rounded-lg border bg-white shadow-lg py-1 z-[80]">
-                              {STATUS_OPTIONS.map((s) => (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 capitalize ${
-                                    reg.status === s
-                                      ? "font-semibold text-gray-900"
-                                      : "text-gray-700"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusChange(reg, s);
-                                    setActionMenu(null);
-                                    setActionMenuStatusSub(false);
-                                  }}
-                                >
-                                  {s}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedRegistration(reg);
-                            setActionMenu(null);
-                          }}
-                        >
-                          <FileText className="w-4 h-4" />
-                          Add/Edit Note
-                        </button>
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleResendEmail(reg.id);
-                          }}
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          Resend Email
-                        </button>
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActionMenu(null);
-                            setDeleteConfirm({ type: "single", id: reg.id });
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </ActionMenu>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={10}
-                    className="px-4 py-12 text-center text-gray-400"
-                  >
-                    No registrations found
-                  </td>
-                </tr>
+      {/* AG Grid Table */}
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <div style={{ height: 600, width: "100%" }}>
+          <AgGridProvider modules={[AllCommunityModule]}>
+            <AgGridReact<Registration>
+              ref={gridRef}
+              theme={registrationsGridTheme}
+              rowData={registrations}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              rowSelection={{ mode: "multiRow", checkboxes: true, headerCheckbox: true }}
+              pagination={false}
+              onSelectionChanged={onSelectionChanged}
+              onRowClicked={onRowClicked}
+              onSortChanged={onSortChanged}
+              getRowId={(params) => params.data.id}
+              context={gridContext}
+              suppressCellFocus={true}
+              loading={loading}
+              noRowsOverlayComponent={() => (
+                <div className="text-center text-gray-400 py-12">No registrations found</div>
               )}
-            </tbody>
-          </table>
+            />
+          </AgGridProvider>
+        </div>
 
-          {/* Pagination */}
-          {totalCount > 0 && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-500">
-                  {startIndex + 1}–{endIndex} of {totalCount}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Rows:</span>
-                  <Select
-                    value={String(pageSize)}
-                    onValueChange={(v: string | null) => {
-                      if (v) {
-                        setPageSize(Number(v));
-                        setPage(1);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-[70px] h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[10, 25, 50, 100].map((size) => (
-                        <SelectItem key={size} value={String(size)}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(1)}
-                  disabled={safePageNum <= 1}
-                >
-                  First
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={safePageNum <= 1}
-                >
-                  Prev
-                </Button>
-                <span className="px-3 text-sm text-gray-600">
-                  {safePageNum} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePageNum >= totalPages}
-                >
-                  Next
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages)}
-                  disabled={safePageNum >= totalPages}
-                >
-                  Last
-                </Button>
-              </div>
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <span>Rows per page:</span>
+            <select
+              className="border rounded px-2 py-1 text-sm bg-white"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+            >
+              {[10, 25, 50, 100].map((size) => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-4">
+            <span>
+              {totalCount === 0
+                ? "No rows"
+                : `${(page - 1) * pageSize + 1} to ${Math.min(page * pageSize, totalCount)} of ${totalCount}`}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                onClick={() => setPage(1)}
+                disabled={page <= 1}
+                title="First page"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+              <button
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                title="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page * pageSize >= totalCount}
+                title="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                onClick={() => setPage(Math.ceil(totalCount / pageSize))}
+                disabled={page * pageSize >= totalCount}
+                title="Last page"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -1267,6 +1277,55 @@ export function RegistrationsTable({ registrations, events }: Props) {
           setSelectedIds(new Set());
         }}
       />
+
+      {/* Table Settings Panel */}
+      {tableSettingsOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setTableSettingsOpen(false)}
+          />
+          <div className="fixed top-0 right-0 h-full w-full max-w-[320px] bg-white z-50 shadow-xl animate-in slide-in-from-right duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">Table settings</h2>
+              <button
+                type="button"
+                onClick={() => setTableSettingsOpen(false)}
+                className="p-1 rounded hover:bg-gray-100 transition-colors"
+                aria-label="Close table settings"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-1 overflow-y-auto" style={{ maxHeight: "calc(100vh - 73px)" }}>
+              {COLUMN_SETTINGS.map((col) => (
+                <label
+                  key={col.key}
+                  className="flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={visibleColumns.has(col.key)}
+                    onChange={() => {
+                      setVisibleColumns((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(col.key)) {
+                          if (next.size > 1) next.delete(col.key);
+                        } else {
+                          next.add(col.key);
+                        }
+                        return next;
+                      });
+                    }}
+                    className="w-4.5 h-4.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  <span className="text-sm text-gray-700">{col.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -72,15 +72,15 @@ const navItems: NavEntry[] = [
           </svg>
         ),
       },
-      {
-        label: "Positions",
-        href: "/admin/positions",
-        icon: (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M3.02 9.573L3 16a2 2 0 002 2h14a2 2 0 002-2V9.574M3.02 9.573A23.94 23.94 0 0112 11c3.183 0 6.22-.62 9-1.745" />
-          </svg>
-        ),
-      },
+      // {
+      //   label: "Positions",
+      //   href: "/admin/positions",
+      //   icon: (
+      //     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M3.02 9.573L3 16a2 2 0 002 2h14a2 2 0 002-2V9.574M3.02 9.573A23.94 23.94 0 0112 11c3.183 0 6.22-.62 9-1.745" />
+      //     </svg>
+      //   ),
+      // },
       {
         label: "Tags",
         href: "/admin/tags",
@@ -127,15 +127,15 @@ const navItems: NavEntry[] = [
           </svg>
         ),
       },
-      {
-        label: "Follow-ups",
-        href: "/admin/follow-ups",
-        icon: (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        ),
-      },
+      // {
+      //   label: "Follow-ups",
+      //   href: "/admin/follow-ups",
+      //   icon: (
+      //     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      //     </svg>
+      //   ),
+      // },
     ],
   },
   {
@@ -280,12 +280,16 @@ export function AdminLayout({ children, userEmail }: AdminLayoutProps) {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  // Auto-expand groups whose children match the current path
+  // Auto-expand groups whose children match the current path; collapse Email, Fundraising, Settings by default
+  const defaultOpen = new Set(["People Management", "Event Management"]);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const entry of navItems) {
       if (isNavGroup(entry)) {
-        initial[entry.label] = true;
+        const hasActiveChild = entry.children.some(
+          (child) => pathname === child.href || pathname.startsWith(child.href)
+        );
+        initial[entry.label] = hasActiveChild || defaultOpen.has(entry.label);
       }
     }
     return initial;
