@@ -7,7 +7,7 @@ export function FloatingSocials() {
         href="https://www.facebook.com/BillionSoulHarvest/"
         target="_blank"
         rel="noopener noreferrer"
-        className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#c8e36a] shadow-lg flex items-center justify-center text-[#0a0a0a] hover:bg-[#d4ee5a] hover:scale-110 transition-all duration-300"
+        className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#1ecdec] shadow-lg flex items-center justify-center text-[#0a0a0a] hover:bg-[#45d6f0] hover:scale-110 transition-all duration-300"
         aria-label="Facebook"
       >
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -18,7 +18,7 @@ export function FloatingSocials() {
         href="https://www.instagram.com/billionsoul_/"
         target="_blank"
         rel="noopener noreferrer"
-        className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#c8e36a] shadow-lg flex items-center justify-center text-[#0a0a0a] hover:bg-[#d4ee5a] hover:scale-110 transition-all duration-300"
+        className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#1ecdec] shadow-lg flex items-center justify-center text-[#0a0a0a] hover:bg-[#45d6f0] hover:scale-110 transition-all duration-300"
         aria-label="Instagram"
       >
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@ export function FloatingSocials() {
         href="https://www.youtube.com/@ghs2033"
         target="_blank"
         rel="noopener noreferrer"
-        className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#c8e36a] shadow-lg flex items-center justify-center text-[#0a0a0a] hover:bg-[#d4ee5a] hover:scale-110 transition-all duration-300"
+        className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-[#1ecdec] shadow-lg flex items-center justify-center text-[#0a0a0a] hover:bg-[#45d6f0] hover:scale-110 transition-all duration-300"
         aria-label="YouTube"
       >
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

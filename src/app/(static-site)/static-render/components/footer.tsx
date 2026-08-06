@@ -25,7 +25,7 @@ export function StaticFooter() {
               href="https://www.youtube.com/@ghs2033"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/50 hover:text-[#00b8d4] transition-colors"
+              className="text-white/50 hover:text-[#1ecdec] transition-colors"
               aria-label="YouTube"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -36,7 +36,7 @@ export function StaticFooter() {
               href="https://www.facebook.com/BillionSoulHarvest/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/50 hover:text-[#00b8d4] transition-colors"
+              className="text-white/50 hover:text-[#1ecdec] transition-colors"
               aria-label="Facebook"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -47,7 +47,7 @@ export function StaticFooter() {
               href="https://www.instagram.com/billionsoul_/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/50 hover:text-[#00b8d4] transition-colors"
+              className="text-white/50 hover:text-[#1ecdec] transition-colors"
               aria-label="Instagram"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -63,22 +63,22 @@ export function StaticFooter() {
           </h6>
           <ul className="space-y-4 font-[family-name:var(--font-geist-sans)] text-base text-white/60">
             <li>
-              <Link href="/about/our-story" className="hover:text-[#00b8d4] transition-colors">
+              <Link href="/about/our-story" className="hover:text-[#1ecdec] transition-colors">
                 About Us
               </Link>
             </li>
             <li>
-              <Link href="/gatherings" className="hover:text-[#00b8d4] transition-colors">
+              <Link href="/gatherings" className="hover:text-[#1ecdec] transition-colors">
                 Gatherings
               </Link>
             </li>
             <li>
-              <Link href="/initiatives" className="hover:text-[#00b8d4] transition-colors">
+              <Link href="/initiatives" className="hover:text-[#1ecdec] transition-colors">
                 Initiatives
               </Link>
             </li>
             <li>
-              <Link href="/stories" className="hover:text-[#00b8d4] transition-colors">
+              <Link href="/stories" className="hover:text-[#1ecdec] transition-colors">
                 Stories
               </Link>
             </li>
@@ -92,7 +92,7 @@ export function StaticFooter() {
           <ul className="space-y-4 font-[family-name:var(--font-geist-sans)] text-base text-white/60">
             <li>
               <ContactDialog>
-                <span className="hover:text-[#00b8d4] transition-colors">
+                <span className="hover:text-[#1ecdec] transition-colors">
                   Contact Us
                 </span>
               </ContactDialog>

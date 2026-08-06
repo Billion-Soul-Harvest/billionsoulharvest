@@ -23,7 +23,7 @@ export default function HomePage() {
           style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}
         >
           <div className="max-w-2xl">
-            <p className="font-[family-name:var(--font-geist-sans)] text-xs md:text-sm font-semibold tracking-[0.2em] uppercase text-[#c8e64a] mb-6">
+            <p className="font-[family-name:var(--font-geist-sans)] text-xs md:text-sm font-semibold tracking-[0.2em] uppercase text-[#1ecdec] mb-6">
               A Global Movement for the Great Commission
             </p>
             <h1 className="font-[family-name:var(--font-jakarta)] text-7xl md:text-[110px] md:leading-[112px] font-[900] text-white mb-6 tracking-[-0.03em]">
@@ -35,7 +35,7 @@ export default function HomePage() {
             <div className="flex flex-wrap justify-start gap-4">
               <Link
                 href="/about#our-story"
-                className="bg-[#c8e64a] text-[#0a0a0a] px-10 py-4 rounded-full text-sm font-bold font-[family-name:var(--font-geist-sans)] hover:bg-[#d4ee5a] transition-all inline-flex items-center gap-2"
+                className="bg-[#1ecdec] text-[#0a0a0a] px-10 py-4 rounded-full text-sm font-bold font-[family-name:var(--font-geist-sans)] hover:bg-[#45d6f0] transition-all inline-flex items-center gap-2"
               >
                 Discover the Vision
                 <svg
@@ -68,7 +68,7 @@ export default function HomePage() {
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
             <div className="text-center mb-4">
-              <p className="font-[family-name:var(--font-geist-sans)] text-xs font-semibold tracking-[0.2em] uppercase text-[#c8e64a] mb-3">
+              <p className="font-[family-name:var(--font-geist-sans)] text-xs font-semibold tracking-[0.2em] uppercase text-[#1ecdec] mb-3">
                 United in Mission
               </p>
               <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#1a1a1a] tracking-[-0.02em]">
@@ -124,7 +124,7 @@ export default function HomePage() {
       <section className="py-20 md:py-[120px] bg-[#111111] border-t border-white/5">
         <ScrollReveal direction="none">
         <div className="max-w-3xl mx-auto px-4 md:px-8 text-center">
-          <p className="font-[family-name:var(--font-geist-sans)] text-xs font-semibold tracking-[0.2em] uppercase text-[#c8e64a] mb-3">
+          <p className="font-[family-name:var(--font-geist-sans)] text-xs font-semibold tracking-[0.2em] uppercase text-[#1ecdec] mb-3">
             Get in Touch
           </p>
           <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-white tracking-[-0.02em] mb-4">
@@ -139,7 +139,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/connect"
-            className="inline-flex items-center gap-2 bg-[#c8e64a] text-[#0a0a0a] px-12 py-5 rounded-full text-base font-bold font-[family-name:var(--font-geist-sans)] hover:bg-[#d4ee5a] transition-all"
+            className="inline-flex items-center gap-2 bg-[#1ecdec] text-[#0a0a0a] px-12 py-5 rounded-full text-base font-bold font-[family-name:var(--font-geist-sans)] hover:bg-[#45d6f0] transition-all"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />

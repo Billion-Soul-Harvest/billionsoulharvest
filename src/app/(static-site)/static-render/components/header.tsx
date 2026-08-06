@@ -71,8 +71,7 @@ export function StaticHeader() {
             alt="Billion Soul Harvest"
             width={220}
             height={56}
-            className="h-full w-auto object-contain"
-            style={{ filter: "brightness(0) saturate(100%) invert(85%) sepia(44%) saturate(491%) hue-rotate(31deg) brightness(102%) contrast(88%)" }}
+            className="h-full w-auto object-contain brightness-0 invert"
             priority
           />
         </Link>
@@ -98,8 +97,8 @@ export function StaticHeader() {
                     href={item.href}
                     className={`flex items-center gap-1 text-sm font-bold tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
                       isActive
-                        ? "text-[#006879] font-bold border-b-2 border-[#006879]"
-                        : "text-white hover:text-[#00b8d4]"
+                        ? "text-[#1ecdec] font-bold border-b-2 border-[#1ecdec]"
+                        : "text-white hover:text-[#1ecdec]"
                     }`}
                   >
                     {item.label}
@@ -124,8 +123,8 @@ export function StaticHeader() {
                     href={item.href}
                     className={`text-sm font-bold tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
                       isActive
-                        ? "text-[#006879] font-bold border-b-2 border-[#006879]"
-                        : "text-white hover:text-[#00b8d4]"
+                        ? "text-[#1ecdec] font-bold border-b-2 border-[#1ecdec]"
+                        : "text-white hover:text-[#1ecdec]"
                     }`}
                   >
                     {item.label}
@@ -226,12 +225,12 @@ export function StaticHeader() {
                       </button>
                     </div>
                     {openDropdown === item.label && (
-                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-[#00b8d4]/30 pl-3">
+                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-[#1ecdec]/30 pl-3">
                         {item.submenu!.map((sub) => (
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            className="block px-3 py-2 rounded-lg text-sm text-[#44474d] hover:bg-[#e7eeff] hover:text-[#00b8d4] transition-colors"
+                            className="block px-3 py-2 rounded-lg text-sm text-[#44474d] hover:bg-[#e7eeff] hover:text-[#1ecdec] transition-colors"
                           >
                             {sub.label}
                           </Link>
