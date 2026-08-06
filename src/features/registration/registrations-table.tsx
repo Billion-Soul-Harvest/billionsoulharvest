@@ -9,7 +9,7 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { SendEmailDialog } from "@/features/emails/send-email-dialog";
 import { toast } from "sonner";
 import { AllCommunityModule, themeQuartz } from "ag-grid-community";
-import type { ColDef, SelectionChangedEvent, RowClickedEvent, ICellRendererParams, SortChangedEvent, PaginationChangedEvent } from "ag-grid-community";
+import type { ColDef, SelectionChangedEvent, RowClickedEvent, ICellRendererParams, SortChangedEvent } from "ag-grid-community";
 import type { AgGridReact as AgGridReactType } from "ag-grid-react";
 import { AgGridReact, AgGridProvider } from "ag-grid-react";
 
@@ -523,7 +523,7 @@ export function RegistrationsTable({ events }: Props) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // const [statusFilter, setStatusFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -599,9 +599,10 @@ export function RegistrationsTable({ events }: Props) {
     fetchRegistrations();
   }, [fetchRegistrations]);
 
-  const { confirmedCount, pendingCount, cancelledCount, waitlistedCount } = stats.total > 0
-    ? { confirmedCount: stats.confirmed, pendingCount: stats.pending, cancelledCount: stats.cancelled, waitlistedCount: stats.waitlisted }
-    : { confirmedCount: 0, pendingCount: 0, cancelledCount: 0, waitlistedCount: 0 };
+  const confirmedCount = stats.confirmed;
+  // const pendingCount = stats.pending;
+  // const cancelledCount = stats.cancelled;
+  // const waitlistedCount = stats.waitlisted;
 
   // Close bulk actions dropdown on outside click
   useEffect(() => {

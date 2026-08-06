@@ -50,9 +50,11 @@ export async function GET(request: NextRequest) {
       `, { count: "exact" });
 
     // Search filter (name or email via contact)
+    // Escape special Postgres LIKE characters to prevent filter injection
     if (search) {
+      const escaped = search.replace(/[%_\\]/g, (c) => `\\${c}`);
       query = query.or(
-        `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`,
+        `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%`,
         { referencedTable: "contacts" }
       );
     }
@@ -109,8 +111,9 @@ export async function GET(request: NextRequest) {
       .select("status, contact:contacts!inner(first_name, last_name, email), event:events!inner(slug)", { count: "exact", head: false });
 
     if (search) {
+      const escaped = search.replace(/[%_\\]/g, (c) => `\\${c}`);
       countBase = countBase.or(
-        `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`,
+        `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%`,
         { referencedTable: "contacts" }
       );
     }
