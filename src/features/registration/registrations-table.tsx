@@ -698,9 +698,26 @@ export function RegistrationsTable({ events }: Props) {
     ...customFieldKeys.map((key) => ({
       key: `cf_${key}`,
       label: formatFieldLabel(key),
-      defaultVisible: false,
+      defaultVisible: true,
     })),
   ], [customFieldKeys]);
+
+  // Auto-enable newly discovered custom field columns
+  useEffect(() => {
+    if (customFieldKeys.length === 0) return;
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const key of customFieldKeys) {
+        const colKey = `cf_${key}`;
+        if (!next.has(colKey)) {
+          next.add(colKey);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [customFieldKeys]);
 
   const confirmedCount = stats.confirmed;
   // const pendingCount = stats.pending;
