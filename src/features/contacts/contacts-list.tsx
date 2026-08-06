@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Pencil, Mail, Search, ChevronDown, Settings, X, ChevronUp, Trash2, Loader2 } from "lucide-react";
+import { Eye, Pencil, Mail, Search, ChevronDown, X, ChevronUp, Trash2, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Settings2, Download, Maximize2, Minimize2 } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
 import {
   Dialog,
@@ -30,6 +29,10 @@ import type { ContactType } from "@/shared/types/database";
 import { CreateContactDialog } from "./create-contact-dialog";
 import { SendEmailDialog } from "@/features/emails/send-email-dialog";
 import type { SegmentFilter } from "@/shared/types/database";
+import { AllCommunityModule, themeQuartz } from "ag-grid-community";
+import type { ColDef, SelectionChangedEvent, RowClickedEvent, ICellRendererParams, SortChangedEvent } from "ag-grid-community";
+import type { AgGridReact as AgGridReactType } from "ag-grid-react";
+import { AgGridReact, AgGridProvider } from "ag-grid-react";
 
 interface ContactRow {
   id: string;
@@ -859,6 +862,225 @@ function SearchableMultiSelect({
   );
 }
 
+// --- AG Grid Theme ---
+const contactsGridTheme = themeQuartz.withParams({
+  backgroundColor: "#ffffff",
+  headerBackgroundColor: "#f9fafb",
+  headerFontSize: 13,
+  fontSize: 14,
+  borderRadius: 12,
+  spacing: 6,
+  headerFontWeight: 500,
+  rowBorder: { color: "#f3f4f6" },
+  selectedRowBackgroundColor: "rgba(6, 182, 212, 0.08)",
+});
+
+// --- Pagination Footer ---
+function PaginationFooter({
+  page,
+  pageSize,
+  totalCount,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+}) {
+  const totalPages = Math.ceil(totalCount / pageSize);
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-gray-600">
+      <div className="flex items-center gap-2">
+        <span className="hidden sm:inline">Rows per page:</span>
+        <select
+          className="border rounded px-2 py-1 text-sm bg-white"
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+        >
+          {PAGE_SIZE_OPTIONS.map((size) => (
+            <option key={size} value={size}>{size}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center gap-2 sm:gap-4">
+        <span className="text-xs sm:text-sm">
+          {totalCount === 0
+            ? "No rows"
+            : `${(page - 1) * pageSize + 1}\u2013${Math.min(page * pageSize, totalCount)} of ${totalCount}`}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(1)}
+            disabled={page <= 1}
+            title="First page"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            disabled={page <= 1}
+            title="Previous page"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages}
+            title="Next page"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(totalPages)}
+            disabled={page >= totalPages}
+            title="Last page"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- AG Grid Cell Renderers ---
+function ContactNameCellRenderer(params: ICellRendererParams<ContactRow>) {
+  if (!params.data) return null;
+  const c = params.data;
+  return (
+    <a
+      href={`/admin/contacts/${c.id}`}
+      className="font-medium text-gray-900 hover:text-cyan-700"
+    >
+      {c.first_name} {c.last_name}
+    </a>
+  );
+}
+
+function TypeCellRenderer(params: ICellRendererParams<ContactRow>) {
+  if (!params.data) return null;
+  const type = params.data.contact_type;
+  return (
+    <Badge variant="secondary" className={contactTypeColors[type]}>
+      {contactTypeLabels[type]}
+    </Badge>
+  );
+}
+
+function RegionCellRenderer(params: ICellRendererParams<ContactRow>) {
+  if (!params.data?.region) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className="w-2.5 h-2.5 rounded-full"
+        style={{ backgroundColor: params.data.region.color }}
+      />
+      <span className="text-gray-700">{params.data.region.name}</span>
+    </span>
+  );
+}
+
+function TagsCellRenderer(params: ICellRendererParams<ContactRow>) {
+  if (!params.data || !params.data.tags || params.data.tags.length === 0) return null;
+  const tags = params.data.tags;
+  const visible = tags.slice(0, 2);
+  const remaining = tags.length - 2;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {visible.map((tag) => (
+        <span key={tag} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">
+          {tag}
+        </span>
+      ))}
+      {remaining > 0 && (
+        <span className="text-cyan-600 text-xs font-medium px-1" title={tags.slice(2).join(", ")}>
+          +{remaining}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function EmailListsCellRenderer(params: ICellRendererParams<ContactRow>) {
+  if (!params.data?.email_lists || params.data.email_lists.length === 0) return <span className="text-gray-400">{"\u2014"}</span>;
+  const lists = params.data.email_lists;
+  const visible = lists.slice(0, 2);
+  const remaining = lists.length - 2;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {visible.map((list) => (
+        <span key={list} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">{list}</span>
+      ))}
+      {remaining > 0 && (
+        <span className="text-gray-500 text-xs font-medium px-1" title={lists.slice(2).join(", ")}>
+          +{remaining}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ContactActionsCellRenderer(params: ICellRendererParams<ContactRow> & { context: any }) {
+  const c = params.data;
+  const [open, setOpen] = useState(false);
+  if (!c) return null;
+  const ctx = params.context;
+
+  const close = () => setOpen(false);
+
+  return (
+    <div data-action-menu>
+      <ActionMenu
+        open={open}
+        onToggle={() => setOpen((prev) => !prev)}
+        onClose={close}
+      >
+        <a
+          href={`/admin/contacts/${c.id}`}
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          onClick={close}
+        >
+          <Eye className="w-4 h-4" /> View
+        </a>
+        <a
+          href={`/admin/contacts/${c.id}?edit=true`}
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          onClick={close}
+        >
+          <Pencil className="w-4 h-4" /> Edit
+        </a>
+        {c.email && (
+          <a
+            href={`mailto:${c.email}`}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            onClick={close}
+          >
+            <Mail className="w-4 h-4" /> Email
+          </a>
+        )}
+        <button
+          type="button"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+          onClick={(e) => {
+            e.stopPropagation();
+            close();
+            ctx.setDeleteContact({ id: c.id, name: `${c.first_name} ${c.last_name}` });
+          }}
+        >
+          <Trash2 className="w-4 h-4" /> Delete
+        </button>
+      </ActionMenu>
+    </div>
+  );
+}
+
 export function ContactsListClient({
   contacts,
   regions,
@@ -887,7 +1109,6 @@ export function ContactsListClient({
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() => new Set(DEFAULT_VISIBLE));
 
@@ -900,8 +1121,6 @@ export function ContactsListClient({
     });
   }
 
-  const isCol = (key: ColumnKey) => visibleColumns.has(key);
-  const visibleCount = visibleColumns.size + 2; // +2 for checkbox and actions columns
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectAllMode, setSelectAllMode] = useState(false);
   const [bulkDialog, setBulkDialog] = useState<"tags" | "region" | "type" | "delete" | "add_to_list" | "remove_from_list" | "remove_tags" | "create_list" | null>(null);
@@ -919,21 +1138,11 @@ export function ContactsListClient({
   const [actionsDropdownOpen, setActionsDropdownOpen] = useState(false);
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [actionMenu, setActionMenu] = useState<string | null>(null);
   const [deleteContact, setDeleteContact] = useState<{ id: string; name: string } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const actionMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!actionMenu) return;
-    function handleClick(e: MouseEvent) {
-      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
-        setActionMenu(null);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [actionMenu]);
+  const [fullscreen, setFullscreen] = useState(false);
+  const gridRef = useRef<AgGridReactType<ContactRow>>(null);
+  const programmaticSelection = useRef(false);
 
   useEffect(() => {
     if (!actionsDropdownOpen) return;
@@ -945,6 +1154,39 @@ export function ContactsListClient({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [actionsDropdownOpen]);
+
+  // Exit fullscreen on Escape key
+  useEffect(() => {
+    if (!fullscreen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setFullscreen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [fullscreen]);
+
+  // Sync AG Grid selection when contacts data changes (page navigation)
+  useEffect(() => {
+    if (!gridRef.current?.api) return;
+    programmaticSelection.current = true;
+    gridRef.current.api.forEachNode((node) => {
+      if (!node.data) return;
+      const shouldSelect = selectAllMode || selected.has(node.data.id);
+      if (node.isSelected() !== shouldSelect) {
+        node.setSelected(shouldSelect);
+      }
+    });
+    requestAnimationFrame(() => { programmaticSelection.current = false; });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts]);
+
+  // Select all rows when selectAllMode becomes true
+  useEffect(() => {
+    if (!selectAllMode || !gridRef.current?.api) return;
+    programmaticSelection.current = true;
+    gridRef.current.api.selectAll();
+    requestAnimationFrame(() => { programmaticSelection.current = false; });
+  }, [selectAllMode]);
 
   const allOnPageSelected = contacts.length > 0 && contacts.every((c) => selected.has(c.id));
   const someSelected = selected.size > 0 || selectAllMode;
@@ -1209,10 +1451,6 @@ export function ContactsListClient({
     [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, excludeListFilter, eventFilter, tagFilter, tagMode, sort, dir, startTransition]
   );
 
-  const totalPages = Math.ceil(totalCount / pageSize);
-  const startIndex = (page - 1) * pageSize + 1;
-  const endIndex = Math.min(page * pageSize, totalCount);
-
   function exportCSV() {
     const headers = ["First Name", "Last Name", "Email", "Phone", "Type", "Church", "City", "Country", "Region", "Tags"];
     const rows = contacts.map((c) => [
@@ -1233,42 +1471,277 @@ export function ContactsListClient({
     URL.revokeObjectURL(url);
   }
 
-  function sortHeader(label: string, column: string) {
-    const isActive = sort === column;
-    return (
-      <button
-        type="button"
-        className="inline-flex items-center gap-1 hover:text-gray-900"
-        onClick={() => navigate({
-          sort: column,
-          dir: isActive && dir === "asc" ? "desc" : "asc",
-          page: "1",
-        })}
-      >
-        {label}
-        {isActive ? (
-          <span className="text-cyan-600">{dir === "asc" ? "▲" : "▼"}</span>
-        ) : (
-          <span className="text-gray-300">▲</span>
-        )}
-      </button>
-    );
-  }
+  // --- AG Grid Column Definitions ---
+  const SORT_COL_MAP: Record<string, string> = {
+    first_name: "first_name",
+    email: "email",
+    contact_type: "contact_type",
+    church_name: "church_name",
+    created_at: "created_at",
+    updated_at: "updated_at",
+  };
+
+  const columnDefs = useMemo<ColDef<ContactRow>[]>(() => {
+    const cols: ColDef<ContactRow>[] = [];
+
+    if (visibleColumns.has("contact")) {
+      cols.push({
+        colId: "contact",
+        headerName: "Contact",
+        valueGetter: (p) => `${p.data?.first_name ?? ""} ${p.data?.last_name ?? ""}`.trim(),
+        cellRenderer: ContactNameCellRenderer,
+        minWidth: 160,
+        flex: 1,
+        sortable: false,
+        filter: true,
+      });
+    }
+    if (visibleColumns.has("email")) {
+      cols.push({
+        colId: "email",
+        headerName: "Email address",
+        field: "email",
+        minWidth: 200,
+        flex: 1.2,
+        filter: true,
+        sort: sort === "email" ? (dir as "asc" | "desc") : undefined,
+      });
+    }
+    if (visibleColumns.has("first_name")) {
+      cols.push({
+        colId: "first_name",
+        headerName: "First name",
+        field: "first_name",
+        minWidth: 120,
+        flex: 0.8,
+        filter: true,
+        sort: sort === "first_name" ? (dir as "asc" | "desc") : undefined,
+      });
+    }
+    if (visibleColumns.has("last_name")) {
+      cols.push({
+        colId: "last_name",
+        headerName: "Last name",
+        field: "last_name",
+        minWidth: 120,
+        flex: 0.8,
+        sortable: false,
+        filter: true,
+      });
+    }
+    if (visibleColumns.has("type")) {
+      cols.push({
+        colId: "contact_type",
+        headerName: "Type",
+        field: "contact_type",
+        cellRenderer: TypeCellRenderer,
+        minWidth: 100,
+        flex: 0.6,
+        filter: true,
+        sort: sort === "contact_type" ? (dir as "asc" | "desc") : undefined,
+      });
+    }
+    if (visibleColumns.has("created_at")) {
+      cols.push({
+        colId: "created_at",
+        headerName: "Date added",
+        valueGetter: (p) => p.data ? new Date(p.data.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
+        minWidth: 110,
+        flex: 0.7,
+        filter: true,
+        sort: sort === "created_at" ? (dir as "asc" | "desc") : undefined,
+      });
+    }
+    if (visibleColumns.has("tags")) {
+      cols.push({
+        colId: "tags",
+        headerName: "Tags",
+        valueGetter: (p) => p.data?.tags?.join(", ") ?? "",
+        cellRenderer: TagsCellRenderer,
+        minWidth: 140,
+        flex: 1,
+        sortable: false,
+        filter: true,
+      });
+    }
+    if (visibleColumns.has("phone")) {
+      cols.push({ colId: "phone", headerName: "Phone", field: "phone", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("church")) {
+      cols.push({
+        colId: "church_name",
+        headerName: "Church",
+        field: "church_name",
+        minWidth: 130,
+        flex: 0.8,
+        filter: true,
+        sort: sort === "church_name" ? (dir as "asc" | "desc") : undefined,
+      });
+    }
+    if (visibleColumns.has("language")) {
+      cols.push({ colId: "language", headerName: "Language", field: "language", minWidth: 100, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("region")) {
+      cols.push({
+        colId: "region",
+        headerName: "Region",
+        valueGetter: (p) => p.data?.region?.name ?? "",
+        cellRenderer: RegionCellRenderer,
+        minWidth: 120,
+        sortable: false,
+        filter: true,
+      });
+    }
+    if (visibleColumns.has("position")) {
+      cols.push({ colId: "position", headerName: "Position", valueGetter: (p) => p.data?.position?.name ?? "", minWidth: 110, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("gender")) {
+      cols.push({ colId: "gender", headerName: "Gender", valueGetter: (p) => p.data?.gender ? p.data.gender.charAt(0).toUpperCase() + p.data.gender.slice(1) : "", minWidth: 90, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("job_title")) {
+      cols.push({ colId: "job_title", headerName: "Job title", field: "job_title", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("church_role")) {
+      cols.push({ colId: "church_role", headerName: "Church role", field: "church_role", minWidth: 110, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("birthday")) {
+      cols.push({ colId: "birthday", headerName: "Birthday", valueGetter: (p) => p.data?.birthday ? new Date(p.data.birthday).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "", minWidth: 110, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("age_group")) {
+      cols.push({ colId: "age_group", headerName: "Age group", field: "age_group", minWidth: 100, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("alternative_email")) {
+      cols.push({ colId: "alternative_email", headerName: "Alt. email", valueGetter: (p) => p.data?.alternative_email?.join(", ") ?? "", minWidth: 160, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("referred_by")) {
+      cols.push({ colId: "referred_by", headerName: "Referred by", field: "referred_by", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("interests")) {
+      cols.push({ colId: "interests", headerName: "Interests", field: "interests", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("expectations")) {
+      cols.push({ colId: "expectations", headerName: "Expectations", field: "expectations", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("source")) {
+      cols.push({ colId: "source", headerName: "Source", field: "source", minWidth: 100, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("email_status")) {
+      cols.push({ colId: "email_status", headerName: "Email status", field: "email_status", minWidth: 110, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("email_permission")) {
+      cols.push({ colId: "email_permission", headerName: "Email permission", field: "email_permission", minWidth: 130, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("email_lists")) {
+      cols.push({
+        colId: "email_lists",
+        headerName: "Lists",
+        valueGetter: (p) => p.data?.email_lists?.join(", ") ?? "",
+        cellRenderer: EmailListsCellRenderer,
+        minWidth: 140,
+        sortable: false,
+        filter: true,
+      });
+    }
+    if (visibleColumns.has("city")) {
+      cols.push({ colId: "city", headerName: "City", field: "city", minWidth: 100, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("country")) {
+      cols.push({ colId: "country", headerName: "Country", field: "country", minWidth: 100, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("street_address")) {
+      cols.push({ colId: "street_address", headerName: "Street address", field: "street_address", minWidth: 140, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("state")) {
+      cols.push({ colId: "state", headerName: "State", field: "state", minWidth: 90, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("phone_home")) {
+      cols.push({ colId: "phone_home", headerName: "Phone (home)", field: "phone_home", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("phone_mobile")) {
+      cols.push({ colId: "phone_mobile", headerName: "Phone (mobile)", field: "phone_mobile", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("phone_work")) {
+      cols.push({ colId: "phone_work", headerName: "Phone (work)", field: "phone_work", minWidth: 120, sortable: false, filter: true });
+    }
+    if (visibleColumns.has("updated_at")) {
+      cols.push({
+        colId: "updated_at",
+        headerName: "Date edited",
+        valueGetter: (p) => p.data ? new Date(p.data.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
+        minWidth: 110,
+        flex: 0.7,
+        filter: true,
+        sort: sort === "updated_at" ? (dir as "asc" | "desc") : undefined,
+      });
+    }
+
+    // Actions column (always visible, pinned right)
+    cols.push({
+      headerName: "",
+      cellRenderer: ContactActionsCellRenderer,
+      minWidth: 60,
+      maxWidth: 60,
+      sortable: false,
+      filter: false,
+      resizable: false,
+      pinned: "right" as const,
+    });
+
+    return cols;
+  }, [visibleColumns, sort, dir]);
+
+  const defaultColDef = useMemo<ColDef>(() => ({
+    sortable: true,
+    resizable: true,
+  }), []);
+
+  // --- AG Grid Event Handlers ---
+  const onSelectionChanged = useCallback((event: SelectionChangedEvent<ContactRow>) => {
+    if (programmaticSelection.current) return;
+    const currentPageIds = new Set(contacts.map((c) => c.id));
+    const gridSelectedIds = new Set(event.api.getSelectedRows().map((r) => r.id));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of currentPageIds) {
+        if (!gridSelectedIds.has(id)) next.delete(id);
+      }
+      for (const id of gridSelectedIds) {
+        next.add(id);
+      }
+      return next;
+    });
+    setSelectAllMode(false);
+  }, [contacts]);
+
+  const onSortChanged = useCallback((event: SortChangedEvent<ContactRow>) => {
+    const colState = event.api.getColumnState();
+    const sorted = colState.find((c) => c.sort);
+    if (sorted && sorted.colId && sorted.colId in SORT_COL_MAP) {
+      navigate({ sort: SORT_COL_MAP[sorted.colId], dir: sorted.sort === "asc" ? "asc" : "desc", page: "1" });
+    } else {
+      navigate({ sort: "created_at", dir: "desc", page: "1" });
+    }
+  }, [navigate]);
+
+  const onRowClicked = useCallback((event: RowClickedEvent<ContactRow>) => {
+    const target = event.event?.target as HTMLElement | null;
+    if (target?.closest("[data-action-menu]") || target?.closest("input[type=checkbox]") || target?.closest("a")) return;
+    if (event.data) {
+      window.location.href = `/admin/contacts/${event.data.id}`;
+    }
+  }, []);
+
+  const gridContext = useMemo(() => ({
+    setDeleteContact,
+  }), []);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-baseline gap-3 mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-        <div className="flex items-center gap-2">
-          <CreateContactDialog
-            listNames={listNames}
-            existingCustomFields={existingCustomFields}
-            onSuccess={() => router.refresh()}
-          />
-          <Button variant="outline" onClick={exportCSV}>
-            Export CSV
-          </Button>
-        </div>
+        <span className="text-sm text-gray-400">&middot;</span>
+        <span className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{totalCount.toLocaleString()}</span> total</span>
       </div>
 
       {/* Filters — Constant Contact style */}
@@ -1323,6 +1796,28 @@ export function ContactsListClient({
           searchPlaceholder="Search events"
           countLabel="events"
         />
+
+        <div className="flex items-center gap-1.5 sm:ml-auto">
+          <CreateContactDialog
+            listNames={listNames}
+            existingCustomFields={existingCustomFields}
+            onSuccess={() => router.refresh()}
+          />
+          <Button variant="outline" onClick={() => setSettingsOpen(true)} className="rounded-lg h-[42px] w-[42px] p-0" title="Table Settings">
+            <Settings2 className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" onClick={exportCSV} className="rounded-lg h-[42px] w-[42px] p-0" title="Export CSV">
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setFullscreen(true)}
+            className="rounded-lg h-[42px] w-[42px] p-0 hidden md:inline-flex"
+            title="Fullscreen"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Applied filter chips */}
@@ -1423,27 +1918,13 @@ export function ContactsListClient({
             </div>
             <button
               type="button"
-              onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}
+              onClick={() => { setSelected(new Set()); setSelectAllMode(false); gridRef.current?.api?.deselectAll(); }}
               className="text-sm text-gray-500 hover:text-gray-700"
             >
               Clear selection
             </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <p className="text-base font-semibold text-gray-900">All contacts</p>
-            <span className="text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-full px-2.5 py-0.5">
-              {totalCount.toLocaleString()}
-            </span>
-          </div>
-        )}
-        <button
-          onClick={() => setSettingsOpen(true)}
-          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors"
-          title="Table settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
+        ) : null}
       </div>
 
       {/* Select all banner */}
@@ -1461,7 +1942,7 @@ export function ContactsListClient({
           <span className="text-gray-300">|</span>
           <button
             type="button"
-            onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}
+            onClick={() => { setSelected(new Set()); setSelectAllMode(false); gridRef.current?.api?.deselectAll(); }}
             className="font-semibold text-gray-600 hover:text-gray-800"
           >
             Clear selection
@@ -1486,7 +1967,7 @@ export function ContactsListClient({
           <span className="text-gray-300">|</span>
           <button
             type="button"
-            onClick={() => { setSelected(new Set()); setSelectAllMode(false); }}
+            onClick={() => { setSelected(new Set()); setSelectAllMode(false); gridRef.current?.api?.deselectAll(); }}
             className="font-semibold text-gray-600 hover:text-gray-800"
           >
             Clear selection
@@ -1494,306 +1975,118 @@ export function ContactsListClient({
         </div>
       )}
 
-      {/* Table */}
-      <div className={`bg-white rounded-xl border overflow-hidden relative ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
-        {isPending && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-cyan-600" />
+      {/* AG Grid Table — hidden on mobile, fullscreen-capable */}
+      <div
+        className={
+          fullscreen
+            ? "fixed inset-0 z-50 bg-white flex flex-col"
+            : "hidden md:block bg-white rounded-xl border overflow-hidden"
+        }
+      >
+        {/* Fullscreen header bar */}
+        {fullscreen && (
+          <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50 shrink-0">
+            <h2 className="text-sm font-semibold text-gray-700">Contacts</h2>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+                <Settings2 className="w-4 h-4 mr-1" /> Settings
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportCSV}>
+                Export CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setFullscreen(false)} title="Exit fullscreen (Esc)">
+                <Minimize2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="px-4 py-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allOnPageSelected || selectAllMode}
-                    onChange={toggleAll}
-                    className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
-                  />
-                </th>
-                {isCol("contact") && <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>}
-                {isCol("email") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Email address", "email")}</th>}
-                {isCol("first_name") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("First name", "first_name")}</th>}
-                {isCol("last_name") && <th className="text-left px-4 py-3 font-medium text-gray-600">Last name</th>}
-                {isCol("type") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Type", "contact_type")}</th>}
-                {isCol("created_at") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Date added", "created_at")}</th>}
-                {isCol("tags") && <th className="text-left px-4 py-3 font-medium text-gray-600">Tags</th>}
-                {isCol("phone") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>}
-                {isCol("church") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Church", "church_name")}</th>}
-                {isCol("language") && <th className="text-left px-4 py-3 font-medium text-gray-600">Language</th>}
-                {isCol("region") && <th className="text-left px-4 py-3 font-medium text-gray-600">Region</th>}
-                {isCol("position") && <th className="text-left px-4 py-3 font-medium text-gray-600">Position</th>}
-                {isCol("gender") && <th className="text-left px-4 py-3 font-medium text-gray-600">Gender</th>}
-                {isCol("job_title") && <th className="text-left px-4 py-3 font-medium text-gray-600">Job title</th>}
-                {isCol("church_role") && <th className="text-left px-4 py-3 font-medium text-gray-600">Church role</th>}
-                {isCol("birthday") && <th className="text-left px-4 py-3 font-medium text-gray-600">Birthday</th>}
-                {isCol("age_group") && <th className="text-left px-4 py-3 font-medium text-gray-600">Age group</th>}
-                {isCol("alternative_email") && <th className="text-left px-4 py-3 font-medium text-gray-600">Alt. email</th>}
-                {isCol("referred_by") && <th className="text-left px-4 py-3 font-medium text-gray-600">Referred by</th>}
-                {isCol("interests") && <th className="text-left px-4 py-3 font-medium text-gray-600">Interests</th>}
-                {isCol("expectations") && <th className="text-left px-4 py-3 font-medium text-gray-600">Expectations</th>}
-                {isCol("source") && <th className="text-left px-4 py-3 font-medium text-gray-600">Source</th>}
-                {isCol("email_status") && <th className="text-left px-4 py-3 font-medium text-gray-600">Email status</th>}
-                {isCol("email_permission") && <th className="text-left px-4 py-3 font-medium text-gray-600">Email permission</th>}
-                {isCol("email_lists") && <th className="text-left px-4 py-3 font-medium text-gray-600">Lists</th>}
-                {isCol("city") && <th className="text-left px-4 py-3 font-medium text-gray-600">City</th>}
-                {isCol("country") && <th className="text-left px-4 py-3 font-medium text-gray-600">Country</th>}
-                {isCol("street_address") && <th className="text-left px-4 py-3 font-medium text-gray-600">Street address</th>}
-                {isCol("state") && <th className="text-left px-4 py-3 font-medium text-gray-600">State</th>}
-                {isCol("phone_home") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone (home)</th>}
-                {isCol("phone_mobile") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone (mobile)</th>}
-                {isCol("phone_work") && <th className="text-left px-4 py-3 font-medium text-gray-600">Phone (work)</th>}
-                {isCol("updated_at") && <th className="text-left px-4 py-3 font-medium text-gray-600">{sortHeader("Date edited", "updated_at")}</th>}
-                <th className="px-4 py-3 w-24 sticky right-0 bg-gray-50"><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {contacts.length > 0 ? (
-                contacts.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50/50 group/row">
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectAllMode || selected.has(c.id)}
-                        onChange={() => toggleOne(c.id)}
-                        className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
-                      />
-                    </td>
-                    {isCol("contact") && (
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/admin/contacts/${c.id}`}
-                          className="font-medium text-gray-900 hover:text-cyan-700"
-                        >
-                          {c.first_name} {c.last_name}
-                        </Link>
-                      </td>
-                    )}
-                    {isCol("email") && <td className="px-4 py-3 text-gray-600">{c.email}</td>}
-                    {isCol("first_name") && <td className="px-4 py-3 text-gray-600">{c.first_name}</td>}
-                    {isCol("last_name") && <td className="px-4 py-3 text-gray-600">{c.last_name}</td>}
-                    {isCol("type") && (
-                      <td className="px-4 py-3">
-                        <Badge variant="secondary" className={contactTypeColors[c.contact_type]}>
-                          {contactTypeLabels[c.contact_type]}
-                        </Badge>
-                      </td>
-                    )}
-                    {isCol("created_at") && (
-                      <td className="px-4 py-3 text-gray-600">
-                        {new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </td>
-                    )}
-                    {isCol("tags") && (
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {(expandedTags.has(c.id) ? c.tags : c.tags.slice(0, 2)).map((tag) => (
-                            <span key={tag} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                          {c.tags.length > 2 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setExpandedTags((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(c.id)) next.delete(c.id);
-                                  else next.add(c.id);
-                                  return next;
-                                });
-                              }}
-                              className="text-cyan-600 hover:text-cyan-800 text-xs font-medium px-1"
-                            >
-                              {expandedTags.has(c.id) ? "show less" : `+${c.tags.length - 2}`}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
-                    {isCol("phone") && <td className="px-4 py-3 text-gray-600">{c.phone}</td>}
-                    {isCol("church") && <td className="px-4 py-3 text-gray-600">{c.church_name}</td>}
-                    {isCol("language") && <td className="px-4 py-3 text-gray-600">{c.language}</td>}
-                    {isCol("region") && (
-                      <td className="px-4 py-3">
-                        {c.region ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span
-                              className="w-2.5 h-2.5 rounded-full"
-                              style={{ backgroundColor: c.region.color }}
-                            />
-                            <span className="text-gray-700">{c.region.name}</span>
-                          </span>
-                        ) : null}
-                      </td>
-                    )}
-                    {isCol("position") && <td className="px-4 py-3 text-gray-600">{c.position?.name}</td>}
-                    {isCol("gender") && <td className="px-4 py-3 text-gray-600 capitalize">{c.gender}</td>}
-                    {isCol("job_title") && <td className="px-4 py-3 text-gray-600">{c.job_title ?? "—"}</td>}
-                    {isCol("church_role") && <td className="px-4 py-3 text-gray-600">{c.church_role ?? "—"}</td>}
-                    {isCol("birthday") && (
-                      <td className="px-4 py-3 text-gray-600">
-                        {c.birthday ? new Date(c.birthday).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
-                      </td>
-                    )}
-                    {isCol("age_group") && <td className="px-4 py-3 text-gray-600">{c.age_group ?? "—"}</td>}
-                    {isCol("alternative_email") && <td className="px-4 py-3 text-gray-600">{c.alternative_email?.join(", ") ?? "—"}</td>}
-                    {isCol("referred_by") && <td className="px-4 py-3 text-gray-600">{c.referred_by ?? "—"}</td>}
-                    {isCol("interests") && <td className="px-4 py-3 text-gray-600">{c.interests ?? "—"}</td>}
-                    {isCol("expectations") && <td className="px-4 py-3 text-gray-600">{c.expectations ?? "—"}</td>}
-                    {isCol("source") && <td className="px-4 py-3 text-gray-600">{c.source ?? "—"}</td>}
-                    {isCol("email_status") && <td className="px-4 py-3 text-gray-600">{c.email_status ?? "—"}</td>}
-                    {isCol("email_permission") && <td className="px-4 py-3 text-gray-600">{c.email_permission ?? "—"}</td>}
-                    {isCol("email_lists") && (
-                      <td className="px-4 py-3">
-                        {c.email_lists && c.email_lists.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {c.email_lists.map((list) => (
-                              <span key={list} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">{list}</span>
-                            ))}
-                          </div>
-                        ) : "—"}
-                      </td>
-                    )}
-                    {isCol("city") && <td className="px-4 py-3 text-gray-600">{c.city}</td>}
-                    {isCol("country") && <td className="px-4 py-3 text-gray-600">{c.country}</td>}
-                    {isCol("street_address") && <td className="px-4 py-3 text-gray-600">{c.street_address ?? "—"}</td>}
-                    {isCol("state") && <td className="px-4 py-3 text-gray-600">{c.state ?? "—"}</td>}
-                    {isCol("phone_home") && <td className="px-4 py-3 text-gray-600">{c.phone_home ?? "—"}</td>}
-                    {isCol("phone_mobile") && <td className="px-4 py-3 text-gray-600">{c.phone_mobile ?? "—"}</td>}
-                    {isCol("phone_work") && <td className="px-4 py-3 text-gray-600">{c.phone_work ?? "—"}</td>}
-                    {isCol("updated_at") && (
-                      <td className="px-4 py-3 text-gray-600">
-                        {new Date(c.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </td>
-                    )}
-                    <td className="px-4 py-3 sticky right-0 bg-white group-hover/row:bg-gray-50">
-                      <ActionMenu
-                        open={actionMenu === c.id}
-                        onToggle={() => setActionMenu(actionMenu === c.id ? null : c.id)}
-                        onClose={() => setActionMenu(null)}
-                      >
-                        <Link
-                          href={`/admin/contacts/${c.id}`}
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => setActionMenu(null)}
-                        >
-                          <Eye className="w-4 h-4" />
-                          View
-                        </Link>
-                        <Link
-                          href={`/admin/contacts/${c.id}?edit=true`}
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => setActionMenu(null)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                          Edit
-                        </Link>
-                        {c.email && (
-                          <a
-                            href={`mailto:${c.email}`}
-                            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            onClick={() => setActionMenu(null)}
-                          >
-                            <Mail className="w-4 h-4" />
-                            Email
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
-                          onClick={() => {
-                            setActionMenu(null);
-                            setDeleteContact({ id: c.id, name: `${c.first_name} ${c.last_name}` });
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </ActionMenu>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={visibleCount} className="px-4 py-12 text-center text-gray-400">
-                    No contacts found
-                  </td>
-                </tr>
+
+        <div style={fullscreen ? { flex: 1 } : { height: 600, width: "100%" }}>
+          <AgGridProvider modules={[AllCommunityModule]}>
+            <AgGridReact<ContactRow>
+              ref={gridRef}
+              theme={contactsGridTheme}
+              rowData={contacts}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              rowSelection={{ mode: "multiRow", checkboxes: true, headerCheckbox: true }}
+              pagination={false}
+              onSelectionChanged={onSelectionChanged}
+              onRowClicked={onRowClicked}
+              onSortChanged={onSortChanged}
+              getRowId={(params) => params.data.id}
+              context={gridContext}
+              suppressCellFocus={true}
+              loading={isPending}
+              noRowsOverlayComponent={() => (
+                <div className="text-center text-gray-400 py-12">No contacts found</div>
               )}
-            </tbody>
-          </table>
+            />
+          </AgGridProvider>
         </div>
 
-        {/* Pagination */}
-        {totalCount > 0 && (
-          <div className="flex items-center justify-between border-t px-4 py-3">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">
-                {startIndex}–{endIndex} of {totalCount}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Rows:</span>
-                <Select
-                  value={String(pageSize)}
-                  onValueChange={(v: string | null) => {
-                    if (v) navigate({ pageSize: v, page: "1" });
-                  }}
-                >
-                  <SelectTrigger className="w-[70px] h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAGE_SIZE_OPTIONS.map((size) => (
-                      <SelectItem key={size} value={String(size)}>
-                        {size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate({ page: "1" })}
-                disabled={page <= 1}
-              >
-                First
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate({ page: String(page - 1) })}
-                disabled={page <= 1}
-              >
-                Prev
-              </Button>
-              <span className="px-3 text-sm text-gray-600">
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate({ page: String(page + 1) })}
-                disabled={page >= totalPages}
-              >
-                Next
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate({ page: String(totalPages) })}
-                disabled={page >= totalPages}
-              >
-                Last
-              </Button>
-            </div>
-          </div>
+        {/* Pagination Footer */}
+        <div className="shrink-0">
+          <PaginationFooter
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={(p) => navigate({ page: String(p) })}
+            onPageSizeChange={(size) => navigate({ pageSize: String(size), page: "1" })}
+          />
+        </div>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {contacts.length === 0 && (
+          <div className="text-center text-gray-400 py-12 bg-white rounded-xl border">No contacts found</div>
         )}
+        {contacts.map((c) => (
+          <a
+            key={c.id}
+            href={`/admin/contacts/${c.id}`}
+            className="block bg-white rounded-xl border p-4 hover:shadow-sm transition-shadow"
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="font-medium text-gray-900">{c.first_name} {c.last_name}</p>
+                <p className="text-sm text-gray-500">{c.email ?? "\u2014"}</p>
+              </div>
+              <Badge variant="secondary" className={contactTypeColors[c.contact_type]}>
+                {contactTypeLabels[c.contact_type]}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-600">
+              {c.church_name && <span>{c.church_name}</span>}
+              {(c.city || c.country) && <span>{[c.city, c.country].filter(Boolean).join(", ")}</span>}
+              {c.region && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.region.color }} />
+                  {c.region.name}
+                </span>
+              )}
+              {c.phone && <span>{c.phone}</span>}
+            </div>
+            {c.tags && c.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {c.tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">{tag}</span>
+                ))}
+                {c.tags.length > 3 && <span className="text-gray-400 text-xs">+{c.tags.length - 3}</span>}
+              </div>
+            )}
+          </a>
+        ))}
+
+        {/* Mobile Pagination */}
+        <PaginationFooter
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={(p) => navigate({ page: String(p) })}
+          onPageSizeChange={(size) => navigate({ pageSize: String(size), page: "1" })}
+        />
       </div>
 
       {/* Assign Tags Dialog */}
