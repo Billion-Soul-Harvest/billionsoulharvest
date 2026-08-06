@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Lora, JetBrains_Mono, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Lora, JetBrains_Mono, Newsreader, Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import { SerwistProvider } from "@serwist/turbopack/react";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/shared/providers/query-provider";
@@ -34,6 +34,12 @@ const plusJakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
 export const metadata: Metadata = {
   title: "Billion Soul Harvest",
   description: "Billion Soul Harvest Ministry — Reaching the nations for Christ",
@@ -59,7 +65,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable} ${newsreader.variable} ${plusJakarta.variable} h-full antialiased`}
+      className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable} ${newsreader.variable} ${plusJakarta.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <SerwistProvider swUrl="/sw.js">

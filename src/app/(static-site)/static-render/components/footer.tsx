@@ -4,7 +4,7 @@ import { ContactDialog } from "./contact-dialog";
 
 export function StaticFooter() {
   return (
-    <footer className="bg-[#0d223f] py-8">
+    <footer className="bg-[#0f1316] py-8">
       <div className="max-w-[1280px] mx-auto px-4 md:px-[80px] grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-1">
           <div className="h-12 flex items-center mb-6">

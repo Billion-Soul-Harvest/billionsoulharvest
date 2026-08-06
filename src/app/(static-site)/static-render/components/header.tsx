@@ -61,7 +61,7 @@ export function StaticHeader() {
   return (
     <nav
       className={`sticky top-0 z-50 border-b border-[#b4c7ec]/20 backdrop-blur-md transition-all ${
-        scrolled ? "bg-[#f9f9ff]/95 shadow-lg" : "bg-[#f9f9ff]/90"
+        scrolled ? "bg-[#0f1316] shadow-lg" : "bg-[#0f1316]"
       }`}
     >
       <div className="flex justify-between items-center w-full px-4 md:px-8 py-4 max-w-[1280px] mx-auto">
@@ -72,6 +72,7 @@ export function StaticHeader() {
             width={220}
             height={56}
             className="h-full w-auto object-contain"
+            style={{ filter: "brightness(0) saturate(100%) invert(85%) sepia(44%) saturate(491%) hue-rotate(31deg) brightness(102%) contrast(88%)" }}
             priority
           />
         </Link>
@@ -95,10 +96,10 @@ export function StaticHeader() {
                 {hasSubmenu ? (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-1 text-sm font-medium tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
+                    className={`flex items-center gap-1 text-sm font-bold tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
                       isActive
                         ? "text-[#006879] font-bold border-b-2 border-[#006879]"
-                        : "text-[#0a1c34] hover:text-[#00b8d4]"
+                        : "text-white hover:text-[#00b8d4]"
                     }`}
                   >
                     {item.label}
@@ -121,10 +122,10 @@ export function StaticHeader() {
                 ) : (
                   <Link
                     href={item.href}
-                    className={`text-sm font-medium tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
+                    className={`text-sm font-bold tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
                       isActive
                         ? "text-[#006879] font-bold border-b-2 border-[#006879]"
-                        : "text-[#0a1c34] hover:text-[#00b8d4]"
+                        : "text-white hover:text-[#00b8d4]"
                     }`}
                   >
                     {item.label}
@@ -134,13 +135,13 @@ export function StaticHeader() {
                 {/* Dropdown */}
                 {hasSubmenu && isDropdownOpen && (
                   <div className="absolute top-full left-0 pt-2">
-                    <div className="bg-white rounded-xl shadow-xl border border-[#b4c7ec]/20 py-2 min-w-[200px] animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="bg-[#0f1316] rounded-xl shadow-xl border border-white/10 py-2 min-w-[200px] animate-in fade-in slide-in-from-top-1 duration-150">
                       {item.submenu!.map((sub) => (
                         <Link
                           key={sub.href}
                           href={sub.href}
                           onClick={() => setOpenDropdown(null)}
-                          className="block px-4 py-2.5 text-sm font-medium text-[#0a1c34] hover:bg-[#f0f3ff] hover:text-[#00b8d4] transition-colors font-[family-name:var(--font-geist-sans)]"
+                          className="block px-4 py-2.5 text-sm font-bold text-white/80 hover:bg-white/10 hover:text-white transition-colors font-[family-name:var(--font-geist-sans)]"
                         >
                           {sub.label}
                         </Link>
@@ -156,7 +157,7 @@ export function StaticHeader() {
         {/* Mobile toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-[#0a1c34] p-1"
+          className="md:hidden text-white p-1"
           aria-label="Toggle navigation menu"
           aria-expanded={mobileOpen}
         >
@@ -187,14 +188,14 @@ export function StaticHeader() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <div ref={mobileNavRef} className="md:hidden border-t border-[#b4c7ec]/20 bg-[#f9f9ff] px-4 pb-4 pt-3 space-y-1">
+        <div ref={mobileNavRef} className="md:hidden border-t border-white/10 bg-[#0f1316] px-4 pb-4 pt-3 space-y-1">
           {navLinks.map((item) => {
             const hasSubmenu = "submenu" in item && item.submenu;
             return (
               <div key={item.href}>
                 {hasSubmenu ? (
                   <>
-                    <div className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium text-[#0a1c34] hover:bg-[#e7eeff] transition-colors">
+                    <div className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-bold text-white hover:bg-[#e7eeff] transition-colors">
                       <Link href={item.href}>
                         {item.label}
                       </Link>
@@ -241,7 +242,7 @@ export function StaticHeader() {
                 ) : (
                   <Link
                     href={item.href}
-                    className="block px-3 py-2 rounded-lg text-sm font-medium text-[#0a1c34] hover:bg-[#e7eeff] transition-colors"
+                    className="block px-3 py-2 rounded-lg text-sm font-bold text-white hover:bg-[#e7eeff] transition-colors"
                   >
                     {item.label}
                   </Link>
