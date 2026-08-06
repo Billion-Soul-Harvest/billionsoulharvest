@@ -7,7 +7,7 @@ import { EventsPageTabs } from "@/features/events/admin/events-page-tabs";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Events — BSH Admin",
+  title: "Gatherings — BSH Admin",
 };
 
 export default async function EventsPage() {
@@ -40,13 +40,13 @@ export default async function EventsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Events</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Gatherings</h1>
         <Link href="/admin/events/new">
           <Button>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            New Event
+            New Gathering
           </Button>
         </Link>
       </div>

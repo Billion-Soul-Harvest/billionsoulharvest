@@ -53,7 +53,7 @@ export function EventsPageTabs({ events, displayOrderEvents, registrationCounts 
               : "border-transparent text-gray-500 hover:text-gray-700"
           }`}
         >
-          All Events
+          All Gatherings
         </button>
         <button
           onClick={() => setActiveTab("display-order")}

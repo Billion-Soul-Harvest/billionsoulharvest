@@ -94,7 +94,7 @@ export default async function EventDetailPage({ params }: Props) {
         tabs={[
           {
             id: "details",
-            label: "Event Details",
+            label: "Gathering Details",
             content: (
               <EventForm
                 event={{

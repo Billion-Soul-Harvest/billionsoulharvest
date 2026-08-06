@@ -34,11 +34,11 @@ export function EventPageCard({ eventId, externalUrl }: EventPageCardProps) {
     <div className="bg-white rounded-xl border p-6 mb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Event Page</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Gathering Page</h2>
           <p className="text-sm text-gray-500 mt-1">
             {hasUrl
-              ? "Your event page is hosted on Google Sites."
-              : "Create a Google Sites page for this event."}
+              ? "Your gathering page is hosted on Google Sites."
+              : "Create a Google Sites page for this gathering."}
           </p>
         </div>
         <div className="flex gap-3">
@@ -65,7 +65,7 @@ export function EventPageCard({ eventId, externalUrl }: EventPageCardProps) {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                Edit Event Page
+                Edit Gathering Page
               </a>
             </>
           ) : (
@@ -78,7 +78,7 @@ export function EventPageCard({ eventId, externalUrl }: EventPageCardProps) {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
               </svg>
-              Create Event Page
+              Create Gathering Page
             </a>
           )}
         </div>
@@ -87,7 +87,7 @@ export function EventPageCard({ eventId, externalUrl }: EventPageCardProps) {
       {/* Event Page URL input */}
       <div className="mt-4 pt-4 border-t">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Event Page URL <span className="text-gray-400 font-normal">(optional)</span>
+          Gathering Page URL <span className="text-gray-400 font-normal">(optional)</span>
         </label>
         <div className="flex gap-2">
           <input

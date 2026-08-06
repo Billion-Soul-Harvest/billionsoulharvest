@@ -135,7 +135,7 @@ export function EventsList({ events, registrationCounts }: Props) {
   if (events.length === 0) {
     return (
       <div className="bg-white rounded-xl border p-12 text-center text-gray-400">
-        No events yet. Create your first event.
+        No gatherings yet. Create your first gathering.
       </div>
     );
   }

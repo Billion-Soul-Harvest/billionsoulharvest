@@ -1164,7 +1164,7 @@ export function EventForm({ event }: Props) {
       )}
 
       <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900">Event Details</h3>
+        <h3 className="font-semibold text-gray-900">Gathering Details</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 space-y-1.5">
@@ -1184,9 +1184,9 @@ export function EventForm({ event }: Props) {
               className="min-h-[60px]" />
           </div>
           <div className="sm:col-span-2 space-y-1.5">
-            <Label>Event Type</Label>
+            <Label>Gathering Type</Label>
             <Select value={form.event_type} onValueChange={(v: string | null) => { if (v) updateField("event_type", v); }}>
-              <SelectTrigger><SelectValue placeholder="Select event type" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select gathering type" /></SelectTrigger>
               <SelectContent>
                 {eventTypes.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
@@ -1276,38 +1276,18 @@ export function EventForm({ event }: Props) {
       </div>
 
 
+      {/* Page Template — temporarily hidden
       {!isEditing && (
         <div className="bg-white rounded-xl border p-6 space-y-4">
           <h3 className="font-semibold text-gray-900">Page Template</h3>
-          <p className="text-sm text-gray-500">Choose a starting layout for your event pages. You can customize everything later.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {eventTemplates.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setSelectedTemplate(t.id)}
-                className={`text-left p-4 rounded-lg border-2 transition-colors ${
-                  selectedTemplate === t.id
-                    ? "border-[#29BDD6] bg-[#29BDD6]/5"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <p className="font-medium text-gray-900 text-sm">{t.name}</p>
-                <p className="text-xs text-gray-500 mt-1">{t.description}</p>
-                {t.pages.length > 0 && (
-                  <p className="text-xs text-gray-400 mt-2">
-                    {t.pages.length} page{t.pages.length > 1 ? "s" : ""}: {t.pages.map((p) => p.title).join(", ")}
-                  </p>
-                )}
-              </button>
-            ))}
-          </div>
+          ...
         </div>
       )}
+      */}
 
       <div className="flex gap-3">
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving..." : isEditing ? "Update Event" : "Create Event"}
+          {saving ? "Saving..." : isEditing ? "Update Gathering" : "Create Gathering"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Cancel
