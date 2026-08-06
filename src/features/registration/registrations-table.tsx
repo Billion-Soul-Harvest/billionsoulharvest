@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowRightLeft, Trash2, Settings2, X } from "lucide-react";
+import { Search, ChevronDown, Eye, RefreshCw, FileText, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowRightLeft, Trash2, Settings2, X, Maximize2, Minimize2, Download } from "lucide-react";
 import { ActionMenu } from "@/components/ui/action-menu";
 import { SendEmailDialog } from "@/features/emails/send-email-dialog";
 import { toast } from "sonner";
@@ -616,9 +616,20 @@ export function RegistrationsTable({ events }: Props) {
   const [bulkStatusSubOpen, setBulkStatusSubOpen] = useState(false);
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
   const [tableSettingsOpen, setTableSettingsOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     () => new Set(BASE_COLUMN_SETTINGS.filter((c) => c.defaultVisible).map((c) => c.key))
   );
+
+  // Exit fullscreen on Escape key
+  useEffect(() => {
+    if (!fullscreen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setFullscreen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [fullscreen]);
 
   // Server-side data state
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -1062,53 +1073,13 @@ export function RegistrationsTable({ events }: Props) {
 
   return (
     <div>
-      {/* Summary Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Total Registrations</p>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount.toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Confirmed</p>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-100 text-green-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{confirmedCount.toLocaleString()}</p>
-        </div>
-        {/* <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Pending</p>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-yellow-100 text-yellow-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{pendingCount.toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Cancelled</p>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-100 text-red-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{cancelledCount.toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Waitlisted</p>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{waitlistedCount.toLocaleString()}</p>
-        </div> */}
+      {/* Header */}
+      <div className="flex flex-wrap items-baseline gap-3 mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Registrations</h1>
+        <span className="text-sm text-gray-400">·</span>
+        <span className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{totalCount.toLocaleString()}</span> total</span>
+        <span className="text-sm text-gray-400">·</span>
+        <span className="text-sm text-gray-500"><span className="font-semibold text-green-600">{confirmedCount.toLocaleString()}</span> confirmed</span>
       </div>
 
       {/* Filters -- Constant Contact style */}
@@ -1159,26 +1130,20 @@ export function RegistrationsTable({ events }: Props) {
           onChange={setCountryFilter}
         />
 
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <Button variant="outline" onClick={() => setTableSettingsOpen(true)} className="rounded-lg h-[42px]">
-            <Settings2 className="w-4 h-4 mr-2" />
-            Table Settings
+        <div className="flex items-center gap-1.5 sm:ml-auto">
+          <Button variant="outline" onClick={() => setTableSettingsOpen(true)} className="rounded-lg h-[42px] w-[42px] p-0" title="Table Settings">
+            <Settings2 className="w-4 h-4" />
           </Button>
-          <Button variant="outline" onClick={exportCSV} className="rounded-lg h-[42px]">
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Export CSV
+          <Button variant="outline" onClick={exportCSV} className="rounded-lg h-[42px] w-[42px] p-0" title="Export CSV">
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setFullscreen(true)}
+            className="rounded-lg h-[42px] w-[42px] p-0 hidden md:inline-flex"
+            title="Fullscreen"
+          >
+            <Maximize2 className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -1276,9 +1241,33 @@ export function RegistrationsTable({ events }: Props) {
         </div>
       )}
 
-      {/* AG Grid Table — hidden on mobile */}
-      <div className="hidden md:block bg-white rounded-xl border overflow-hidden">
-        <div style={{ height: 600, width: "100%" }}>
+      {/* AG Grid Table — hidden on mobile, fullscreen-capable */}
+      <div
+        className={
+          fullscreen
+            ? "fixed inset-0 z-50 bg-white flex flex-col"
+            : "hidden md:block bg-white rounded-xl border overflow-hidden"
+        }
+      >
+        {/* Fullscreen header bar */}
+        {fullscreen && (
+          <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50 shrink-0">
+            <h2 className="text-sm font-semibold text-gray-700">Registrations</h2>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setTableSettingsOpen(true)}>
+                <Settings2 className="w-4 h-4 mr-1" /> Settings
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportCSV}>
+                Export CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setFullscreen(false)} title="Exit fullscreen (Esc)">
+                <Minimize2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div style={fullscreen ? { flex: 1 } : { height: 600, width: "100%" }}>
           <AgGridProvider modules={[AllCommunityModule]}>
             <AgGridReact<Registration>
               ref={gridRef}
@@ -1302,14 +1291,16 @@ export function RegistrationsTable({ events }: Props) {
           </AgGridProvider>
         </div>
 
-        {/* Pagination Footer — desktop */}
-        <PaginationFooter
-          page={page}
-          pageSize={pageSize}
-          totalCount={totalCount}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-        />
+        {/* Pagination Footer */}
+        <div className="shrink-0">
+          <PaginationFooter
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          />
+        </div>
       </div>
 
       {/* Mobile Card List — shown only on mobile */}
