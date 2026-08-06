@@ -64,17 +64,17 @@ export default function HomePage() {
       </header>
 
       {/* ── 2033 Endorsing Partners ── */}
-      <section className="py-20 md:py-[100px] bg-[#0a0a0a] border-t border-white/5">
+      <section className="py-20 md:py-[100px] bg-white">
         <div className="max-w-[1280px] mx-auto px-4 md:px-8">
           <ScrollReveal>
             <div className="text-center mb-4">
               <p className="font-[family-name:var(--font-geist-sans)] text-xs font-semibold tracking-[0.2em] uppercase text-[#c8e64a] mb-3">
                 United in Mission
               </p>
-              <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-white tracking-[-0.02em]">
+              <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#1a1a1a] tracking-[-0.02em]">
                 2033 Endorsing Partners
               </h2>
-              <p className="font-[family-name:var(--font-jakarta)] text-lg text-white/50 mt-4">
+              <p className="font-[family-name:var(--font-jakarta)] text-lg text-[#555] mt-4">
                 One Mission. Many Voices. A Billion Souls.
               </p>
             </div>
