@@ -518,6 +518,79 @@ const COLUMN_SETTINGS = [
 
 type ColumnKey = (typeof COLUMN_SETTINGS)[number]["key"];
 
+function PaginationFooter({
+  page,
+  pageSize,
+  totalCount,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+}) {
+  const totalPages = Math.ceil(totalCount / pageSize);
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-gray-600">
+      <div className="flex items-center gap-2">
+        <span className="hidden sm:inline">Rows per page:</span>
+        <select
+          className="border rounded px-2 py-1 text-sm bg-white"
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+        >
+          {[10, 25, 50, 100].map((size) => (
+            <option key={size} value={size}>{size}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center gap-2 sm:gap-4">
+        <span className="text-xs sm:text-sm">
+          {totalCount === 0
+            ? "No rows"
+            : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, totalCount)} of ${totalCount}`}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(1)}
+            disabled={page <= 1}
+            title="First page"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            disabled={page <= 1}
+            title="Previous page"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages}
+            title="Next page"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <button
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={() => onPageChange(totalPages)}
+            disabled={page >= totalPages}
+            title="Last page"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Main Component ---
 export function RegistrationsTable({ events }: Props) {
   const [search, setSearch] = useState("");
@@ -1134,8 +1207,8 @@ export function RegistrationsTable({ events }: Props) {
         </div>
       )}
 
-      {/* AG Grid Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
+      {/* AG Grid Table — hidden on mobile */}
+      <div className="hidden md:block bg-white rounded-xl border overflow-hidden">
         <div style={{ height: 600, width: "100%" }}>
           <AgGridProvider modules={[AllCommunityModule]}>
             <AgGridReact<Registration>
@@ -1160,65 +1233,66 @@ export function RegistrationsTable({ events }: Props) {
           </AgGridProvider>
         </div>
 
-        {/* Pagination Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <span>Rows per page:</span>
-            <select
-              className="border rounded px-2 py-1 text-sm bg-white"
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setPage(1);
-              }}
-            >
-              {[10, 25, 50, 100].map((size) => (
-                <option key={size} value={size}>{size}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-4">
-            <span>
-              {totalCount === 0
-                ? "No rows"
-                : `${(page - 1) * pageSize + 1} to ${Math.min(page * pageSize, totalCount)} of ${totalCount}`}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                onClick={() => setPage(1)}
-                disabled={page <= 1}
-                title="First page"
+        {/* Pagination Footer — desktop */}
+        <PaginationFooter
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        />
+      </div>
+
+      {/* Mobile Card List — shown only on mobile */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="text-center text-gray-400 py-12">Loading...</div>
+        ) : registrations.length === 0 ? (
+          <div className="text-center text-gray-400 py-12">No registrations found</div>
+        ) : (
+          registrations.map((reg) => {
+            const fullName = `${reg.contact?.first_name ?? ""} ${reg.contact?.last_name ?? ""}`.trim();
+            const location = [reg.city, reg.country].filter(Boolean).join(", ");
+            return (
+              <div
+                key={reg.id}
+                className="bg-white rounded-xl border p-4 space-y-2 active:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => setSelectedRegistration(reg)}
               >
-                <ChevronsLeft className="h-4 w-4" />
-              </button>
-              <button
-                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                title="Previous page"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page * pageSize >= totalCount}
-                title="Next page"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                onClick={() => setPage(Math.ceil(totalCount / pageSize))}
-                disabled={page * pageSize >= totalCount}
-                title="Last page"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{fullName || "—"}</p>
+                    <p className="text-sm text-gray-500 truncate">{reg.contact?.email || "—"}</p>
+                  </div>
+                  <Badge variant="secondary" className={`${statusColor[reg.status] ?? ""} shrink-0 capitalize`}>
+                    {reg.status}
+                  </Badge>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                  {reg.event?.title && (
+                    <span className="truncate max-w-[200px]">{reg.event.title}</span>
+                  )}
+                  {location && <span>{location}</span>}
+                  <span>{new Date(reg.created_at).toLocaleDateString()}</span>
+                </div>
+                {(reg.church_name || reg.contact?.church_name) && (
+                  <p className="text-xs text-gray-400 truncate">
+                    {reg.church_name || reg.contact?.church_name}
+                  </p>
+                )}
+              </div>
+            );
+          })
+        )}
+
+        {/* Pagination Footer — mobile */}
+        <PaginationFooter
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        />
       </div>
 
       {/* Detail Slide-out Panel */}
