@@ -7,7 +7,7 @@ import type { EventStatus, RegistrationConfig } from "@/shared/types/database";
 import { DeleteEventButton } from "@/features/events/admin/delete-event-button";
 import { EventPageCard } from "./event-page-card";
 import { EventDetailTabs } from "./event-detail-tabs";
-import { RegistrationFieldsManager } from "@/features/events/admin/registration-fields-manager";
+// import { RegistrationFieldsManager } from "@/features/events/admin/registration-fields-manager";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -96,92 +96,36 @@ export default async function EventDetailPage({ params }: Props) {
             id: "details",
             label: "Event Details",
             content: (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <EventForm
-                    event={{
-                      id: event.id,
-                      title: event.title,
-                      slug: event.slug,
-                      description: event.description ?? "",
-                      event_type: event.event_type ?? "conference",
-                      location: event.location ?? "",
-                      city: event.city ?? "",
-                      country: event.country ?? "",
-                      start_date: event.start_date ?? "",
-                      end_date: event.end_date ?? "",
-                      status: event.status as EventStatus,
-                      address: event.address ?? "",
-                      region: event.region ?? "",
-                      postal_code: event.postal_code ?? "",
-                      max_registrations: event.max_registrations?.toString() ?? "",
-                      banner_url: event.banner_url ?? "",
-                      is_external: event.is_external ?? false,
-                      external_url: event.external_url ?? "",
-                      registration_config: event.registration_config as RegistrationConfig | null,
-                    }}
-                  />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Registrations ({registrations?.length ?? 0})
-                  </h2>
-                  <div className="bg-white rounded-xl border overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-gray-50 border-b">
-                            <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                            <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-                            <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                            <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {registrations && registrations.length > 0 ? registrations.map((reg) => (
-                            <tr key={reg.id} className="hover:bg-gray-50/50">
-                              <td className="px-4 py-3">
-                                <Link href={`/admin/contacts/${reg.contact_id}`} className="font-medium text-gray-900 hover:text-blue-700">
-                                  {reg.contact?.first_name} {reg.contact?.last_name}
-                                </Link>
-                              </td>
-                              <td className="px-4 py-3 text-gray-600">{reg.contact?.email}</td>
-                              <td className="px-4 py-3">
-                                <Badge variant="secondary" className={
-                                  reg.status === "confirmed" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                                }>{reg.status}</Badge>
-                              </td>
-                              <td className="px-4 py-3 text-gray-400 text-xs">
-                                {new Date(reg.created_at).toLocaleDateString()}
-                              </td>
-                            </tr>
-                          )) : (
-                            <tr>
-                              <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
-                                No registrations yet
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ),
-          },
-          {
-            id: "registration",
-            label: "Registration",
-            content: (
-              <RegistrationFieldsManager
-                eventId={event.id}
-                initialConfig={event.registration_config as RegistrationConfig | null}
-                slug={event.slug}
-                bannerUrl={event.banner_url}
+              <EventForm
+                event={{
+                  id: event.id,
+                  title: event.title,
+                  slug: event.slug,
+                  description: event.description ?? "",
+                  event_type: event.event_type ?? "conference",
+                  location: event.location ?? "",
+                  city: event.city ?? "",
+                  country: event.country ?? "",
+                  start_date: event.start_date ?? "",
+                  end_date: event.end_date ?? "",
+                  status: event.status as EventStatus,
+                  address: event.address ?? "",
+                  region: event.region ?? "",
+                  postal_code: event.postal_code ?? "",
+                  max_registrations: event.max_registrations?.toString() ?? "",
+                  banner_url: event.banner_url ?? "",
+                  is_external: event.is_external ?? false,
+                  external_url: event.external_url ?? "",
+                  registration_config: event.registration_config as RegistrationConfig | null,
+                }}
               />
             ),
           },
+          // {
+          //   id: "registration",
+          //   label: "Registration",
+          //   — temporarily hidden
+          // },
         ]}
       />
     </div>
