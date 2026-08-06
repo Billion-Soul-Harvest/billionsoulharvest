@@ -1738,10 +1738,31 @@ export function ContactsListClient({
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-wrap items-baseline gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
         <span className="text-sm text-gray-400">&middot;</span>
         <span className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{totalCount.toLocaleString()}</span> total</span>
+        <div className="flex items-center gap-1.5 ml-auto">
+          <CreateContactDialog
+            listNames={listNames}
+            existingCustomFields={existingCustomFields}
+            onSuccess={() => router.refresh()}
+          />
+          <Button variant="outline" onClick={() => setSettingsOpen(true)} className="rounded-lg h-[42px] w-[42px] p-0" title="Table Settings">
+            <Settings2 className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" onClick={exportCSV} className="rounded-lg h-[42px] w-[42px] p-0" title="Export CSV">
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setFullscreen(true)}
+            className="rounded-lg h-[42px] w-[42px] p-0 hidden md:inline-flex"
+            title="Fullscreen"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Filters — Constant Contact style */}
@@ -1797,27 +1818,6 @@ export function ContactsListClient({
           countLabel="events"
         />
 
-        <div className="flex items-center gap-1.5 sm:ml-auto">
-          <CreateContactDialog
-            listNames={listNames}
-            existingCustomFields={existingCustomFields}
-            onSuccess={() => router.refresh()}
-          />
-          <Button variant="outline" onClick={() => setSettingsOpen(true)} className="rounded-lg h-[42px] w-[42px] p-0" title="Table Settings">
-            <Settings2 className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" onClick={exportCSV} className="rounded-lg h-[42px] w-[42px] p-0" title="Export CSV">
-            <Download className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setFullscreen(true)}
-            className="rounded-lg h-[42px] w-[42px] p-0 hidden md:inline-flex"
-            title="Fullscreen"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </Button>
-        </div>
       </div>
 
       {/* Applied filter chips */}
