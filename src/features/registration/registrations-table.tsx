@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -504,8 +504,8 @@ function DetailRow({
   );
 }
 
-// Column visibility config for Table Settings
-const COLUMN_SETTINGS = [
+// Base (static) column settings — always available
+const BASE_COLUMN_SETTINGS: { key: string; label: string; defaultVisible: boolean }[] = [
   { key: "name", label: "Name", defaultVisible: true },
   { key: "email", label: "Email", defaultVisible: true },
   { key: "phone", label: "Phone", defaultVisible: true },
@@ -514,9 +514,16 @@ const COLUMN_SETTINGS = [
   { key: "event", label: "Event", defaultVisible: true },
   { key: "status", label: "Status", defaultVisible: true },
   { key: "date", label: "Date", defaultVisible: true },
-] as const;
+];
 
-type ColumnKey = (typeof COLUMN_SETTINGS)[number]["key"];
+// Format a camelCase/snake_case key into a human-readable label
+function formatFieldLabel(key: string): string {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/_/g, " ")
+    .replace(/^\w/, (c) => c.toUpperCase())
+    .trim();
+}
 
 function PaginationFooter({
   page,
@@ -609,8 +616,8 @@ export function RegistrationsTable({ events }: Props) {
   const [bulkStatusSubOpen, setBulkStatusSubOpen] = useState(false);
   const actionsDropdownRef = useRef<HTMLDivElement>(null);
   const [tableSettingsOpen, setTableSettingsOpen] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
-    () => new Set(COLUMN_SETTINGS.filter((c) => c.defaultVisible).map((c) => c.key))
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
+    () => new Set(BASE_COLUMN_SETTINGS.filter((c) => c.defaultVisible).map((c) => c.key))
   );
 
   // Server-side data state
@@ -671,6 +678,29 @@ export function RegistrationsTable({ events }: Props) {
   useEffect(() => {
     fetchRegistrations();
   }, [fetchRegistrations]);
+
+  // Discover custom field keys from all loaded registrations
+  const customFieldKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const reg of registrations) {
+      if (reg.custom_fields) {
+        for (const k of Object.keys(reg.custom_fields)) {
+          keys.add(k);
+        }
+      }
+    }
+    return Array.from(keys).sort();
+  }, [registrations]);
+
+  // Combined column settings: base + custom fields
+  const allColumnSettings = useMemo(() => [
+    ...BASE_COLUMN_SETTINGS,
+    ...customFieldKeys.map((key) => ({
+      key: `cf_${key}`,
+      label: formatFieldLabel(key),
+      defaultVisible: false,
+    })),
+  ], [customFieldKeys]);
 
   const confirmedCount = stats.confirmed;
   // const pendingCount = stats.pending;
@@ -867,81 +897,101 @@ export function RegistrationsTable({ events }: Props) {
   );
 
   // --- AG Grid column definitions ---
-  const columnDefs = useMemo<ColDef<Registration>[]>(() => [
-    {
-      colId: "name",
-      headerName: "Name",
-      valueGetter: (p) => `${p.data?.contact?.first_name ?? ""} ${p.data?.contact?.last_name ?? ""}`.trim(),
-      minWidth: 130,
-      flex: 1,
-      filter: true,
-      hide: !visibleColumns.has("name"),
-    },
-    {
-      colId: "email",
-      headerName: "Email",
-      valueGetter: (p) => p.data?.contact?.email ?? "",
-      minWidth: 160,
-      flex: 1,
-      filter: true,
-      hide: !visibleColumns.has("email"),
-    },
-    {
-      colId: "phone",
-      headerName: "Phone",
-      valueGetter: (p) => p.data?.contact?.phone || "\u2014",
+  const columnDefs = useMemo<ColDef<Registration>[]>(() => {
+    const baseCols: ColDef<Registration>[] = [
+      {
+        colId: "name",
+        headerName: "Name",
+        valueGetter: (p) => `${p.data?.contact?.first_name ?? ""} ${p.data?.contact?.last_name ?? ""}`.trim(),
+        minWidth: 130,
+        flex: 1,
+        filter: true,
+        hide: !visibleColumns.has("name"),
+      },
+      {
+        colId: "email",
+        headerName: "Email",
+        valueGetter: (p) => p.data?.contact?.email ?? "",
+        minWidth: 160,
+        flex: 1,
+        filter: true,
+        hide: !visibleColumns.has("email"),
+      },
+      {
+        colId: "phone",
+        headerName: "Phone",
+        valueGetter: (p) => p.data?.contact?.phone || "\u2014",
+        minWidth: 120,
+        flex: 0.8,
+        filter: true,
+        hide: !visibleColumns.has("phone"),
+      },
+      {
+        colId: "church",
+        headerName: "Church",
+        valueGetter: (p) => p.data?.church_name || p.data?.contact?.church_name || "\u2014",
+        minWidth: 120,
+        flex: 1,
+        filter: true,
+        hide: !visibleColumns.has("church"),
+      },
+      {
+        colId: "location",
+        headerName: "Location",
+        valueGetter: (p) => [p.data?.city, p.data?.country].filter(Boolean).join(", ") || "\u2014",
+        minWidth: 110,
+        flex: 0.8,
+        filter: true,
+        hide: !visibleColumns.has("location"),
+      },
+      {
+        colId: "event",
+        headerName: "Event",
+        valueGetter: (p) => p.data?.event?.title ?? "",
+        minWidth: 140,
+        flex: 1,
+        filter: true,
+        hide: !visibleColumns.has("event"),
+      },
+      {
+        colId: "status",
+        headerName: "Status",
+        field: "status",
+        cellRenderer: StatusCellRenderer,
+        minWidth: 100,
+        flex: 0.6,
+        filter: true,
+        hide: !visibleColumns.has("status"),
+      },
+      {
+        colId: "date",
+        headerName: "Date",
+        valueGetter: (p) => p.data ? new Date(p.data.created_at).toLocaleDateString() : "",
+        minWidth: 90,
+        flex: 0.6,
+        filter: true,
+        hide: !visibleColumns.has("date"),
+      },
+    ];
+
+    // Dynamic custom field columns (not sortable server-side since they're in JSONB)
+    const customCols: ColDef<Registration>[] = customFieldKeys.map((key) => ({
+      colId: `cf_${key}`,
+      headerName: formatFieldLabel(key),
+      valueGetter: (p: { data?: Registration }) => {
+        const val = p.data?.custom_fields?.[key];
+        if (val == null) return "\u2014";
+        if (typeof val === "boolean") return val ? "Yes" : "No";
+        return String(val);
+      },
       minWidth: 120,
       flex: 0.8,
       filter: true,
-      hide: !visibleColumns.has("phone"),
-    },
-    {
-      colId: "church",
-      headerName: "Church",
-      valueGetter: (p) => p.data?.church_name || p.data?.contact?.church_name || "\u2014",
-      minWidth: 120,
-      flex: 1,
-      filter: true,
-      hide: !visibleColumns.has("church"),
-    },
-    {
-      colId: "location",
-      headerName: "Location",
-      valueGetter: (p) => [p.data?.city, p.data?.country].filter(Boolean).join(", ") || "\u2014",
-      minWidth: 110,
-      flex: 0.8,
-      filter: true,
-      hide: !visibleColumns.has("location"),
-    },
-    {
-      colId: "event",
-      headerName: "Event",
-      valueGetter: (p) => p.data?.event?.title ?? "",
-      minWidth: 140,
-      flex: 1,
-      filter: true,
-      hide: !visibleColumns.has("event"),
-    },
-    {
-      colId: "status",
-      headerName: "Status",
-      field: "status",
-      cellRenderer: StatusCellRenderer,
-      minWidth: 100,
-      flex: 0.6,
-      filter: true,
-      hide: !visibleColumns.has("status"),
-    },
-    {
-      colId: "date",
-      headerName: "Date",
-      valueGetter: (p) => p.data ? new Date(p.data.created_at).toLocaleDateString() : "",
-      minWidth: 90,
-      flex: 0.6,
-      filter: true,
-      hide: !visibleColumns.has("date"),
-    },
-    {
+      sortable: false,
+      hide: !visibleColumns.has(`cf_${key}`),
+    }));
+
+    const actionCol: ColDef<Registration> = {
       headerName: "",
       cellRenderer: ActionsCellRenderer,
       minWidth: 60,
@@ -950,8 +1000,10 @@ export function RegistrationsTable({ events }: Props) {
       filter: false,
       resizable: false,
       pinned: "right" as const,
-    },
-  ], [visibleColumns]);
+    };
+
+    return [...baseCols, ...customCols, actionCol];
+  }, [visibleColumns, customFieldKeys]);
 
   const defaultColDef = useMemo<ColDef>(() => ({
     sortable: true,
@@ -1280,6 +1332,22 @@ export function RegistrationsTable({ events }: Props) {
                     {reg.church_name || reg.contact?.church_name}
                   </p>
                 )}
+                {/* Show visible custom fields */}
+                {reg.custom_fields && customFieldKeys.filter((k) => visibleColumns.has(`cf_${k}`)).length > 0 && (
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 pt-1 border-t border-gray-100">
+                    {customFieldKeys
+                      .filter((k) => visibleColumns.has(`cf_${k}`) && reg.custom_fields?.[k] != null)
+                      .map((k) => {
+                        const val = reg.custom_fields![k];
+                        const display = typeof val === "boolean" ? (val ? "Yes" : "No") : String(val);
+                        return (
+                          <span key={k}>
+                            <span className="text-gray-400">{formatFieldLabel(k)}:</span> {display}
+                          </span>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
             );
           })
@@ -1373,29 +1441,35 @@ export function RegistrationsTable({ events }: Props) {
               </button>
             </div>
             <div className="px-6 py-4 space-y-1 overflow-y-auto" style={{ maxHeight: "calc(100vh - 73px)" }}>
-              {COLUMN_SETTINGS.map((col) => (
-                <label
-                  key={col.key}
-                  className="flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={visibleColumns.has(col.key)}
-                    onChange={() => {
-                      setVisibleColumns((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(col.key)) {
-                          if (next.size > 1) next.delete(col.key);
-                        } else {
-                          next.add(col.key);
-                        }
-                        return next;
-                      });
-                    }}
-                    className="w-4.5 h-4.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
-                  />
-                  <span className="text-sm text-gray-700">{col.label}</span>
-                </label>
+              {allColumnSettings.map((col, i) => (
+                <React.Fragment key={col.key}>
+                  {i === BASE_COLUMN_SETTINGS.length && customFieldKeys.length > 0 && (
+                    <div className="pt-3 pb-1 px-2">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Custom Fields</p>
+                    </div>
+                  )}
+                  <label
+                    className="flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.has(col.key)}
+                      onChange={() => {
+                        setVisibleColumns((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(col.key)) {
+                            if (next.size > 1) next.delete(col.key);
+                          } else {
+                            next.add(col.key);
+                          }
+                          return next;
+                        });
+                      }}
+                      className="w-4.5 h-4.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                    />
+                    <span className="text-sm text-gray-700">{col.label}</span>
+                  </label>
+                </React.Fragment>
               ))}
             </div>
           </div>
