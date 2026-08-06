@@ -333,7 +333,7 @@ function FilterDropdown({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[160px] ${
+        className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[130px] ${
           open
             ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
             : value !== "all"
@@ -429,7 +429,7 @@ function SearchableFilterDropdown({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[120px] ${
+        className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors ${
           open
             ? isRose ? "border-rose-300 ring-2 ring-rose-100 text-gray-900" : "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
             : hasSelection
@@ -650,7 +650,7 @@ function TagFilterDropdown({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors min-w-[120px] ${
+        className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors ${
           open
             ? "border-cyan-300 ring-2 ring-cyan-100 text-gray-900"
             : hasSelection
@@ -1745,7 +1745,7 @@ export function ContactsListClient({
       </div>
 
       {/* Filters — Constant Contact style */}
-      <div className={`flex flex-wrap items-center gap-3 mb-4 transition-opacity ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
+      <div className={`flex flex-wrap items-center gap-2 mb-4 transition-opacity ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
         {/* Search field picker + input */}
         <div className="flex">
           <FilterDropdown
@@ -1758,7 +1758,7 @@ export function ContactsListClient({
             defaultValue={search}
             onSearch={(v) => navigate({ search: v, page: "1" })}
             placeholder={`Search by ${searchFieldOptions.find((o) => o.value === searchField)?.label.toLowerCase() ?? "name or email"}...`}
-            className="rounded-l-none border-gray-200 pr-10 h-[42px] flex-1 min-w-[220px] -ml-px"
+            className="rounded-l-none border-gray-200 pr-10 h-[42px] flex-1 min-w-[140px] w-[180px] -ml-px"
           />
         </div>
 
