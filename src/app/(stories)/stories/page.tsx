@@ -13,12 +13,10 @@ export const metadata: Metadata = {
 };
 
 function extractFirstImage(contentHtml: string | null, galleryImages: { url: string }[] | null): string | null {
-  // Try content_html first
   if (contentHtml) {
     const match = contentHtml.match(/<img[^>]+src="([^"]+)"/);
     if (match) return match[1];
   }
-  // Fall back to first gallery image
   if (galleryImages && galleryImages.length > 0) {
     return galleryImages[0].url;
   }
@@ -27,11 +25,9 @@ function extractFirstImage(contentHtml: string | null, galleryImages: { url: str
 
 function extractTextSnippet(contentHtml: string | null, maxLength = 150): string | null {
   if (!contentHtml) return null;
-  // Strip HTML tags
   const text = contentHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   if (!text) return null;
   if (text.length <= maxLength) return text;
-  // Cut at last space before maxLength
   const truncated = text.slice(0, maxLength);
   const lastSpace = truncated.lastIndexOf(" ");
   return (lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated) + "...";
@@ -47,158 +43,287 @@ export default async function StoriesListingPage() {
     .order("display_order", { ascending: true, nullsFirst: false })
     .order("published_at", { ascending: false });
 
+  const storyCount = stories?.length ?? 0;
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#f9f9ff] text-[#0a1c34]">
+    <div className="min-h-screen flex flex-col bg-[#0a0a0a] text-white">
       <StaticHeader />
       <main className="flex-1">
-        {/* Hero */}
-        <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
+        {/* ── Hero ── */}
+        <section
+          className="relative overflow-hidden flex flex-col justify-end"
+          style={{ minHeight: "74vh" }}
+        >
           <Image
-            src="/media-hero-bg.webp"
+            src="/hero/home/media-hero-bg.webp"
             alt=""
             fill
             className="object-cover"
+            style={{ objectPosition: "center 45%" }}
             priority
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(13,34,63,0.8) 20%, rgba(13,34,63,0.45) 100%)" }} />
-          <div className="max-w-4xl mx-auto text-center relative z-10 px-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 font-[family-name:var(--font-jakarta)]">
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to top, #0a0a0a 2%, rgba(10,10,10,0.7) 35%, rgba(10,10,10,0.15) 70%, transparent 100%)",
+            }}
+          />
+
+          <div className="relative z-10 px-4 md:px-10 pb-[60px] pt-[190px] flex flex-col gap-7">
+            <div className="flex items-center">
+              <span className="inline-block bg-[#0a1928]/80 border border-[#1ecdec]/50 rounded-full px-6 py-2.5 font-[family-name:var(--font-geist-mono)] text-[12px] font-medium tracking-[0.2em] uppercase text-[#1ecdec]">
+                From the Field
+              </span>
+            </div>
+
+            <h1
+              className="font-[family-name:var(--font-jakarta)] text-white uppercase m-0"
+              style={{
+                fontWeight: 900,
+                fontSize: "clamp(52px, 9vw, 168px)",
+                lineHeight: 0.82,
+                letterSpacing: "-0.06em",
+                textShadow: "0 4px 40px rgba(10,10,10,0.55)",
+              }}
+            >
               Stories
             </h1>
-            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Discover stories of impact and transformation from the Billion Soul Harvest movement.
+
+            <p
+              className="font-[family-name:var(--font-jakarta)] m-0 max-w-[58ch] text-pretty"
+              style={{
+                paddingTop: "26px",
+                borderTop: "2px solid rgba(255,255,255,0.32)",
+                fontSize: "17px",
+                lineHeight: 1.7,
+                color: "rgba(255,255,255,0.93)",
+              }}
+            >
+              Discover stories of impact and transformation from the Billion
+              Soul Harvest movement.
             </p>
           </div>
         </section>
 
-        {/* Stories Grid */}
-        <section className="py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+        {/* ── Latest Stories ── */}
+        <section className="py-[110px] bg-[#f5f7fa] text-[#0a0a0a]">
+          <div className="max-w-[1360px] mx-auto px-4 md:px-10 flex flex-col gap-11">
+            <div
+              className="flex flex-wrap items-end justify-between gap-5 pb-[22px]"
+              style={{ borderBottom: "2px solid #0a0a0a" }}
+            >
+              <h2
+                className="font-[family-name:var(--font-jakarta)] uppercase m-0"
+                style={{
+                  fontWeight: 900,
+                  fontSize: "clamp(36px, 4.8vw, 80px)",
+                  lineHeight: 0.88,
+                  letterSpacing: "-0.05em",
+                }}
+              >
+                Latest Stories
+              </h2>
+              <p className="font-[family-name:var(--font-geist-mono)] text-[12.5px] font-medium tracking-[0.16em] uppercase text-[#506b9f] m-0">
+                {storyCount} {storyCount === 1 ? "story" : "stories"}
+              </p>
+            </div>
+
             {stories && stories.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div
+                className="grid gap-6"
+                style={{
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                }}
+              >
                 {stories.map((story) => {
                   const previewImage = extractFirstImage(
                     story.content_html,
                     story.gallery_images as { url: string }[] | null
                   );
-                  const snippet = extractTextSnippet(story.content_html) || story.description;
+                  const snippet = extractTextSnippet(story.content_html, 120) || story.description;
 
                   return (
                     <Link
                       key={story.id}
                       href={`/stories/${story.slug}`}
-                      className="group bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+                      className="flex flex-col bg-white border border-[#0a0a0a]/20 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(10,10,10,0.18)] shadow-[0_2px_12px_rgba(10,10,10,0.08)]"
                     >
-                      {previewImage ? (
-                        <div className="aspect-[16/9] relative overflow-hidden">
+                      {/* Card image */}
+                      <span
+                        className="relative block overflow-hidden"
+                        style={{ aspectRatio: "3/2", backgroundColor: "#e8ecf1" }}
+                      >
+                        {previewImage ? (
                           <Image
                             src={previewImage}
                             alt={story.title}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-cover"
                             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           />
-                        </div>
-                      ) : (
-                        <div className="aspect-[16/9] bg-gradient-to-br from-[#0d223f] to-[#29BDD6] flex items-center justify-center">
-                          <svg className="w-12 h-12 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        </div>
-                      )}
-                      <div className="p-6">
-                        <h2 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-[#29BDD6] transition-colors line-clamp-2">
-                          {story.title}
-                        </h2>
-                        {snippet && (
-                          <p className="text-sm text-gray-500 line-clamp-3 mb-3">{snippet}</p>
+                        ) : (
+                          <span className="absolute inset-0 bg-gradient-to-br from-[#0d1520] to-[#1ecdec]/20 flex items-center justify-center">
+                            <svg className="w-10 h-10 text-white/25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                          </span>
                         )}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 text-xs text-gray-400">
-                            {story.author && <span>{story.author}</span>}
-                            {story.author && story.published_at && <span>&middot;</span>}
-                            {story.published_at && (
-                              <span>{new Date(story.published_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
-                            )}
-                          </div>
-                          <span className="text-xs font-medium text-[#29BDD6] group-hover:underline">
+                      </span>
+
+                      {/* Card body */}
+                      <span className="flex flex-col flex-1 gap-3 p-6">
+                        <span
+                          className="font-[family-name:var(--font-jakarta)]"
+                          style={{
+                            fontWeight: 800,
+                            fontSize: "18px",
+                            lineHeight: 1.25,
+                            letterSpacing: "-0.02em",
+                            color: "#0a0a0a",
+                          }}
+                        >
+                          {story.title}
+                        </span>
+                        {snippet && (
+                          <span
+                            className="font-[family-name:var(--font-jakarta)]"
+                            style={{
+                              fontSize: "14.5px",
+                              lineHeight: 1.6,
+                              color: "#505870",
+                            }}
+                          >
+                            {snippet}
+                          </span>
+                        )}
+
+                        {/* Card footer */}
+                        <span
+                          className="flex items-center justify-between gap-4 mt-auto pt-4"
+                          style={{
+                            borderTop: "1px solid rgba(10,10,10,0.1)",
+                          }}
+                        >
+                          <span
+                            className="font-[family-name:var(--font-geist-mono)]"
+                            style={{
+                              fontSize: "11.5px",
+                              letterSpacing: "0.04em",
+                              color: "#506b9f",
+                            }}
+                          >
+                            {story.author && <>{story.author}</>}
+                            {story.author && story.published_at && <> · </>}
+                            {story.published_at && new Date(story.published_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                          </span>
+                          <span
+                            className="font-[family-name:var(--font-jakarta)] font-[700] text-[#1ecdec]"
+                            style={{
+                              fontSize: "13px",
+                              letterSpacing: "0.02em",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
                             Read More
                           </span>
-                        </div>
-                      </div>
+                        </span>
+                      </span>
                     </Link>
                   );
                 })}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-24 px-4">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0d223f]/10 to-[#29BDD6]/10 flex items-center justify-center mb-6">
-                  <svg className="w-10 h-10 text-[#29BDD6]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-[#0d223f] mb-2 font-[family-name:var(--font-jakarta)]">
-                  Stories Coming Soon
-                </h2>
-                <p className="text-gray-400 text-center max-w-md">
-                  We&apos;re preparing inspiring stories of impact and transformation from around the world. Check back soon to read about what God is doing through the Billion Soul Harvest movement.
+                <p className="font-[family-name:var(--font-jakarta)] text-[#505870] text-[17px]">
+                  Stories coming soon. Check back for inspiring stories of impact and transformation.
                 </p>
-                <div className="flex items-center gap-2 mt-8">
-                  <span className="w-2 h-2 rounded-full bg-[#29BDD6]/30 animate-pulse" />
-                  <span className="w-2 h-2 rounded-full bg-[#29BDD6]/50 animate-pulse [animation-delay:300ms]" />
-                  <span className="w-2 h-2 rounded-full bg-[#29BDD6]/30 animate-pulse [animation-delay:600ms]" />
-                </div>
               </div>
             )}
           </div>
         </section>
 
-        {/* Resources */}
-        <section className="py-20 md:py-[100px] bg-white">
-          <div className="max-w-6xl mx-auto px-4 md:px-8">
-            <div className="mb-12">
-              <span className="text-[#00b8d4] text-xs font-semibold font-[family-name:var(--font-geist-sans)] uppercase tracking-widest">
-                Downloads, Brochures, Guides &amp; Presentations
-              </span>
-              <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#0d223f] mt-4 tracking-[-0.02em]">
+        {/* ── Resources ── */}
+        <section className="py-[110px] bg-[#0a0a0a]">
+          <div className="max-w-[1360px] mx-auto px-4 md:px-10 flex flex-col gap-11">
+            <div
+              className="flex flex-wrap items-end justify-between gap-5 pb-[22px]"
+              style={{ borderBottom: "2px solid rgba(255,255,255,0.3)" }}
+            >
+              <h2
+                className="font-[family-name:var(--font-jakarta)] uppercase text-white m-0"
+                style={{
+                  fontWeight: 900,
+                  fontSize: "clamp(36px, 4.8vw, 80px)",
+                  lineHeight: 0.88,
+                  letterSpacing: "-0.05em",
+                }}
+              >
                 Resources
               </h2>
+              <p className="font-[family-name:var(--font-geist-mono)] text-[12.5px] font-medium tracking-[0.16em] uppercase text-[#1ecdec] m-0 max-w-[34ch]">
+                Downloads, Brochures, Guides &amp; Presentations
+              </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                borderTop: "1px solid rgba(255,255,255,0.16)",
+                borderLeft: "1px solid rgba(255,255,255,0.16)",
+              }}
+            >
               {[
-                { label: "Downloads", icon: (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                )},
-                { label: "Brochures", icon: (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                )},
-                { label: "Guides", icon: (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                )},
-                { label: "Presentations", icon: (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21l5-2.5L17 21M7 3l5 2.5L17 3m-5 2.5V21M3 7h18M3 17h18M3 7v10h18V7" />
-                  </svg>
-                )},
+                { label: "Downloads", number: "01" },
+                { label: "Brochures", number: "02" },
+                { label: "Guides", number: "03" },
+                { label: "Presentations", number: "04" },
               ].map((cat) => (
                 <div
                   key={cat.label}
-                  className="group bg-[#f9f9ff] rounded-2xl border border-[#b4c7ec]/20 p-6 hover:border-[#00b8d4]/30 hover:shadow-md transition-all duration-300 flex flex-col items-center text-center"
+                  className="flex flex-col bg-[#0a0a0a]"
+                  style={{
+                    borderRight: "1px solid rgba(255,255,255,0.16)",
+                    borderBottom: "1px solid rgba(255,255,255,0.16)",
+                    padding: "40px 30px 44px",
+                    gap: "16px",
+                  }}
                 >
-                  <div className="w-14 h-14 rounded-xl bg-[#0d223f] flex items-center justify-center text-[#a9edff] mb-4">
-                    {cat.icon}
-                  </div>
-                  <h3 className="font-[family-name:var(--font-jakarta)] text-lg font-bold text-[#0d223f] mb-2">
+                  <span
+                    className="font-[family-name:var(--font-geist-mono)] uppercase"
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.14em",
+                      color: "#1ecdec",
+                    }}
+                  >
+                    {cat.number}
+                  </span>
+                  <h3
+                    className="font-[family-name:var(--font-jakarta)] uppercase text-white m-0"
+                    style={{
+                      fontWeight: 900,
+                      fontSize: "clamp(26px, 2.4vw, 36px)",
+                      lineHeight: 0.92,
+                      letterSpacing: "-0.045em",
+                    }}
+                  >
                     {cat.label}
                   </h3>
-                  <span className="text-sm text-[#44474d]/60 italic font-[family-name:var(--font-geist-sans)]">
+                  <span
+                    className="self-start font-[family-name:var(--font-geist-mono)] uppercase"
+                    style={{
+                      marginTop: "6px",
+                      padding: "6px 11px",
+                      border: "1px solid rgba(255,255,255,0.28)",
+                      fontSize: "10.5px",
+                      fontWeight: 500,
+                      letterSpacing: "0.14em",
+                      color: "rgba(255,255,255,0.82)",
+                    }}
+                  >
                     Coming soon
                   </span>
                 </div>

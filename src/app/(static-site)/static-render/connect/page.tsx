@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { ScrollReveal } from "../components/scroll-reveal";
 import { ContactDialog } from "../components/contact-dialog";
+import { InlineContactForm } from "../components/inline-contact-form";
+import { HeroSlideshow } from "../components/hero-slideshow";
 
 export default function ConnectPage() {
   const sections = [
@@ -81,38 +84,43 @@ export default function ConnectPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
-        <img
-          src="/connect-hero-bg.webp"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+      <header className="relative min-h-screen md:min-h-[85vh] flex flex-col justify-end overflow-hidden bg-[#0a0a0a]">
+        <HeroSlideshow />
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 z-[1]"
           style={{
             background:
-              "linear-gradient(to top, rgba(13,34,63,0.8) 20%, rgba(13,34,63,0.45) 100%)",
+              "linear-gradient(to top, #0a0a0a 2%, rgba(10,10,10,0.7) 35%, rgba(10,10,10,0.15) 70%, transparent 100%)",
           }}
         />
-        <div className="max-w-[1280px] mx-auto px-4 md:px-8 relative z-10">
-          <span className="text-[#a9edff] text-xs font-semibold font-[family-name:var(--font-geist-sans)] uppercase tracking-widest">
-            Connect
-          </span>
-          <h1 className="font-[family-name:var(--font-jakarta)] text-4xl md:text-[56px] md:leading-[64px] font-bold mt-4 mb-6 tracking-[-0.02em]">
-            Join the Movement
+
+        <div className="relative z-10 max-w-[1360px] mx-auto px-4 md:px-10 w-full pt-[180px] pb-14 flex flex-col gap-7">
+          <div className="flex items-center">
+            <span className="inline-block bg-[#0a1928]/80 border border-[#1ecdec]/50 rounded-full px-6 py-2.5 font-[family-name:var(--font-geist-mono)] text-[12px] font-medium tracking-[0.2em] uppercase text-[#1ecdec]">
+              Get Involved
+            </span>
+          </div>
+
+          <h1
+            className="font-[family-name:var(--font-jakarta)] font-[900] text-white uppercase m-0 max-w-[14ch]"
+            style={{
+              fontSize: "clamp(44px, 7vw, 120px)",
+              lineHeight: 0.88,
+              letterSpacing: "-0.05em",
+              textShadow: "0 4px 40px rgba(10,10,10,0.55)",
+            }}
+          >
+            Join the{" "}
+            <span className="text-[#1ecdec]">Movement</span>
           </h1>
-          <p className="font-[family-name:var(--font-jakarta)] text-lg md:text-xl leading-8 text-white/80 max-w-3xl">
-            The Great Commission is too great for any one church, ministry, or
-            nation to fulfill alone. We believe God is calling His people to work
-            together in unity for the greatest harvest in history.
-          </p>
-          <p className="font-[family-name:var(--font-jakarta)] text-lg md:text-xl leading-8 text-white/80 max-w-3xl mt-4">
-            Whether you are a pastor, missionary, ministry leader, church,
-            organization, or believer with a heart for the nations, we invite you
-            to become part of the Billion Soul Harvest movement.
-          </p>
+
+          <div className="hidden md:block border-t border-[#1ecdec] pt-7">
+            <p className="font-[family-name:var(--font-jakarta)] text-[15px] leading-[1.7] text-white/90 m-0 max-w-[52ch] text-pretty">
+              Whether you want to partner, pray, give, or stay connected — there are many ways to be part of what God is doing through Billion Soul Harvest.
+            </p>
+          </div>
         </div>
-      </section>
+      </header>
 
       {/* Ways to Connect — temporarily hidden
       <section className="py-20 md:py-[100px] bg-[#f9f9ff]">
@@ -158,22 +166,136 @@ export default function ConnectPage() {
       */}
 
       {/* Contact Us */}
-      <section className="py-20 md:py-[100px] bg-white">
-        <div className="max-w-[900px] mx-auto px-4 md:px-8 text-center">
+      <section
+        className="bg-[#0a0a0a]"
+        style={{
+          paddingTop: "110px",
+          paddingBottom: "120px",
+          borderTop: "1px solid rgba(255,255,255,0.16)",
+        }}
+      >
+        <div className="max-w-[1100px] mx-auto px-4 md:px-8">
           <ScrollReveal direction="none">
-            <h2 className="font-[family-name:var(--font-jakarta)] text-3xl md:text-[40px] md:leading-[48px] font-bold text-[#0d223f] tracking-[-0.02em]">
-              Contact Us
-            </h2>
-            <p className="font-[family-name:var(--font-jakarta)] text-lg leading-8 text-[#2a3a50] mt-4">
-              We would love to hear from you.
-            </p>
-            <p className="font-[family-name:var(--font-jakarta)] text-lg leading-8 text-[#2a3a50] mt-2 max-w-2xl mx-auto">
-              Whether you have a question, would like to partner with us, or
-              simply want to learn more about Billion Soul Harvest, our team is
-              here to help.
-            </p>
-            <div className="mt-8">
-              <ContactDialog />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+                gap: "64px",
+              }}
+            >
+              {/* Left Column */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
+                <span
+                  className="font-[family-name:var(--font-geist-mono)]"
+                  style={{
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "#1ecdec",
+                  }}
+                >
+                  Connect
+                </span>
+                <h2
+                  className="font-[family-name:var(--font-jakarta)] uppercase text-white"
+                  style={{
+                    fontWeight: 900,
+                    fontSize: "clamp(40px, 5.4vw, 92px)",
+                    lineHeight: 0.86,
+                    letterSpacing: "-0.055em",
+                    margin: 0,
+                  }}
+                >
+                  Contact Us
+                </h2>
+                <p
+                  className="font-[family-name:var(--font-jakarta)] text-white"
+                  style={{
+                    fontWeight: 800,
+                    fontSize: "clamp(22px, 2.2vw, 32px)",
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.035em",
+                    margin: 0,
+                  }}
+                >
+                  We would love to hear from you.
+                </p>
+                <p
+                  className="font-[family-name:var(--font-jakarta)]"
+                  style={{
+                    maxWidth: "52ch",
+                    fontSize: "17px",
+                    lineHeight: 1.72,
+                    color: "rgba(255,255,255,0.85)",
+                    margin: 0,
+                  }}
+                >
+                  Whether you have a question, would like to partner with us, or
+                  simply want to learn more about Billion Soul Harvest, our team is
+                  here to help.
+                </p>
+
+                {/* Social Media Buttons */}
+                <div className="flex flex-wrap" style={{ gap: "14px", marginTop: "8px" }}>
+                  <a
+                    href="https://www.facebook.com/BillionSoulHarvest/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-[family-name:var(--font-geist-mono)] text-white hover:bg-[#1ecdec] hover:border-[#1ecdec] hover:text-[#0a0a0a] transition-colors"
+                    style={{
+                      padding: "15px 26px",
+                      border: "1px solid rgba(255,255,255,0.34)",
+                      fontSize: "11.5px",
+                      fontWeight: 500,
+                      letterSpacing: "0.16em",
+                      textDecoration: "none",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Facebook
+                  </a>
+                  <a
+                    href="https://www.instagram.com/billionsoul_/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-[family-name:var(--font-geist-mono)] text-white hover:bg-[#1ecdec] hover:border-[#1ecdec] hover:text-[#0a0a0a] transition-colors"
+                    style={{
+                      padding: "15px 26px",
+                      border: "1px solid rgba(255,255,255,0.34)",
+                      fontSize: "11.5px",
+                      fontWeight: 500,
+                      letterSpacing: "0.16em",
+                      textDecoration: "none",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Instagram
+                  </a>
+                  <a
+                    href="https://www.youtube.com/@ghs2033"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-[family-name:var(--font-geist-mono)] text-white hover:bg-[#1ecdec] hover:border-[#1ecdec] hover:text-[#0a0a0a] transition-colors"
+                    style={{
+                      padding: "15px 26px",
+                      border: "1px solid rgba(255,255,255,0.34)",
+                      fontSize: "11.5px",
+                      fontWeight: 500,
+                      letterSpacing: "0.16em",
+                      textDecoration: "none",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    YouTube
+                  </a>
+                </div>
+              </div>
+
+              {/* Right Column — Inline Contact Form */}
+              <div>
+                <InlineContactForm />
+              </div>
             </div>
           </ScrollReveal>
         </div>

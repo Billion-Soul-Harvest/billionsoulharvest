@@ -19,7 +19,7 @@ const navLinks = [
   { label: "Gatherings", href: "/gatherings" },
   { label: "Initiatives", href: "/initiatives" },
   { label: "Stories", href: "/stories" },
-  { label: "Connect", href: "/connect" },
+  { label: "Connect", href: "/connect", cta: true },
 ];
 
 export function StaticHeader() {
@@ -60,24 +60,32 @@ export function StaticHeader() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 border-b border-[#b4c7ec]/20 backdrop-blur-md transition-all ${
-        scrolled ? "bg-[#0f1316] shadow-lg" : "bg-[#0f1316]"
+      className={`sticky top-0 z-50 border-b border-white/[0.16] backdrop-blur-[14px] transition-all ${
+        scrolled ? "bg-[#0a0a0a]/[0.92] shadow-lg" : "bg-[#0a0a0a]/[0.92]"
       }`}
     >
-      <div className="flex justify-between items-center w-full px-4 md:px-8 py-4 max-w-[1280px] mx-auto">
-        <Link href="/" className="h-14 flex items-center shrink-0">
+      <div className="flex justify-between items-center w-full px-4 md:px-10 py-3 max-w-[1280px] mx-auto">
+        <Link href="/" className="h-14 flex items-center shrink-0 gap-4">
           <Image
-            src="/bsh-logo.webp"
+            src="/bsh-icon-cyan.png"
             alt="Billion Soul Harvest"
-            width={220}
+            width={56}
             height={56}
-            className="h-full w-auto object-contain brightness-0 invert"
+            className="h-full w-auto object-contain mix-blend-screen"
             priority
           />
+          <div className="flex flex-col justify-center h-14">
+            <span className="font-[family-name:var(--font-jakarta)] text-white font-[900] text-[21px] leading-none tracking-[-0.025em] uppercase">
+              Billion Soul Harvest
+            </span>
+            <span className="font-[family-name:var(--font-geist-mono)] text-white/70 text-[9px] font-medium uppercase tracking-[0.22em] w-full">
+              Accelerating the Great Commission
+            </span>
+          </div>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8" ref={dropdownRef}>
+        <div className="hidden md:flex items-center gap-7" ref={dropdownRef}>
           {navLinks.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -95,9 +103,9 @@ export function StaticHeader() {
                 {hasSubmenu ? (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-1 text-sm font-bold tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
+                    className={`flex items-center gap-1 text-xs font-medium tracking-[0.14em] uppercase font-[family-name:var(--font-geist-mono)] transition-all duration-300 py-1 ${
                       isActive
-                        ? "text-[#1ecdec] font-bold border-b-2 border-[#1ecdec]"
+                        ? "text-[#1ecdec] border-b-2 border-[#1ecdec]"
                         : "text-white hover:text-[#1ecdec]"
                     }`}
                   >
@@ -118,12 +126,19 @@ export function StaticHeader() {
                       />
                     </svg>
                   </Link>
+                ) : "cta" in item && item.cta ? (
+                  <Link
+                    href={item.href}
+                    className="text-xs font-bold tracking-[0.14em] uppercase font-[family-name:var(--font-geist-mono)] transition-all duration-300 bg-[#1ecdec] text-[#0a0a0a] px-[22px] py-3 hover:bg-white"
+                  >
+                    {item.label}
+                  </Link>
                 ) : (
                   <Link
                     href={item.href}
-                    className={`text-sm font-bold tracking-[0.01em] font-[family-name:var(--font-geist-sans)] transition-all duration-300 py-1 ${
+                    className={`text-xs font-medium tracking-[0.14em] uppercase font-[family-name:var(--font-geist-mono)] transition-all duration-300 py-1 ${
                       isActive
-                        ? "text-[#1ecdec] font-bold border-b-2 border-[#1ecdec]"
+                        ? "text-[#1ecdec] border-b-2 border-[#1ecdec]"
                         : "text-white hover:text-[#1ecdec]"
                     }`}
                   >
@@ -187,7 +202,7 @@ export function StaticHeader() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <div ref={mobileNavRef} className="md:hidden border-t border-white/10 bg-[#0f1316] px-4 pb-4 pt-3 space-y-1">
+        <div ref={mobileNavRef} className="md:hidden border-t border-white/10 bg-[#0a0a0a] px-4 pb-4 pt-3 space-y-1">
           {navLinks.map((item) => {
             const hasSubmenu = "submenu" in item && item.submenu;
             return (
@@ -230,7 +245,7 @@ export function StaticHeader() {
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            className="block px-3 py-2 rounded-lg text-sm text-[#44474d] hover:bg-[#e7eeff] hover:text-[#1ecdec] transition-colors"
+                            className="block px-3 py-2 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-[#1ecdec] transition-colors"
                           >
                             {sub.label}
                           </Link>

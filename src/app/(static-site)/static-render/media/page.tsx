@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { HeroSlideshow } from "../components/hero-slideshow";
 import { ScrollReveal } from "../components/scroll-reveal";
 
 export default function MediaPage() {
@@ -63,34 +65,59 @@ export default function MediaPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-[#0d223f] text-white py-24 md:py-32 overflow-hidden">
-        <img
-          src="/media-hero-bg.webp"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+      <header className="relative min-h-[85vh] flex flex-col justify-end overflow-hidden bg-[#0a0a0a]">
+        <HeroSlideshow />
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 z-[1]"
           style={{
             background:
-              "linear-gradient(to top, rgba(13,34,63,0.8) 20%, rgba(13,34,63,0.45) 100%)",
+              "linear-gradient(to top, #0a0a0a 2%, rgba(10,10,10,0.7) 35%, rgba(10,10,10,0.15) 70%, transparent 100%)",
           }}
         />
-        <div className="max-w-[1280px] mx-auto px-4 md:px-8 relative z-10">
-          <span className="text-[#a9edff] text-xs font-semibold font-[family-name:var(--font-geist-sans)] uppercase tracking-widest">
-            Media
-          </span>
-          <h1 className="font-[family-name:var(--font-jakarta)] text-4xl md:text-[56px] md:leading-[64px] font-bold mt-4 mb-6 tracking-[-0.02em]">
-            Stories of a Global Movement
+
+        <div className="relative z-10 max-w-[1360px] mx-auto px-4 md:px-10 w-full pt-[180px] pb-14 flex flex-col gap-7">
+          <div className="flex items-center">
+            <span className="inline-block bg-[#0a1928]/80 border border-[#1ecdec]/50 rounded-full px-6 py-2.5 font-[family-name:var(--font-geist-mono)] text-[12px] font-medium tracking-[0.2em] uppercase text-[#1ecdec]">
+              Media
+            </span>
+          </div>
+
+          <h1
+            className="font-[family-name:var(--font-jakarta)] font-[900] text-white uppercase m-0 max-w-[14ch]"
+            style={{
+              fontSize: "clamp(44px, 7vw, 120px)",
+              lineHeight: 0.88,
+              letterSpacing: "-0.05em",
+              textShadow: "0 4px 40px rgba(10,10,10,0.55)",
+            }}
+          >
+            Stories of a Global{" "}
+            <span className="text-[#1ecdec]">Movement</span>
           </h1>
-          <p className="font-[family-name:var(--font-jakarta)] text-lg md:text-xl leading-8 text-white/80 max-w-3xl">
-            Explore the stories, videos, and resources that capture what God is
-            doing through Billion Soul Harvest around the world. From inspiring
-            testimonies to event highlights and ministry resources, discover how
-            lives are being transformed through the power of the Gospel.
-          </p>
+
+          <div className="hidden md:block border-t border-[#1ecdec] pt-7">
+            <div className="grid grid-cols-1 md:grid-cols-[1.1fr_auto] gap-8 items-end">
+              <p className="font-[family-name:var(--font-jakarta)] text-[15px] leading-[1.7] text-white/90 m-0 max-w-[52ch] text-pretty">
+                Videos, testimonies, news, and photos from the Billion Soul Harvest movement around the world.
+              </p>
+              <div className="flex gap-3">
+                <Link
+                  href="/stories"
+                  className="bg-[#1ecdec] text-[#0a0a0a] px-8 py-[18px] text-[14px] font-[800] tracking-[0.08em] uppercase font-[family-name:var(--font-jakarta)] hover:bg-white transition-colors"
+                >
+                  Stories
+                </Link>
+                <Link
+                  href="/connect"
+                  className="border-2 border-white/50 text-white px-8 py-[18px] text-[14px] font-[800] tracking-[0.08em] uppercase font-[family-name:var(--font-jakarta)] hover:bg-white hover:text-[#0a0a0a] transition-colors"
+                >
+                  Connect
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
-      </section>
+      </header>
 
       {/* Stories */}
       <section className="py-20 md:py-[100px] bg-[#f9f9ff]">
