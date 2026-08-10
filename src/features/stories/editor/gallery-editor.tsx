@@ -27,6 +27,7 @@ import { createClient } from "@/shared/utils/supabase/client";
 export interface GalleryImage {
   url: string;
   caption?: string;
+  type?: "image" | "video";
 }
 
 interface Props {
@@ -35,8 +36,10 @@ interface Props {
   storyId: string;
 }
 
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const VIDEO_MAX_SIZE = 50 * 1024 * 1024;
 
 function SortableImageCard({
   image,
@@ -81,12 +84,31 @@ function SortableImageCard({
         {...attributes}
         {...listeners}
       >
-        <img
-          src={image.url}
-          alt={image.caption || `Gallery image ${index + 1}`}
-          className="w-full h-full object-cover"
-          draggable={false}
-        />
+        {image.type === "video" ? (
+          <>
+            <video
+              src={image.url}
+              muted
+              preload="metadata"
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          </>
+        ) : (
+          <img
+            src={image.url}
+            alt={image.caption || `Gallery image ${index + 1}`}
+            className="w-full h-full object-cover"
+            draggable={false}
+          />
+        )}
         <button
           type="button"
           onClick={() => onRemove(index)}
@@ -127,8 +149,11 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
       const newImages: GalleryImage[] = [];
 
       for (const file of Array.from(files)) {
-        if (!ACCEPTED_TYPES.includes(file.type)) continue;
-        if (file.size > MAX_SIZE) continue;
+        const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type);
+        const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type);
+        if (!isImage && !isVideo) continue;
+        if (isImage && file.size > IMAGE_MAX_SIZE) continue;
+        if (isVideo && file.size > VIDEO_MAX_SIZE) continue;
 
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `${storyId}/gallery/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -143,7 +168,7 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
           data: { publicUrl },
         } = supabase.storage.from("event-assets").getPublicUrl(path);
 
-        newImages.push({ url: publicUrl });
+        newImages.push({ url: publicUrl, type: isVideo ? "video" : "image" });
       }
 
       if (newImages.length > 0) {
@@ -238,9 +263,9 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
               />
             </svg>
             <p className="text-sm text-gray-500">
-              Drop images here or <span className="text-[#29BDD6] font-medium">click to browse</span>
+              Drop files here or <span className="text-[#29BDD6] font-medium">click to browse</span>
             </p>
-            <p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP up to 5MB each</p>
+            <p className="text-xs text-gray-400 mt-1">Images (JPEG, PNG, WebP) up to 5MB | Videos (MP4, WebM, MOV) up to 50MB</p>
           </>
         )}
       </div>
@@ -248,7 +273,7 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
         multiple
         className="hidden"
         onChange={(e) => {
