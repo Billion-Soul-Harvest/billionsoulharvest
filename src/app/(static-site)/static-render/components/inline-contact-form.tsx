@@ -41,7 +41,7 @@ export function InlineContactForm() {
   if (status === "sent") {
     return (
       <div
-        className="bg-white text-[#0a0a0a]"
+        className="bg-white text-[#0a0a0a] border border-[#0a0a0a]/12 shadow-[0_8px_30px_rgba(10,10,10,0.08)]"
         style={{ padding: "48px 44px" }}
       >
         <div
@@ -64,7 +64,7 @@ export function InlineContactForm() {
 
   return (
     <div
-      className="bg-white text-[#0a0a0a]"
+      className="bg-white text-[#0a0a0a] border border-[#0a0a0a]/12 shadow-[0_8px_30px_rgba(10,10,10,0.08)]"
       style={{ padding: "48px 44px" }}
     >
       <p

@@ -234,7 +234,7 @@ export default async function GatheringsPage() {
             ].map((g, i) => (
               <div
                 key={i}
-                className="overflow-hidden flex flex-col"
+                className="overflow-hidden flex flex-col bg-[#111318] border border-white/10 rounded"
               >
                 {g.videoId && (
                   <a href={`https://youtu.be/${g.videoId}`} target="_blank" rel="noopener noreferrer" className="relative w-full block bg-[#262d48]" style={{ aspectRatio: "16/9" }}>
@@ -265,14 +265,14 @@ export default async function GatheringsPage() {
                     </svg>
                   </div>
                 )}
-                <div className="pt-5 flex flex-col flex-1">
+                <div className="p-5 flex flex-col flex-1">
                   <h3 className="font-[family-name:var(--font-jakarta)] font-[900] text-white uppercase" style={{ fontSize: "clamp(21px, 2vw, 28px)", lineHeight: 0.98, letterSpacing: "-0.035em" }}>
                     {g.title}
                   </h3>
                   <p className="font-[family-name:var(--font-geist-mono)] text-white/82 mt-2" style={{ fontSize: "12px", letterSpacing: "0.06em" }}>
                     {g.location}
                   </p>
-                  <div className="mt-auto flex items-center gap-4 pt-4">
+                  <div className="mt-auto flex items-center gap-4 pt-4 border-t border-white/10">
                     {g.videoId && (
                       <a
                         href={`https://youtu.be/${g.videoId}`}
@@ -327,7 +327,7 @@ export default async function GatheringsPage() {
               href="https://sites.google.com/view/bshuk?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              className="overflow-hidden flex flex-col cursor-pointer"
+              className="overflow-hidden flex flex-col cursor-pointer bg-white border border-[#0a0a0a]/16 rounded hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(10,10,10,0.12)] transition-all duration-200"
             >
               <div className="relative w-full bg-[#0a0a0a] flex items-center justify-center" style={{ aspectRatio: "16/9" }}>
                 <div className="absolute inset-0 bg-[rgba(10,10,10,0.22)]" />
@@ -337,14 +337,14 @@ export default async function GatheringsPage() {
                   </svg>
                 </div>
               </div>
-              <div className="pt-4">
+              <div className="p-5">
                 <h3 className="font-[family-name:var(--font-jakarta)] font-[900] text-[#0a0a0a] uppercase" style={{ fontSize: "19px", lineHeight: 1.02, letterSpacing: "-0.03em" }}>
                   BSH UK/Europe 2025
                 </h3>
                 <p className="font-[family-name:var(--font-geist-mono)] text-[#506b9f] mt-1" style={{ fontSize: "12px", letterSpacing: "0.06em" }}>
                   United Kingdom
                 </p>
-                <div className="mt-3">
+                <div className="mt-3 pt-3 border-t border-[#0a0a0a]/10">
                   <span className="inline-flex items-center gap-1 text-[#506b9f] font-[family-name:var(--font-geist-mono)] font-[500] uppercase" style={{ fontSize: "11px", letterSpacing: "0.12em" }}>
                     Learn More &rarr;
                   </span>
@@ -368,7 +368,7 @@ export default async function GatheringsPage() {
                 href={`https://www.youtube.com/watch?v=${g.videoId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="overflow-hidden flex flex-col cursor-pointer"
+                className="overflow-hidden flex flex-col cursor-pointer bg-white border border-[#0a0a0a]/16 rounded hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(10,10,10,0.12)] transition-all duration-200"
               >
                 <div className="relative w-full bg-[#0a0a0a]" style={{ aspectRatio: "16/9" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -387,13 +387,15 @@ export default async function GatheringsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="pt-4">
+                <div className="p-5">
                   <h3 className="font-[family-name:var(--font-jakarta)] font-[900] text-[#0a0a0a] uppercase" style={{ fontSize: "19px", lineHeight: 1.02, letterSpacing: "-0.03em" }}>
                     {g.title}
                   </h3>
-                  <span className="inline-flex items-center gap-1 text-[#506b9f] font-[family-name:var(--font-geist-mono)] font-[500] uppercase mt-2" style={{ fontSize: "11px", letterSpacing: "0.12em" }}>
-                    Watch Video &rarr;
-                  </span>
+                  <div className="mt-3 pt-3 border-t border-[#0a0a0a]/10">
+                    <span className="inline-flex items-center gap-1 text-[#506b9f] font-[family-name:var(--font-geist-mono)] font-[500] uppercase" style={{ fontSize: "11px", letterSpacing: "0.12em" }}>
+                      Watch Video &rarr;
+                    </span>
+                  </div>
                 </div>
               </a>
             ))}
