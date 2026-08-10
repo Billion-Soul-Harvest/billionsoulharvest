@@ -50,6 +50,8 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [linkText, setLinkText] = useState("");
+  const [hasSelection, setHasSelection] = useState(false);
   const [driveDialogOpen, setDriveDialogOpen] = useState(false);
   const [driveUploading, setDriveUploading] = useState(false);
   const [driveUploadProgress, setDriveUploadProgress] = useState(0);
@@ -116,6 +118,10 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
   const openLinkDialog = useCallback(() => {
     if (!editor) return;
     const prev = editor.getAttributes("link").href ?? "";
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, "");
+    setHasSelection(from !== to);
+    setLinkText(selectedText || "");
     setLinkUrl(prev || "https://");
     setLinkDialogOpen(true);
   }, [editor]);
@@ -124,12 +130,21 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
     if (!editor) return;
     if (!linkUrl || linkUrl === "https://") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    } else if (!hasSelection) {
+      // No text selected — insert link text + URL
+      const displayText = linkText.trim() || linkUrl;
+      editor
+        .chain()
+        .focus()
+        .insertContent(`<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${displayText}</a>`)
+        .run();
     } else {
       editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run();
     }
     setLinkDialogOpen(false);
     setLinkUrl("");
-  }, [editor, linkUrl]);
+    setLinkText("");
+  }, [editor, linkUrl, linkText, hasSelection]);
 
   const openYoutubeDialog = useCallback(() => {
     setYoutubeUrl("");
@@ -671,6 +686,18 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
             }}
           >
             <div className="space-y-3 py-2">
+              {!hasSelection && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="link-text">Link Text</Label>
+                  <Input
+                    id="link-text"
+                    value={linkText}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLinkText(e.target.value)}
+                    placeholder="Display text (optional, defaults to URL)"
+                    autoFocus
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="link-url">URL</Label>
                 <Input
@@ -678,7 +705,7 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
                   value={linkUrl}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)}
                   placeholder="https://..."
-                  autoFocus
+                  autoFocus={hasSelection}
                 />
               </div>
             </div>
