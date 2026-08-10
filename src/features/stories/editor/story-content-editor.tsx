@@ -8,6 +8,7 @@ import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
 import Youtube from "@tiptap/extension-youtube";
 import { GoogleDriveVideo } from "./extensions/google-drive-video";
+import { VideoNode } from "./extensions/video-node";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,12 @@ const MAX_SIZE = 5 * 1024 * 1024;
 
 export function StoryContentEditor({ value, onChange, storyId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [editorInView, setEditorInView] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -89,6 +93,9 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
         HTMLAttributes: { class: "rounded-lg max-w-full h-auto" },
       }),
       GoogleDriveVideo.configure({
+        HTMLAttributes: { class: "rounded-lg" },
+      }),
+      VideoNode.configure({
         HTMLAttributes: { class: "rounded-lg" },
       }),
     ],
@@ -288,6 +295,63 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
     [editor, storyId]
   );
 
+  const handleVideoUpload = useCallback(
+    async (file: File) => {
+      if (!editor) return;
+      const accepted = ["video/mp4", "video/webm", "video/quicktime"];
+      if (!accepted.includes(file.type)) {
+        alert("Only MP4, WebM, and MOV files are allowed.");
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        alert("Video must be under 50MB.");
+        return;
+      }
+
+      setVideoUploading(true);
+      setVideoUploadProgress(0);
+
+      const ext = file.name.split(".").pop() ?? "mp4";
+      const path = `${storyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const url = `${supabaseUrl}/storage/v1/object/event-assets/${path}`;
+
+      try {
+        const publicUrl = await new Promise<string>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener("progress", (e) => {
+            if (e.lengthComputable) {
+              setVideoUploadProgress(Math.round((e.loaded / e.total) * 100));
+            }
+          });
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const supabase = createClient();
+              const { data: { publicUrl: pUrl } } = supabase.storage.from("event-assets").getPublicUrl(path);
+              resolve(pUrl);
+            } else {
+              reject(new Error("Upload failed"));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Upload failed"));
+          xhr.open("POST", url);
+          xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+          xhr.setRequestHeader("apikey", supabaseKey);
+          xhr.send(file);
+        });
+
+        editor.chain().focus().setVideo({ src: publicUrl }).run();
+      } catch {
+        alert("Video upload failed.");
+      } finally {
+        setVideoUploading(false);
+        setVideoUploadProgress(0);
+      }
+    },
+    [editor, storyId]
+  );
+
   if (!editor) return null;
 
   return (
@@ -457,6 +521,27 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0C.488 3.45.029 5.804 0 12c.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0C23.512 20.55 23.971 18.196 24 12c-.029-6.185-.484-8.549-4.385-8.816zM9 16V8l8 3.993L9 16z" />
             </svg>
           </ToolbarBtn>
+          {videoUploading ? (
+            <div className="flex items-center gap-1.5 px-2 shrink-0" title={`Uploading ${videoUploadProgress}%`}>
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#29BDD6] rounded-full transition-all duration-300"
+                  style={{ width: `${videoUploadProgress}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-gray-500">{videoUploadProgress}%</span>
+            </div>
+          ) : (
+            <ToolbarBtn
+              active={false}
+              onClick={() => videoInputRef.current?.click()}
+              title="Upload Video"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </ToolbarBtn>
+          )}
           <ToolbarBtn
             active={false}
             onClick={() => { setDriveDialogOpen(true); fetchDriveFiles(); }}
@@ -482,6 +567,17 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) handleImageUpload(file);
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleVideoUpload(file);
             e.target.value = "";
           }}
         />

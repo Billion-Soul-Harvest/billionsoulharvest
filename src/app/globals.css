@@ -163,6 +163,13 @@ html {
   word-break: break-word;
 }
 
+/* Ensure videos render properly in prose content */
+.prose video {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0.5rem;
+}
+
 /* Google Drive video embeds in prose content */
 .prose div[data-google-drive-video] iframe {
   width: 100%;
