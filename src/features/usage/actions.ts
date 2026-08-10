@@ -22,18 +22,11 @@ export async function getUsageData(): Promise<UsageData> {
 
   const supabase = createServiceClient();
 
-  // Fetch database usage via RPC
-  const { data: dbUsage, error: dbError } = await supabase.rpc(
-    "get_database_usage"
-  );
-  if (dbError)
-    throw new Error(`Failed to fetch database usage: ${dbError.message}`);
+  // Fetch database usage via RPC (may fail if PostgREST cache hasn't refreshed)
+  const { data: dbUsage } = await supabase.rpc("get_database_usage");
 
   // Fetch storage buckets
-  const { data: buckets, error: bucketsError } =
-    await supabase.storage.listBuckets();
-  if (bucketsError)
-    throw new Error(`Failed to list buckets: ${bucketsError.message}`);
+  const { data: buckets } = await supabase.storage.listBuckets();
 
   // Fetch objects per bucket
   const bucketUsages: BucketUsage[] = await Promise.all(
