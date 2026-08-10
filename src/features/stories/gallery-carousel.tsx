@@ -5,6 +5,7 @@ import { useState, useCallback } from "react";
 interface GalleryImage {
   url: string;
   caption?: string;
+  type?: "image" | "video";
 }
 
 interface Props {
@@ -29,13 +30,24 @@ export function GalleryCarousel({ images }: Props) {
   return (
     <div className="max-w-[1000px] mx-auto px-4 pb-12">
       <div className="relative rounded-xl overflow-hidden bg-gray-900">
-        {/* Main image */}
+        {/* Main image/video */}
         <div className="aspect-[16/9] relative">
-          <img
-            src={image.url}
-            alt={image.caption || `Gallery image ${current + 1}`}
-            className="w-full h-full object-contain"
-          />
+          {image.type === "video" ? (
+            <video
+              key={image.url}
+              controls
+              preload="metadata"
+              className="w-full h-full object-contain"
+            >
+              <source src={image.url} />
+            </video>
+          ) : (
+            <img
+              src={image.url}
+              alt={image.caption || `Gallery image ${current + 1}`}
+              className="w-full h-full object-contain"
+            />
+          )}
         </div>
 
         {/* Caption */}
@@ -90,11 +102,31 @@ export function GalleryCarousel({ images }: Props) {
                   : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
-              <img
-                src={img.url}
-                alt={img.caption || `Thumbnail ${i + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {img.type === "video" ? (
+                <div className="relative w-full h-full">
+                  <video
+                    src={img.url}
+                    muted
+                    preload="metadata"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-white drop-shadow-lg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={img.url}
+                  alt={img.caption || `Thumbnail ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              )}
             </button>
           ))}
         </div>
