@@ -126,8 +126,7 @@ export default function HomePage() {
 
           <ScrollReveal delay={100}>
             <div
-              className="grid gap-[1px] bg-[#0a0a0a]/20 border border-[#0a0a0a]/20"
-              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
+              className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-[1px] bg-[#0a0a0a]/20 border border-[#0a0a0a]/20"
             >
               {PARTNERS.map((p) => (
                 <PartnerCell key={p.name} {...p} />
