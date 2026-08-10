@@ -8,6 +8,7 @@ import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
 import Youtube from "@tiptap/extension-youtube";
 import { GoogleDriveVideo } from "./extensions/google-drive-video";
+import { VideoNode } from "./extensions/video-node";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,11 @@ const MAX_SIZE = 5 * 1024 * 1024;
 
 export function StoryContentEditor({ value, onChange, storyId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [editorInView, setEditorInView] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -89,6 +92,9 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
         HTMLAttributes: { class: "rounded-lg max-w-full h-auto" },
       }),
       GoogleDriveVideo.configure({
+        HTMLAttributes: { class: "rounded-lg" },
+      }),
+      VideoNode.configure({
         HTMLAttributes: { class: "rounded-lg" },
       }),
     ],
@@ -288,6 +294,44 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
     [editor, storyId]
   );
 
+  const handleVideoUpload = useCallback(
+    async (file: File) => {
+      if (!editor) return;
+      const accepted = ["video/mp4", "video/webm", "video/quicktime"];
+      if (!accepted.includes(file.type)) {
+        alert("Only MP4, WebM, and MOV files are allowed.");
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        alert("Video must be under 50MB.");
+        return;
+      }
+
+      setVideoUploading(true);
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() ?? "mp4";
+      const path = `${storyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+      const { error } = await supabase.storage
+        .from("event-assets")
+        .upload(path, file, { upsert: false });
+
+      if (error) {
+        alert(`Upload failed: ${error.message}`);
+        setVideoUploading(false);
+        return;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("event-assets").getPublicUrl(path);
+
+      editor.chain().focus().setVideo({ src: publicUrl }).run();
+      setVideoUploading(false);
+    },
+    [editor, storyId]
+  );
+
   if (!editor) return null;
 
   return (
@@ -459,6 +503,21 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
           </ToolbarBtn>
           <ToolbarBtn
             active={false}
+            onClick={() => videoInputRef.current?.click()}
+            title="Upload Video"
+          >
+            {videoUploading ? (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeWidth={2} d="M12 6V3m0 18v-3m9-6h-3M6 12H3m15.364 6.364l-2.121-2.121M8.757 8.757L6.636 6.636m12.728 0l-2.121 2.121M8.757 15.243l-2.121 2.121" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            )}
+          </ToolbarBtn>
+          <ToolbarBtn
+            active={false}
             onClick={() => { setDriveDialogOpen(true); fetchDriveFiles(); }}
             title="Google Drive File"
           >
@@ -482,6 +541,17 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) handleImageUpload(file);
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleVideoUpload(file);
             e.target.value = "";
           }}
         />
