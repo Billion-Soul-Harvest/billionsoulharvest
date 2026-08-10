@@ -18,6 +18,12 @@ import {
 import { createClient } from "@/shared/utils/supabase/client";
 import type { StoryStatus } from "@/shared/types/database";
 
+const STEPS = [
+  { number: 1, label: "Story Details" },
+  { number: 2, label: "Story Content" },
+  { number: 3, label: "Gallery Images" },
+] as const;
+
 interface StoryData {
   id?: string;
   title: string;
@@ -43,6 +49,7 @@ export function StoryForm({ story }: Props) {
   const isEditing = !!story?.id;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
 
   const [form, setForm] = useState<StoryData>({
     title: story?.title ?? "",
@@ -65,6 +72,11 @@ export function StoryForm({ story }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!form.title.trim() || !form.slug.trim()) {
+      setError("Title and Slug are required. Please complete Step 1.");
+      setStep(1);
+      return;
+    }
     setSaving(true);
     setError(null);
 
@@ -112,84 +124,135 @@ export function StoryForm({ story }: Props) {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900">Story Details</h3>
+      {/* Stepper */}
+      <div className="flex items-center gap-2">
+        {STEPS.map((s, i) => (
+          <div key={s.number} className="flex items-center gap-2 flex-1">
+            <button
+              type="button"
+              onClick={() => setStep(s.number)}
+              className={`flex items-center gap-2 w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                step === s.number
+                  ? "bg-gray-900 text-white"
+                  : "bg-white border text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 ${
+                step === s.number ? "bg-white text-gray-900" : "bg-gray-100 text-gray-500"
+              }`}>
+                {s.number}
+              </span>
+              <span className="hidden sm:inline">{s.label}</span>
+            </button>
+            {i < STEPS.length - 1 && (
+              <div className="w-6 h-px bg-gray-200 shrink-0" />
+            )}
+          </div>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>Title</Label>
-            <Input value={form.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("title", e.target.value)} required />
+      {/* Step 1: Story Details */}
+      {step === 1 && (
+        <div className="bg-white rounded-xl border p-6 space-y-4">
+          <h3 className="font-semibold text-gray-900">Story Details</h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Title</Label>
+              <Input value={form.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("title", e.target.value)} />
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Slug</Label>
+              <Input value={form.slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("slug", e.target.value)}
+                className="font-mono text-sm" />
+              <p className="text-xs text-gray-400">URL: /stories/{form.slug || "..."}</p>
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Description</Label>
+              <Textarea value={form.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField("description", e.target.value)}
+                className="min-h-[60px]" />
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>Author</Label>
+              <Input value={form.author} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("author", e.target.value)} />
+            </div>
           </div>
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>Slug</Label>
-            <Input value={form.slug} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("slug", e.target.value)} required
-              className="font-mono text-sm" />
-            <p className="text-xs text-gray-400">URL: /stories/{form.slug || "..."}</p>
-          </div>
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>Description</Label>
-            <Textarea value={form.description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField("description", e.target.value)}
-              className="min-h-[60px]" />
-          </div>
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>Author</Label>
-            <Input value={form.author} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("author", e.target.value)} />
+
+          <hr className="my-4" />
+
+          <h3 className="font-semibold text-gray-900">Settings</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(v: string | null) => { if (v) updateField("status", v); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {statuses.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {form.status === "published" && (
+              <div className="space-y-1.5">
+                <Label>Published Date</Label>
+                <Input type="date" value={form.published_at ? form.published_at.split("T")[0] : ""}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("published_at", e.target.value ? `${e.target.value}T00:00:00Z` : "")} />
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900">Story Content</h3>
-        <p className="text-sm text-gray-500">Write your story using the editor below. You can add text, headings, images, and YouTube videos.</p>
-        <StoryContentEditor
-          value={form.content_html}
-          onChange={(html) => setForm((prev) => ({ ...prev, content_html: html }))}
-          storyId={story?.id ?? "new-story"}
-        />
-      </div>
+      {/* Step 2: Story Content */}
+      {step === 2 && (
+        <div className="bg-white rounded-xl border p-6 space-y-4">
+          <h3 className="font-semibold text-gray-900">Story Content</h3>
+          <p className="text-sm text-gray-500">Write your story using the editor below. You can add text, headings, images, YouTube videos, and Google Drive files.</p>
+          <StoryContentEditor
+            value={form.content_html}
+            onChange={(html) => setForm((prev) => ({ ...prev, content_html: html }))}
+            storyId={story?.id ?? "new-story"}
+          />
+        </div>
+      )}
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900">Gallery Images</h3>
-        <p className="text-sm text-gray-500">Add photos to display in a gallery grid below the story content. Drag to reorder.</p>
-        <GalleryEditor
-          images={form.gallery_images}
-          onChange={(images) => setForm((prev) => ({ ...prev, gallery_images: images }))}
-          storyId={story?.id ?? "new-story"}
-        />
-      </div>
+      {/* Step 3: Gallery Images */}
+      {step === 3 && (
+        <div className="bg-white rounded-xl border p-6 space-y-4">
+          <h3 className="font-semibold text-gray-900">Gallery Images</h3>
+          <p className="text-sm text-gray-500">Add photos to display in a gallery grid below the story content. Drag to reorder.</p>
+          <GalleryEditor
+            images={form.gallery_images}
+            onChange={(images) => setForm((prev) => ({ ...prev, gallery_images: images }))}
+            storyId={story?.id ?? "new-story"}
+          />
+        </div>
+      )}
 
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900">Settings</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Status</Label>
-            <Select value={form.status} onValueChange={(v: string | null) => { if (v) updateField("status", v); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {statuses.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {form.status === "published" && (
-            <div className="space-y-1.5">
-              <Label>Published Date</Label>
-              <Input type="date" value={form.published_at ? form.published_at.split("T")[0] : ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("published_at", e.target.value ? `${e.target.value}T00:00:00Z` : "")} />
-            </div>
+      {/* Navigation & Save */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-3">
+          {step > 1 && (
+            <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
+              Back
+            </Button>
+          )}
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Cancel
+          </Button>
+        </div>
+        <div className="flex gap-3">
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving..." : isEditing ? "Update Story" : "Create Story"}
+          </Button>
+          {step < 3 && (
+            <Button type="button" onClick={() => setStep(step + 1)}>
+              Next
+            </Button>
           )}
         </div>
-      </div>
-
-      <div className="flex gap-3">
-        <Button type="submit" disabled={saving}>
-          {saving ? "Saving..." : isEditing ? "Update Story" : "Create Story"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
-          Cancel
-        </Button>
       </div>
     </form>
   );

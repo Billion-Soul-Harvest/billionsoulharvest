@@ -36,6 +36,7 @@
     "ag-grid-react": "^36.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "googleapis": "^174.0.1",
     "imapflow": "^1.4.6",
     "lucide-react": "^1.23.0",
     "motion": "^12.42.2",

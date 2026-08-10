@@ -7,7 +7,9 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
 import Youtube from "@tiptap/extension-youtube";
+import { GoogleDriveVideo } from "./extensions/google-drive-video";
 import { useEffect, useCallback, useRef, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,16 +28,36 @@ interface Props {
   storyId: string;
 }
 
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  createdTime: string;
+  thumbnailLink?: string;
+  embedUrl: string;
+}
+
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
 
 export function StoryContentEditor({ value, onChange, storyId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const [editorInView, setEditorInView] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [driveDialogOpen, setDriveDialogOpen] = useState(false);
+  const [driveUploading, setDriveUploading] = useState(false);
+  const [driveUploadProgress, setDriveUploadProgress] = useState(0);
+  const [driveUrl, setDriveUrl] = useState("");
+  const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
+  const [driveFilesLoading, setDriveFilesLoading] = useState(false);
+  const driveFileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -64,6 +86,9 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
       Image.configure({
         HTMLAttributes: { class: "rounded-lg max-w-full h-auto" },
       }),
+      GoogleDriveVideo.configure({
+        HTMLAttributes: { class: "rounded-lg" },
+      }),
     ],
     content: value,
     onUpdate: ({ editor: ed }) => {
@@ -76,6 +101,17 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
       editor.commands.setContent(value, { emitUpdate: false });
     }
   }, [value, editor]);
+
+  useEffect(() => {
+    const el = editorContainerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setEditorInView(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const openLinkDialog = useCallback(() => {
     if (!editor) return;
@@ -106,6 +142,99 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
     setYoutubeDialogOpen(false);
     setYoutubeUrl("");
   }, [editor, youtubeUrl]);
+
+  const handleDriveFileUpload = useCallback(
+    async (file: File) => {
+      if (!editor) return;
+      if (file.size > 500 * 1024 * 1024) {
+        setDriveError("File must be under 500MB.");
+        return;
+      }
+
+      setDriveError(null);
+      setDriveUploading(true);
+      setDriveUploadProgress(0);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            setDriveUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+
+        const result = await new Promise<{ embedUrl: string }>((resolve, reject) => {
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText));
+            } else {
+              const err = JSON.parse(xhr.responseText);
+              reject(new Error(err.error || "Upload failed"));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Upload failed"));
+          xhr.open("POST", "/api/drive-upload");
+          xhr.send(formData);
+        });
+
+        editor.chain().focus().setGoogleDriveVideo({ src: result.embedUrl }).run();
+        setDriveDialogOpen(false);
+      } catch (err) {
+        setDriveError(err instanceof Error ? err.message : "Upload failed");
+      } finally {
+        setDriveUploading(false);
+        setDriveUploadProgress(0);
+      }
+    },
+    [editor]
+  );
+
+  const handleDriveUrlSubmit = useCallback(() => {
+    if (!editor || !driveUrl) return;
+    const match = driveUrl.match(
+      /https?:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/
+    );
+    if (!match) {
+      setDriveError("Please enter a valid Google Drive file URL.");
+      return;
+    }
+    const fileId = match[1];
+    const src = `https://drive.google.com/file/d/${fileId}/preview`;
+    editor.chain().focus().setGoogleDriveVideo({ src }).run();
+    setDriveDialogOpen(false);
+    setDriveUrl("");
+  }, [editor, driveUrl]);
+
+  const fetchDriveFiles = useCallback(async () => {
+    setDriveFilesLoading(true);
+    setDriveError(null);
+    try {
+      const res = await fetch("/api/drive-files");
+      if (!res.ok) {
+        const data = await res.json();
+        setDriveError(data.error || "Failed to load files");
+        return;
+      }
+      const data = await res.json();
+      setDriveFiles(data.files);
+    } catch {
+      setDriveError("Failed to load files");
+    } finally {
+      setDriveFilesLoading(false);
+    }
+  }, []);
+
+  const handleDriveFileSelect = useCallback(
+    (file: DriveFile) => {
+      if (!editor) return;
+      editor.chain().focus().setGoogleDriveVideo({ src: file.embedUrl }).run();
+      setDriveDialogOpen(false);
+    },
+    [editor]
+  );
 
   const handleImageUpload = useCallback(
     async (file: File) => {
@@ -148,9 +277,9 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
 
   return (
     <>
-      <div className="border rounded-lg overflow-hidden bg-white">
-        {/* Toolbar */}
-        <div className="flex flex-wrap gap-0.5 border-b bg-gray-50 p-1">
+      <div ref={editorContainerRef} className="border rounded-lg bg-white">
+        {/* Toolbar: inline scrollable on mobile, floating pill on desktop */}
+        <div className="flex flex-nowrap gap-0.5 border-b bg-gray-50 p-1 overflow-x-auto sm:fixed sm:bottom-24 sm:left-1/2 sm:-translate-x-1/2 sm:z-50 sm:bg-white sm:border sm:shadow-lg sm:rounded-full sm:px-3 sm:py-1.5 sm:border-b-0 sm:overflow-visible sm:flex-wrap sm:justify-center">
           <ToolbarBtn
             active={editor.isActive("bold")}
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -313,6 +442,15 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0C.488 3.45.029 5.804 0 12c.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0C23.512 20.55 23.971 18.196 24 12c-.029-6.185-.484-8.549-4.385-8.816zM9 16V8l8 3.993L9 16z" />
             </svg>
           </ToolbarBtn>
+          <ToolbarBtn
+            active={false}
+            onClick={() => { setDriveDialogOpen(true); fetchDriveFiles(); }}
+            title="Google Drive File"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7.71 3.5L1.15 15l3.43 5.99L11.14 9.5 7.71 3.5zm1.14 0l6.86 12H22.8l-3.43-6-3.43-6H8.85zM15.96 16.5H2.28L5.71 22.5h13.72l-3.47-6z" />
+            </svg>
+          </ToolbarBtn>
         </div>
 
         {/* Editor */}
@@ -375,6 +513,143 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Google Drive Dialog */}
+      <Dialog open={driveDialogOpen} onOpenChange={(open) => { setDriveDialogOpen(open); if (open) fetchDriveFiles(); if (!open) setDriveError(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.71 3.5L1.15 15l3.43 5.99L11.14 9.5 7.71 3.5zm1.14 0l6.86 12H22.8l-3.43-6-3.43-6H8.85zM15.96 16.5H2.28L5.71 22.5h13.72l-3.47-6z" />
+              </svg>
+              Google Drive File
+            </DialogTitle>
+          </DialogHeader>
+          {driveError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-md">
+              {driveError}
+            </div>
+          )}
+          <Tabs defaultValue="browse" className="w-full" onValueChange={(v) => { if (v === "browse" && driveFiles.length === 0) fetchDriveFiles(); }}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="browse">Browse</TabsTrigger>
+              <TabsTrigger value="upload">Upload</TabsTrigger>
+              <TabsTrigger value="url">Paste URL</TabsTrigger>
+            </TabsList>
+            <TabsContent value="browse" className="space-y-3 pt-2">
+              {driveFilesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <svg className="w-5 h-5 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeWidth={2} d="M12 6V3m0 18v-3m9-6h-3M6 12H3m15.364 6.364l-2.121-2.121M8.757 8.757L6.636 6.636m12.728 0l-2.121 2.121M8.757 15.243l-2.121 2.121" />
+                  </svg>
+                </div>
+              ) : driveFiles.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">No files found in the Drive folder.</p>
+              ) : (
+                <div className="max-h-64 overflow-y-auto space-y-1">
+                  {driveFiles.map((file) => (
+                    <button
+                      key={file.id}
+                      type="button"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 text-left text-sm transition-colors"
+                      onClick={() => handleDriveFileSelect(file)}
+                    >
+                      <span className="shrink-0 w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-xs text-gray-500">
+                        {file.mimeType?.startsWith("video/") ? "🎬" : file.mimeType?.startsWith("audio/") ? "🎵" : file.mimeType === "application/pdf" ? "📄" : "📁"}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate font-medium">{file.name}</span>
+                        <span className="block text-xs text-gray-400">
+                          {file.size > 0 ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : ""}
+                          {file.createdTime ? ` · ${new Date(file.createdTime).toLocaleDateString()}` : ""}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="upload" className="space-y-3 pt-2">
+              <p className="text-sm text-gray-500">
+                Upload a file to Google Drive. It will be shared publicly for embedding.
+              </p>
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={driveUploading}
+                  onClick={() => driveFileInputRef.current?.click()}
+                >
+                  {driveUploading ? "Uploading..." : "Choose File"}
+                </Button>
+                {driveUploading && (
+                  <div className="space-y-1">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                        style={{ width: `${driveUploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 text-center">
+                      {driveUploadProgress}%
+                    </p>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={driveFileInputRef}
+                type="file"
+                className="hidden"
+                accept="video/*,audio/*,application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleDriveFileUpload(file);
+                  e.target.value = "";
+                }}
+              />
+            </TabsContent>
+            <TabsContent value="url" className="space-y-3 pt-2">
+              <p className="text-sm text-gray-500">
+                Paste a Google Drive file URL. The file must be shared as &quot;Anyone with the link&quot; to be viewable.
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleDriveUrlSubmit();
+                }}
+              >
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="drive-url">Google Drive URL</Label>
+                    <Input
+                      id="drive-url"
+                      value={driveUrl}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setDriveUrl(e.target.value)
+                      }
+                      placeholder="https://drive.google.com/file/d/..."
+                      autoFocus
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setDriveDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={!driveUrl.trim()}>
+                      Embed
+                    </Button>
+                  </DialogFooter>
+                </div>
+              </form>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
@@ -453,7 +728,7 @@ function ToolbarBtn({
       size="sm"
       onClick={onClick}
       title={title}
-      className={`h-7 w-7 p-0 text-xs ${active ? "bg-gray-200 text-gray-900" : "text-gray-600"}`}
+      className={`h-7 w-7 p-0 text-xs shrink-0 ${active ? "bg-gray-200 text-gray-900" : "text-gray-600"}`}
     >
       {children}
     </Button>
@@ -461,5 +736,5 @@ function ToolbarBtn({
 }
 
 function Divider() {
-  return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
+  return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center shrink-0" />;
 }
