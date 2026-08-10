@@ -167,19 +167,17 @@ export default function ConnectPage() {
 
       {/* Contact Us */}
       <section
-        className="bg-[#0a0a0a]"
+        className="bg-[#f5f7fa]"
         style={{
           paddingTop: "110px",
           paddingBottom: "120px",
-          borderTop: "1px solid rgba(255,255,255,0.16)",
         }}
       >
         <div className="max-w-[1100px] mx-auto px-4 md:px-8">
           <ScrollReveal direction="none">
             <div
+              className="grid grid-cols-1 md:grid-cols-[1fr_1fr]"
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
                 gap: "64px",
               }}
             >
@@ -192,13 +190,13 @@ export default function ConnectPage() {
                     fontWeight: 500,
                     letterSpacing: "0.2em",
                     textTransform: "uppercase",
-                    color: "#1ecdec",
+                    color: "#506b9f",
                   }}
                 >
                   Connect
                 </span>
                 <h2
-                  className="font-[family-name:var(--font-jakarta)] uppercase text-white"
+                  className="font-[family-name:var(--font-jakarta)] uppercase text-[#0a0a0a]"
                   style={{
                     fontWeight: 900,
                     fontSize: "clamp(40px, 5.4vw, 92px)",
@@ -210,7 +208,7 @@ export default function ConnectPage() {
                   Contact Us
                 </h2>
                 <p
-                  className="font-[family-name:var(--font-jakarta)] text-white"
+                  className="font-[family-name:var(--font-jakarta)] text-[#0a0a0a]"
                   style={{
                     fontWeight: 800,
                     fontSize: "clamp(22px, 2.2vw, 32px)",
@@ -227,7 +225,7 @@ export default function ConnectPage() {
                     maxWidth: "52ch",
                     fontSize: "17px",
                     lineHeight: 1.72,
-                    color: "rgba(255,255,255,0.85)",
+                    color: "#505870",
                     margin: 0,
                   }}
                 >
@@ -242,10 +240,10 @@ export default function ConnectPage() {
                     href="https://www.facebook.com/BillionSoulHarvest/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-[family-name:var(--font-geist-mono)] text-white hover:bg-[#1ecdec] hover:border-[#1ecdec] hover:text-[#0a0a0a] transition-colors"
+                    className="font-[family-name:var(--font-geist-mono)] text-[#0a0a0a] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white transition-colors"
                     style={{
                       padding: "15px 26px",
-                      border: "1px solid rgba(255,255,255,0.34)",
+                      border: "1px solid rgba(10,10,10,0.3)",
                       fontSize: "11.5px",
                       fontWeight: 500,
                       letterSpacing: "0.16em",
@@ -259,10 +257,10 @@ export default function ConnectPage() {
                     href="https://www.instagram.com/billionsoul_/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-[family-name:var(--font-geist-mono)] text-white hover:bg-[#1ecdec] hover:border-[#1ecdec] hover:text-[#0a0a0a] transition-colors"
+                    className="font-[family-name:var(--font-geist-mono)] text-[#0a0a0a] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white transition-colors"
                     style={{
                       padding: "15px 26px",
-                      border: "1px solid rgba(255,255,255,0.34)",
+                      border: "1px solid rgba(10,10,10,0.3)",
                       fontSize: "11.5px",
                       fontWeight: 500,
                       letterSpacing: "0.16em",
@@ -276,10 +274,10 @@ export default function ConnectPage() {
                     href="https://www.youtube.com/@ghs2033"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-[family-name:var(--font-geist-mono)] text-white hover:bg-[#1ecdec] hover:border-[#1ecdec] hover:text-[#0a0a0a] transition-colors"
+                    className="font-[family-name:var(--font-geist-mono)] text-[#0a0a0a] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white transition-colors"
                     style={{
                       padding: "15px 26px",
-                      border: "1px solid rgba(255,255,255,0.34)",
+                      border: "1px solid rgba(10,10,10,0.3)",
                       fontSize: "11.5px",
                       fontWeight: 500,
                       letterSpacing: "0.16em",
