@@ -134,6 +134,9 @@ function SortableImageCard({
 export function GalleryEditor({ images, onChange, storyId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadCurrent, setUploadCurrent] = useState(0);
+  const [uploadTotal, setUploadTotal] = useState(0);
   const [activeImage, setActiveImage] = useState<GalleryImage | null>(null);
   const activeIndex = activeImage ? images.findIndex((img) => img.url === activeImage.url) : -1;
 
@@ -142,41 +145,79 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const uploadFileWithProgress = useCallback(
+    (file: File, path: string): Promise<string | null> => {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const url = `${supabaseUrl}/storage/v1/object/event-assets/${path}`;
+
+      return new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const supabase = createClient();
+            const { data: { publicUrl } } = supabase.storage.from("event-assets").getPublicUrl(path);
+            resolve(publicUrl);
+          } else {
+            resolve(null);
+          }
+        };
+        xhr.onerror = () => resolve(null);
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+        xhr.setRequestHeader("apikey", supabaseKey);
+        xhr.send(file);
+      });
+    },
+    []
+  );
+
   const handleUpload = useCallback(
     async (files: FileList) => {
-      setUploading(true);
-      const supabase = createClient();
-      const newImages: GalleryImage[] = [];
-
-      for (const file of Array.from(files)) {
+      const validFiles = Array.from(files).filter((file) => {
         const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type);
         const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type);
-        if (!isImage && !isVideo) continue;
-        if (isImage && file.size > IMAGE_MAX_SIZE) continue;
-        if (isVideo && file.size > VIDEO_MAX_SIZE) continue;
+        if (!isImage && !isVideo) return false;
+        if (isImage && file.size > IMAGE_MAX_SIZE) return false;
+        if (isVideo && file.size > VIDEO_MAX_SIZE) return false;
+        return true;
+      });
 
+      if (validFiles.length === 0) return;
+
+      setUploading(true);
+      setUploadTotal(validFiles.length);
+      const newImages: GalleryImage[] = [];
+
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        setUploadCurrent(i + 1);
+        setUploadProgress(0);
+
+        const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type);
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `${storyId}/gallery/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-        const { error } = await supabase.storage
-          .from("event-assets")
-          .upload(path, file, { upsert: false });
-
-        if (error) continue;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("event-assets").getPublicUrl(path);
-
-        newImages.push({ url: publicUrl, type: isVideo ? "video" : "image" });
+        const publicUrl = await uploadFileWithProgress(file, path);
+        if (publicUrl) {
+          newImages.push({ url: publicUrl, type: isVideo ? "video" : "image" });
+        }
       }
 
       if (newImages.length > 0) {
         onChange([...images, ...newImages]);
       }
       setUploading(false);
+      setUploadProgress(0);
+      setUploadCurrent(0);
+      setUploadTotal(0);
     },
-    [images, onChange, storyId]
+    [images, onChange, storyId, uploadFileWithProgress]
   );
 
   function handleCaptionChange(index: number, caption: string) {
@@ -246,7 +287,18 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors border-gray-300 hover:border-gray-400 bg-gray-50`}
       >
         {uploading ? (
-          <p className="text-sm text-gray-500">Uploading...</p>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-500">
+              Uploading {uploadCurrent} of {uploadTotal}...
+            </p>
+            <div className="w-48 mx-auto h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#29BDD6] rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-400">{uploadProgress}%</p>
+          </div>
         ) : (
           <>
             <svg

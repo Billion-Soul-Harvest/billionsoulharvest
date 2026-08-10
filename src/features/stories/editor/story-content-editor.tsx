@@ -49,6 +49,7 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
   const [editorInView, setEditorInView] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -308,26 +309,45 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
       }
 
       setVideoUploading(true);
-      const supabase = createClient();
+      setVideoUploadProgress(0);
+
       const ext = file.name.split(".").pop() ?? "mp4";
       const path = `${storyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const url = `${supabaseUrl}/storage/v1/object/event-assets/${path}`;
 
-      const { error } = await supabase.storage
-        .from("event-assets")
-        .upload(path, file, { upsert: false });
+      try {
+        const publicUrl = await new Promise<string>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener("progress", (e) => {
+            if (e.lengthComputable) {
+              setVideoUploadProgress(Math.round((e.loaded / e.total) * 100));
+            }
+          });
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const supabase = createClient();
+              const { data: { publicUrl: pUrl } } = supabase.storage.from("event-assets").getPublicUrl(path);
+              resolve(pUrl);
+            } else {
+              reject(new Error("Upload failed"));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Upload failed"));
+          xhr.open("POST", url);
+          xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+          xhr.setRequestHeader("apikey", supabaseKey);
+          xhr.send(file);
+        });
 
-      if (error) {
-        alert(`Upload failed: ${error.message}`);
+        editor.chain().focus().setVideo({ src: publicUrl }).run();
+      } catch {
+        alert("Video upload failed.");
+      } finally {
         setVideoUploading(false);
-        return;
+        setVideoUploadProgress(0);
       }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("event-assets").getPublicUrl(path);
-
-      editor.chain().focus().setVideo({ src: publicUrl }).run();
-      setVideoUploading(false);
     },
     [editor, storyId]
   );
@@ -501,21 +521,27 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0C.488 3.45.029 5.804 0 12c.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0C23.512 20.55 23.971 18.196 24 12c-.029-6.185-.484-8.549-4.385-8.816zM9 16V8l8 3.993L9 16z" />
             </svg>
           </ToolbarBtn>
-          <ToolbarBtn
-            active={false}
-            onClick={() => videoInputRef.current?.click()}
-            title="Upload Video"
-          >
-            {videoUploading ? (
-              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeWidth={2} d="M12 6V3m0 18v-3m9-6h-3M6 12H3m15.364 6.364l-2.121-2.121M8.757 8.757L6.636 6.636m12.728 0l-2.121 2.121M8.757 15.243l-2.121 2.121" />
-              </svg>
-            ) : (
+          {videoUploading ? (
+            <div className="flex items-center gap-1.5 px-2 shrink-0" title={`Uploading ${videoUploadProgress}%`}>
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#29BDD6] rounded-full transition-all duration-300"
+                  style={{ width: `${videoUploadProgress}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-gray-500">{videoUploadProgress}%</span>
+            </div>
+          ) : (
+            <ToolbarBtn
+              active={false}
+              onClick={() => videoInputRef.current?.click()}
+              title="Upload Video"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-            )}
-          </ToolbarBtn>
+            </ToolbarBtn>
+          )}
           <ToolbarBtn
             active={false}
             onClick={() => { setDriveDialogOpen(true); fetchDriveFiles(); }}
