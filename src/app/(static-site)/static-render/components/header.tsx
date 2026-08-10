@@ -103,7 +103,7 @@ export function StaticHeader() {
                 {hasSubmenu ? (
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-1 text-xs font-medium tracking-[0.14em] uppercase font-[family-name:var(--font-geist-mono)] transition-all duration-300 py-1 ${
+                    className={`flex items-center gap-1 text-xs font-bold tracking-[0.14em] uppercase font-[family-name:var(--font-geist-mono)] transition-all duration-300 py-1 ${
                       isActive
                         ? "text-[#1ecdec] border-b-2 border-[#1ecdec]"
                         : "text-white hover:text-[#1ecdec]"
@@ -136,7 +136,7 @@ export function StaticHeader() {
                 ) : (
                   <Link
                     href={item.href}
-                    className={`text-xs font-medium tracking-[0.14em] uppercase font-[family-name:var(--font-geist-mono)] transition-all duration-300 py-1 ${
+                    className={`text-xs font-bold tracking-[0.14em] uppercase font-[family-name:var(--font-geist-mono)] transition-all duration-300 py-1 ${
                       isActive
                         ? "text-[#1ecdec] border-b-2 border-[#1ecdec]"
                         : "text-white hover:text-[#1ecdec]"
