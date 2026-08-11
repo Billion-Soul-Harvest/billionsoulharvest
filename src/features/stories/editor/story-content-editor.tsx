@@ -177,32 +177,60 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
       setDriveUploading(true);
       setDriveUploadProgress(0);
 
-      const formData = new FormData();
-      formData.append("file", file);
-
       try {
-        const xhr = new XMLHttpRequest();
-        xhr.upload.addEventListener("progress", (e) => {
-          if (e.lengthComputable) {
-            setDriveUploadProgress(Math.round((e.loaded / e.total) * 100));
-          }
+        // Step 1: Get resumable upload URL from our API
+        const initRes = await fetch("/api/drive-upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: file.name,
+            mimeType: file.type,
+            fileSize: file.size,
+          }),
         });
+        if (!initRes.ok) {
+          const err = await initRes.json();
+          throw new Error(err.error || "Failed to start upload");
+        }
+        const { uploadUrl } = await initRes.json();
 
-        const result = await new Promise<{ embedUrl: string }>((resolve, reject) => {
+        // Step 2: Upload file directly to Google Drive with progress
+        const fileId = await new Promise<string>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener("progress", (e) => {
+            if (e.lengthComputable) {
+              setDriveUploadProgress(Math.round((e.loaded / e.total) * 90));
+            }
+          });
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              resolve(JSON.parse(xhr.responseText));
+              const data = JSON.parse(xhr.responseText);
+              resolve(data.id);
             } else {
-              const err = JSON.parse(xhr.responseText);
-              reject(new Error(err.error || "Upload failed"));
+              reject(new Error("Upload to Google Drive failed"));
             }
           };
           xhr.onerror = () => reject(new Error("Upload failed"));
-          xhr.open("POST", "/api/drive-upload");
-          xhr.send(formData);
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("Content-Type", file.type);
+          xhr.send(file);
         });
 
-        editor.chain().focus().setGoogleDriveVideo({ src: result.embedUrl }).run();
+        setDriveUploadProgress(95);
+
+        // Step 3: Set public permissions via our API
+        const permRes = await fetch("/api/drive-upload", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId }),
+        });
+        if (!permRes.ok) {
+          const err = await permRes.json();
+          throw new Error(err.error || "Failed to set permissions");
+        }
+        const { embedUrl } = await permRes.json();
+
+        editor.chain().focus().setGoogleDriveVideo({ src: embedUrl }).run();
         setDriveDialogOpen(false);
       } catch (err) {
         setDriveError(err instanceof Error ? err.message : "Upload failed");
@@ -694,18 +722,22 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
                   disabled={driveUploading}
                   onClick={() => driveFileInputRef.current?.click()}
                 >
-                  {driveUploading ? "Uploading..." : "Choose File"}
+                  {driveUploading
+                    ? driveUploadProgress >= 90
+                      ? "Processing..."
+                      : "Uploading..."
+                    : "Choose File"}
                 </Button>
                 {driveUploading && (
                   <div className="space-y-1">
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                        className={`h-full rounded-full transition-all duration-300 ${driveUploadProgress >= 90 ? "bg-amber-500 animate-pulse" : "bg-blue-600"}`}
                         style={{ width: `${driveUploadProgress}%` }}
                       />
                     </div>
                     <p className="text-xs text-gray-400 text-center">
-                      {driveUploadProgress}%
+                      {driveUploadProgress >= 90 ? "Uploading to Google Drive..." : `${driveUploadProgress}%`}
                     </p>
                   </div>
                 )}
