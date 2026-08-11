@@ -194,37 +194,47 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
         }
         const { uploadUrl } = await initRes.json();
 
-        // Step 2: Upload file through our API proxy (streams to Google Drive)
-        const result = await new Promise<{ embedUrl: string }>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.upload.addEventListener("progress", (e) => {
-            if (e.lengthComputable) {
-              setDriveUploadProgress(Math.round((e.loaded / e.total) * 90));
-            }
-          });
-          xhr.upload.addEventListener("load", () => {
-            setDriveUploadProgress(95);
-          });
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve(JSON.parse(xhr.responseText));
-            } else {
-              try {
-                const err = JSON.parse(xhr.responseText);
-                reject(new Error(err.error || "Upload failed"));
-              } catch {
-                reject(new Error("Upload failed"));
-              }
-            }
-          };
-          xhr.onerror = () => reject(new Error("Upload failed"));
-          xhr.open("POST", "/api/drive-upload");
-          xhr.setRequestHeader("Content-Type", file.type);
-          xhr.setRequestHeader("x-upload-url", uploadUrl);
-          xhr.send(file);
-        });
+        // Step 2: Upload file in chunks through our API proxy
+        const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB chunks (under Vercel 4.5MB limit)
+        const totalSize = file.size;
+        let uploaded = 0;
+        let embedUrl = "";
 
-        const { embedUrl } = result;
+        while (uploaded < totalSize) {
+          const end = Math.min(uploaded + CHUNK_SIZE, totalSize);
+          const chunk = file.slice(uploaded, end);
+          const contentRange = `bytes ${uploaded}-${end - 1}/${totalSize}`;
+
+          const chunkRes = await fetch("/api/drive-upload", {
+            method: "PUT",
+            headers: {
+              "Content-Type": file.type,
+              "x-upload-url": uploadUrl,
+              "x-content-range": contentRange,
+            },
+            body: chunk,
+          });
+
+          if (!chunkRes.ok) {
+            const err = await chunkRes.json().catch(() => ({ error: "Chunk upload failed" }));
+            throw new Error(err.error || "Upload failed");
+          }
+
+          const data = await chunkRes.json();
+          uploaded = end;
+          setDriveUploadProgress(Math.round((uploaded / totalSize) * 90));
+
+          if (data.status === "complete") {
+            embedUrl = data.embedUrl;
+            break;
+          }
+        }
+
+        if (!embedUrl) {
+          throw new Error("Upload completed but no embed URL received");
+        }
+
+        setDriveUploadProgress(100);
 
         editor.chain().focus().setGoogleDriveVideo({ src: embedUrl }).run();
         setDriveDialogOpen(false);
