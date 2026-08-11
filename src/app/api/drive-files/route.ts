@@ -58,10 +58,11 @@ export async function GET() {
     }));
 
     return NextResponse.json({ files });
-  } catch (err) {
-    console.error("Drive list error:", err);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Drive list error:", message, err);
     return NextResponse.json(
-      { error: "Failed to list files" },
+      { error: "Failed to list files", detail: message },
       { status: 500 }
     );
   }
