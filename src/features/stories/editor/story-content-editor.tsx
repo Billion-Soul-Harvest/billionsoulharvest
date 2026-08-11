@@ -194,41 +194,37 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
         }
         const { uploadUrl } = await initRes.json();
 
-        // Step 2: Upload file directly to Google Drive with progress
-        const fileId = await new Promise<string>((resolve, reject) => {
+        // Step 2: Upload file through our API proxy (streams to Google Drive)
+        const result = await new Promise<{ embedUrl: string }>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.upload.addEventListener("progress", (e) => {
             if (e.lengthComputable) {
               setDriveUploadProgress(Math.round((e.loaded / e.total) * 90));
             }
           });
+          xhr.upload.addEventListener("load", () => {
+            setDriveUploadProgress(95);
+          });
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              const data = JSON.parse(xhr.responseText);
-              resolve(data.id);
+              resolve(JSON.parse(xhr.responseText));
             } else {
-              reject(new Error("Upload to Google Drive failed"));
+              try {
+                const err = JSON.parse(xhr.responseText);
+                reject(new Error(err.error || "Upload failed"));
+              } catch {
+                reject(new Error("Upload failed"));
+              }
             }
           };
           xhr.onerror = () => reject(new Error("Upload failed"));
-          xhr.open("PUT", uploadUrl);
+          xhr.open("POST", "/api/drive-upload");
           xhr.setRequestHeader("Content-Type", file.type);
+          xhr.setRequestHeader("x-upload-url", uploadUrl);
           xhr.send(file);
         });
 
-        setDriveUploadProgress(95);
-
-        // Step 3: Set public permissions via our API
-        const permRes = await fetch("/api/drive-upload", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileId }),
-        });
-        if (!permRes.ok) {
-          const err = await permRes.json();
-          throw new Error(err.error || "Failed to set permissions");
-        }
-        const { embedUrl } = await permRes.json();
+        const { embedUrl } = result;
 
         editor.chain().focus().setGoogleDriveVideo({ src: embedUrl }).run();
         setDriveDialogOpen(false);
