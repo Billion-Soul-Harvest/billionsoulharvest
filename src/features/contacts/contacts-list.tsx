@@ -1413,25 +1413,64 @@ export function ContactsListClient({
     }
   }
 
-  function exportSelectedCSV() {
-    const selectedContacts = contacts.filter((c) => selected.has(c.id));
+  async function fetchAllContactsForExport(ids?: Set<string>): Promise<ContactRow[]> {
+    const supabase = createClient();
+    const allContacts: ContactRow[] = [];
+    const batchSize = 1000;
+    const selectFields = "*, region:ministry_regions(id, name, color), position:positions(id, name)";
+    if (ids) {
+      const idArray = [...ids];
+      for (let i = 0; i < idArray.length; i += batchSize) {
+        const { data } = await supabase
+          .from("contacts")
+          .select(selectFields)
+          .in("id", idArray.slice(i, i + batchSize));
+        if (data && data.length > 0) allContacts.push(...(data as unknown as ContactRow[]));
+      }
+    } else {
+      let offset = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data } = await supabase
+          .from("contacts")
+          .select(selectFields)
+          .range(offset, offset + batchSize - 1);
+        if (data && data.length > 0) allContacts.push(...(data as unknown as ContactRow[]));
+        hasMore = (data?.length ?? 0) === batchSize;
+        offset += batchSize;
+      }
+    }
+    return allContacts;
+  }
+
+  function downloadCSV(rows: ContactRow[], filename: string) {
     const headers = ["First Name", "Last Name", "Email", "Phone", "Type", "Church", "City", "Country", "Region", "Tags"];
-    const rows = selectedContacts.map((c) => [
+    const csvRows = rows.map((c) => [
       c.first_name, c.last_name, c.email ?? "", c.phone ?? "",
       c.contact_type, c.church_name ?? "", c.city ?? "", c.country ?? "",
-      c.region?.name ?? "", c.tags.join("; "),
+      c.region?.name ?? "", (c.tags ?? []).join("; "),
     ]);
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+      ...csvRows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
     ].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `contacts-selected-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function exportSelectedCSV() {
+    if (selectAllMode) {
+      const allContacts = await fetchAllContactsForExport();
+      downloadCSV(allContacts, `contacts-selected-${new Date().toISOString().slice(0, 10)}.csv`);
+    } else {
+      const allContacts = await fetchAllContactsForExport(selected);
+      downloadCSV(allContacts, `contacts-selected-${new Date().toISOString().slice(0, 10)}.csv`);
+    }
   }
 
   const navigate = useCallback(
@@ -1451,24 +1490,9 @@ export function ContactsListClient({
     [router, pathname, page, pageSize, search, searchField, typeFilter, regionFilter, positionFilter, languageFilter, listFilter, excludeListFilter, eventFilter, tagFilter, tagMode, sort, dir, startTransition]
   );
 
-  function exportCSV() {
-    const headers = ["First Name", "Last Name", "Email", "Phone", "Type", "Church", "City", "Country", "Region", "Tags"];
-    const rows = contacts.map((c) => [
-      c.first_name, c.last_name, c.email ?? "", c.phone ?? "",
-      c.contact_type, c.church_name ?? "", c.city ?? "", c.country ?? "",
-      c.region?.name ?? "", c.tags.join("; "),
-    ]);
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
-    ].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  async function exportCSV() {
+    const allContacts = await fetchAllContactsForExport();
+    downloadCSV(allContacts, `contacts-${new Date().toISOString().slice(0, 10)}.csv`);
   }
 
   // --- AG Grid Column Definitions ---
