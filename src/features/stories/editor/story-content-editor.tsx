@@ -349,6 +349,9 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
       const path = `${storyId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token ?? supabaseKey;
       const url = `${supabaseUrl}/storage/v1/object/event-assets/${path}`;
 
       try {
@@ -361,7 +364,6 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
           });
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              const supabase = createClient();
               const { data: { publicUrl: pUrl } } = supabase.storage.from("event-assets").getPublicUrl(path);
               resolve(pUrl);
             } else {
@@ -370,8 +372,9 @@ export function StoryContentEditor({ value, onChange, storyId }: Props) {
           };
           xhr.onerror = () => reject(new Error("Upload failed"));
           xhr.open("POST", url);
-          xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+          xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
           xhr.setRequestHeader("apikey", supabaseKey);
+          xhr.setRequestHeader("Content-Type", file.type);
           xhr.send(file);
         });
 

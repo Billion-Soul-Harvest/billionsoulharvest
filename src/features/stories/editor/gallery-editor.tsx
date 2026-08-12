@@ -146,9 +146,12 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
   );
 
   const uploadFileWithProgress = useCallback(
-    (file: File, path: string): Promise<string | null> => {
+    async (file: File, path: string): Promise<string | null> => {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token ?? supabaseKey;
       const url = `${supabaseUrl}/storage/v1/object/event-assets/${path}`;
 
       return new Promise((resolve) => {
@@ -160,7 +163,6 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
         });
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            const supabase = createClient();
             const { data: { publicUrl } } = supabase.storage.from("event-assets").getPublicUrl(path);
             resolve(publicUrl);
           } else {
@@ -169,8 +171,9 @@ export function GalleryEditor({ images, onChange, storyId }: Props) {
         };
         xhr.onerror = () => resolve(null);
         xhr.open("POST", url);
-        xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+        xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
         xhr.setRequestHeader("apikey", supabaseKey);
+        xhr.setRequestHeader("Content-Type", file.type);
         xhr.send(file);
       });
     },
