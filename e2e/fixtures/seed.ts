@@ -51,6 +51,7 @@ export async function cleanup() {
   await supabase.from("tags").delete().ilike("name", "test-%");
   await supabase.from("stories").delete().ilike("slug", "test-%");
   await supabase.from("events").delete().ilike("slug", "test-%");
+  await supabase.from("events").delete().ilike("slug", "e2e-test-%");
   await supabase.from("audiences").delete().ilike("name", "Test %");
   await supabase.from("contacts").delete().ilike("email", "test-%@example.com");
 
