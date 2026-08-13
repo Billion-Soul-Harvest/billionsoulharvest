@@ -47,6 +47,11 @@ recordings/
 public/sw*
 public/swe-worker*
 
+# Testing
+e2e/.auth/
+test-results/
+playwright-report/
+
 # design reference images
 *.png
 !public/**/*.png
